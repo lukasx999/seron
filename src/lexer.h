@@ -16,6 +16,7 @@ typedef enum {
     TOK_SEMICOLON,
     TOK_IDENTIFIER,
     TOK_ASSIGN,
+    TOK_EQUALS,
     TOKENKIND_COUNT,
 } TokenKind;
 

@@ -4,7 +4,7 @@ BIN=compiler
 DEPS=lexer.h util.h
 SOURCES=lexer.o
 
-all: compiler
+all: compiler test
 
 compiler: main.o $(SOURCES)
 	@$(CC) $(CFLAGS) $^ -o $(BIN)

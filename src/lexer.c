@@ -21,6 +21,7 @@ static const char *tokenkind_to_string(TokenKind tok) {
         [TOK_SEMICOLON]  = "semicolon",
         [TOK_IDENTIFIER] = "identifier",
         [TOK_ASSIGN]     = "assign",
+        [TOK_EQUALS]     = "equals",
     };
     assert(ARRAY_LEN(repr) == TOKENKIND_COUNT);
     return repr[tok];
@@ -70,7 +71,6 @@ void tokenlist_destroy(TokenList *tokens) {
 
 
 TokenList tokenize(const char *src) {
-
     TokenList tokens = tokenlist_new();
 
     for (size_t i=0; i < strlen(src); ++i) {
@@ -98,7 +98,11 @@ TokenList tokenize(const char *src) {
                 tok.kind = TOK_SLASH;
                 break;
             case '=':
-                tok.kind = TOK_ASSIGN;
+                if (src[i+1] == '=') {
+                    tok.kind = TOK_EQUALS;
+                    ++i;
+                } else
+                    tok.kind = TOK_ASSIGN;
                 break;
             case ';':
                 tok.kind = TOK_SEMICOLON;
