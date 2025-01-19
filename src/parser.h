@@ -16,20 +16,30 @@ typedef struct {
     AstNode **items;
 } AstNodeList;
 
+extern AstNodeList astnodelist_new    (void);
+extern void        astnodelist_append (AstNodeList *list, AstNode *node);
+extern void        astnodelist_destroy(AstNodeList *list);
+
+
 
 
 typedef struct {
     Token op;
-} Literal;
+} ExprLiteral;
 
 typedef struct {
     AstNode *lhs, *rhs;
     Token op;
-} BinOp;
+} ExprBinOp;
 
 typedef struct {
     AstNodeList stmts;
 } Block;
+
+typedef struct {
+    Token op, identifier;
+    AstNode *body; // NULL if declaration
+} StmtFunc;
 
 typedef struct {
     Token op;
@@ -45,10 +55,18 @@ struct AstNode {
     enum {
         ASTNODE_LITERAL,
         ASTNODE_BINOP,
+        ASTNODE_BLOCK,
+        ASTNODE_FUNC,
+        ASTNODE_IF,
+        ASTNODE_WHILE,
     } kind;
     union {
-        Literal literal;
-        BinOp binop;
+        ExprLiteral expr_literal;
+        ExprBinOp   expr_binop;
+        Block       block;
+        StmtFunc    stmt_func;
+        StmtIf      stmt_if;
+        StmtWhile   stmt_while;
     };
 };
 

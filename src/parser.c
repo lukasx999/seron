@@ -1,3 +1,4 @@
+#include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,6 +9,43 @@
 #include "./util.h"
 #include "./lexer.h"
 #include "./parser.h"
+
+
+
+
+
+
+
+AstNodeList astnodelist_new(void) {
+    AstNodeList list = {
+        .capacity = 5,
+        .size     = 0,
+        .items    = NULL,
+    };
+    list.items = malloc(list.capacity * sizeof(AstNode*));
+    return list;
+}
+
+void astnodelist_append(AstNodeList *list, AstNode *node) {
+    if (list->size == list->capacity) {
+        list->capacity *= 2;
+        list->items = realloc(list->items, list->capacity * sizeof(AstNode*));
+    }
+    list->items[list->size++] = node;
+}
+
+void astnodelist_destroy(AstNodeList *list) {
+    free(list->items);
+    list->items = NULL;
+}
+
+
+
+
+
+
+
+
 
 
 typedef struct {
@@ -24,6 +62,11 @@ static void parser_advance(Parser *p) {
 }
 
 
+
+
+
+
+
 static AstNode *rule_primary(Parser *p) {
     // primary ::= <number> | <identifier>
 
@@ -33,7 +76,7 @@ static AstNode *rule_primary(Parser *p) {
         get_current_token(p).kind == TOK_IDENTIFIER ) {
 
         astnode->kind    = ASTNODE_LITERAL;
-        astnode->literal = (Literal) { .op = get_current_token(p) };
+        astnode->expr_literal = (ExprLiteral) { .op = get_current_token(p) };
 
         parser_advance(p);
 
@@ -59,7 +102,7 @@ static AstNode *rule_term(Parser *p) {
 
         AstNode *astnode = malloc(sizeof(AstNode));
         astnode->kind    = ASTNODE_BINOP;
-        astnode->binop   = (BinOp) {
+        astnode->expr_binop   = (ExprBinOp) {
             .lhs = lhs,
             .op  = op,
             .rhs = rhs,
@@ -73,16 +116,40 @@ static AstNode *rule_term(Parser *p) {
 
 }
 
+static AstNode *rule_stmt(Parser *p) {
+    // statement ::= function | if | while | expr ";"
+}
+
+static AstNode *rule_block(Parser *p) {
+    // block ::= "{" statement* "}"
+
+    assert(get_current_token(p).kind == TOK_LBRACE);
+    parser_advance(p);
+
+    AstNode *node = malloc(sizeof(AstNode));
+    node->kind    = ASTNODE_BLOCK;
+    node->block   = (Block) { .stmts = astnodelist_new() };
+
+    while (get_current_token(p).kind != TOK_RBRACE) {
+        parser_advance(p);
+        astnodelist_append(&node->block.stmts, rule_stmt(p));
+    }
+
+    return node;
+}
+
+static AstNode *rule_program(Parser *p) {
+
+    rule_block(p);
+
+}
+
 
 
 AstNode *parse(const TokenList *tokens) {
+    Parser parser = { .current = 0, .tokens = tokens };
 
-    Parser parser = {
-        .current = 0,
-        .tokens  = tokens,
-    };
+    AstNode *root = rule_program(&parser);
 
-    AstNode *root = rule_term(&parser);
     return root;
-
 }

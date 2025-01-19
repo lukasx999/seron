@@ -31,8 +31,8 @@ static char *read_file(const char *filename) {
 int main(void) {
 
     char *file = read_file("example.spx");
-    // const char *src = file;
-    const char *src = "1+2";
+    const char *src = file;
+    // const char *src = "1+2";
 
     printf("Source: `%s`\n\n", src);
 
@@ -40,7 +40,7 @@ int main(void) {
     tokenlist_print(&tokens);
     puts("");
 
-    // AstNode *root = parse(&tokens);
+    AstNode *root = parse(&tokens);
 
     tokenlist_destroy(&tokens);
     free(file);
