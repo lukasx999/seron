@@ -71,6 +71,7 @@ struct AstNode {
 };
 
 extern AstNode *parse(const TokenList *tokens);
+extern void print_ast(const AstNode *root);
 
 
 

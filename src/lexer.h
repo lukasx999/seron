@@ -29,6 +29,8 @@ typedef enum {
     TOKENKIND_COUNT,
 } TokenKind;
 
+extern const char *tokenkind_to_string(TokenKind tok);
+
 typedef struct {
     TokenKind kind;
     char value[BUFSIZ]; // only holds value for literals, otherwise: ""

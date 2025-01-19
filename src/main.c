@@ -28,6 +28,8 @@ static char *read_file(const char *filename) {
 
 
 
+// TODO: free() ast
+
 int main(void) {
 
     char *file = read_file("example.spx");
@@ -41,6 +43,7 @@ int main(void) {
     puts("");
 
     AstNode *root = parse(&tokens);
+    print_ast(root);
 
     tokenlist_destroy(&tokens);
     free(file);

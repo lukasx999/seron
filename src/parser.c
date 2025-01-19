@@ -42,6 +42,8 @@ void astnodelist_destroy(AstNodeList *list) {
 
 
 
+// TODO: remove assertions
+
 
 
 
@@ -61,6 +63,46 @@ static void parser_advance(Parser *p) {
     p->current++;
 }
 
+
+
+void print_ast(const AstNode *root) {
+    static int indent = 0;
+
+    const int spacing = 3;
+    for (int i=0; i < indent*spacing; ++i)
+        printf("%s⋅%s", COLOR_GRAY, COLOR_END);
+
+
+    switch (root->kind) {
+
+        case ASTNODE_BLOCK: {
+            printf("block\n");
+            AstNodeList list = root->block.stmts;
+            indent++;
+            for (size_t i=0; i < list.size; ++i)
+                print_ast(list.items[i]);
+        } break;
+
+        case ASTNODE_BINOP: {
+            ExprBinOp binop = root->expr_binop;
+            const char *repr = tokenkind_to_string(binop.op.kind);
+            puts(repr);
+            indent++;
+            print_ast(binop.lhs);
+            print_ast(binop.rhs);
+            indent--;
+        } break;
+
+        case ASTNODE_LITERAL: {
+            Token tok = root->expr_literal.op;
+            printf("%s", tokenkind_to_string(tok.kind));
+            if (strcmp(tok.value, ""))
+                printf("(%s)", tok.value);
+            puts("");
+        } break;
+
+    }
+}
 
 
 
@@ -116,8 +158,20 @@ static AstNode *rule_term(Parser *p) {
 
 }
 
+static AstNode *rule_exprstmt(Parser *p) {
+    // exprstmt ::= expr ";"
+    AstNode *node = rule_term(p);
+    assert(get_current_token(p).kind == TOK_SEMICOLON);
+    parser_advance(p);
+    return node;
+}
+
 static AstNode *rule_stmt(Parser *p) {
-    // statement ::= function | if | while | expr ";"
+    // statement ::= block | function | if | while | expr ";"
+
+    // TODO: add statements
+    return rule_exprstmt(p);
+
 }
 
 static AstNode *rule_block(Parser *p) {
@@ -131,7 +185,6 @@ static AstNode *rule_block(Parser *p) {
     node->block   = (Block) { .stmts = astnodelist_new() };
 
     while (get_current_token(p).kind != TOK_RBRACE) {
-        parser_advance(p);
         astnodelist_append(&node->block.stmts, rule_stmt(p));
     }
 
@@ -139,10 +192,9 @@ static AstNode *rule_block(Parser *p) {
 }
 
 static AstNode *rule_program(Parser *p) {
-
-    rule_block(p);
-
+    return rule_block(p);
 }
+
 
 
 

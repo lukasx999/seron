@@ -10,7 +10,7 @@
 
 
 
-static const char *tokenkind_to_string(TokenKind tok) {
+const char *tokenkind_to_string(TokenKind tok) {
     const char *repr[] = {
         [TOK_INVALID]     = "invalid",
         [TOK_NUMBER]      = "number",
