@@ -30,7 +30,7 @@ static char *read_file(const char *filename) {
 int main(void) {
 
     char *file = read_file("example.spx");
-    const char *src = "foo = 123;";
+    const char *src = "foo() = 123;";
 
     printf("Tokenizing: `%s`\n", src);
 

@@ -22,6 +22,8 @@ static const char *tokenkind_to_string(TokenKind tok) {
         [TOK_IDENTIFIER] = "identifier",
         [TOK_ASSIGN]     = "assign",
         [TOK_EQUALS]     = "equals",
+        [TOK_LPAREN]     = "lparen",
+        [TOK_RPAREN]     = "rparen",
     };
     assert(ARRAY_LEN(repr) == TOKENKIND_COUNT);
     return repr[tok];
@@ -96,6 +98,12 @@ TokenList tokenize(const char *src) {
                 break;
             case '/':
                 tok.kind = TOK_SLASH;
+                break;
+            case '(':
+                tok.kind = TOK_LPAREN;
+                break;
+            case ')':
+                tok.kind = TOK_RPAREN;
                 break;
             case '=':
                 if (src[i+1] == '=') {

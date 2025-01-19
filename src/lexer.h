@@ -17,6 +17,8 @@ typedef enum {
     TOK_IDENTIFIER,
     TOK_ASSIGN,
     TOK_EQUALS,
+    TOK_LPAREN,
+    TOK_RPAREN,
     TOKENKIND_COUNT,
 } TokenKind;
 

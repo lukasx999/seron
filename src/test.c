@@ -64,6 +64,15 @@ void test_lexer(void) {
     };
     lexer_testcase("foo_123 = 123 + 456", case3, ARRAY_LEN(case3));
 
+    Token case4[] = {
+        (Token) { TOK_IDENTIFIER, "func" },
+        (Token) { TOK_LPAREN,     ""     },
+        (Token) { TOK_RPAREN,     ""     },
+        (Token) { TOK_EQUALS,     ""     },
+        (Token) { TOK_NUMBER,     "1"    },
+    };
+    lexer_testcase("func() == 1", case4, ARRAY_LEN(case4));
+
 
 }
 
