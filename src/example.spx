@@ -1,1 +1,10 @@
-foo = 123;
+proc main() {
+
+    if 1 {
+    } else {
+    }
+
+    while 1 {}
+
+    print();
+}

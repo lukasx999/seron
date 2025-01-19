@@ -14,11 +14,18 @@ typedef enum {
     TOK_ASTERISK,
     TOK_SLASH,
     TOK_SEMICOLON,
+    TOK_COMMA,
     TOK_IDENTIFIER,
     TOK_ASSIGN,
     TOK_EQUALS,
     TOK_LPAREN,
     TOK_RPAREN,
+    TOK_LBRACE,
+    TOK_RBRACE,
+    TOK_KW_FUNCTION,
+    TOK_KW_IF,
+    TOK_KW_ELSE,
+    TOK_KW_WHILE,
     TOKENKIND_COUNT,
 } TokenKind;
 
@@ -28,8 +35,7 @@ typedef struct {
 } Token;
 
 typedef struct {
-    size_t capacity;
-    size_t size;
+    size_t capacity, size;
     Token *items;
 } TokenList;
 

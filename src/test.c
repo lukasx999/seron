@@ -73,6 +73,20 @@ void test_lexer(void) {
     };
     lexer_testcase("func() == 1", case4, ARRAY_LEN(case4));
 
+    Token case5[] = {
+        (Token) { TOK_KW_FUNCTION, ""     },
+        (Token) { TOK_IDENTIFIER,  "main" },
+        (Token) { TOK_LPAREN,      ""     },
+        (Token) { TOK_IDENTIFIER,  "a"    },
+        (Token) { TOK_COMMA,       ""     },
+        (Token) { TOK_IDENTIFIER,  "b"    },
+        (Token) { TOK_COMMA,       ""     },
+        (Token) { TOK_IDENTIFIER,  "c"    },
+        (Token) { TOK_RPAREN,      ""     },
+        (Token) { TOK_LBRACE,      ""     },
+        (Token) { TOK_RBRACE,      ""     },
+    };
+    lexer_testcase("proc main(a, b, c) {}", case5, ARRAY_LEN(case5));
 
 }
 

@@ -1,8 +1,8 @@
 CC=gcc
-CFLAGS=-Wall -Wextra -ggdb -std=c23 -pedantic
+CFLAGS=-Wall -Wextra -ggdb -std=c99 -pedantic
 BIN=compiler
-DEPS=lexer.h util.h
-SOURCES=lexer.o
+DEPS=lexer.h parser.h util.h
+SOURCES=lexer.o parser.o
 
 all: compiler test
 

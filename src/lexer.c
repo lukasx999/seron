@@ -12,22 +12,32 @@
 
 static const char *tokenkind_to_string(TokenKind tok) {
     const char *repr[] = {
-        [TOK_INVALID]    = "invalid",
-        [TOK_NUMBER]     = "number",
-        [TOK_PLUS]       = "plus",
-        [TOK_MINUS]      = "minus",
-        [TOK_ASTERISK]   = "asterisk",
-        [TOK_SLASH]      = "slash",
-        [TOK_SEMICOLON]  = "semicolon",
-        [TOK_IDENTIFIER] = "identifier",
-        [TOK_ASSIGN]     = "assign",
-        [TOK_EQUALS]     = "equals",
-        [TOK_LPAREN]     = "lparen",
-        [TOK_RPAREN]     = "rparen",
+        [TOK_INVALID]     = "invalid",
+        [TOK_NUMBER]      = "number",
+        [TOK_PLUS]        = "plus",
+        [TOK_MINUS]       = "minus",
+        [TOK_ASTERISK]    = "asterisk",
+        [TOK_SLASH]       = "slash",
+        [TOK_SEMICOLON]   = "semicolon",
+        [TOK_COMMA]       = "comma",
+        [TOK_IDENTIFIER]  = "identifier",
+        [TOK_ASSIGN]      = "assign",
+        [TOK_EQUALS]      = "equals",
+        [TOK_LPAREN]      = "lparen",
+        [TOK_RPAREN]      = "rparen",
+        [TOK_LBRACE]      = "lbrace",
+        [TOK_RBRACE]      = "rbrace",
+        [TOK_KW_FUNCTION] = "function",
+        [TOK_KW_IF]       = "if",
+        [TOK_KW_ELSE]     = "else",
+        [TOK_KW_WHILE]    = "while",
     };
     assert(ARRAY_LEN(repr) == TOKENKIND_COUNT);
     return repr[tok];
 }
+
+
+
 
 TokenList tokenlist_new(void) {
     TokenList tokens = {
@@ -77,7 +87,6 @@ TokenList tokenize(const char *src) {
 
     for (size_t i=0; i < strlen(src); ++i) {
         char c = src[i];
-
         Token tok = { .kind = TOK_INVALID, .value = { 0 } };
 
         switch (c) {
@@ -105,6 +114,12 @@ TokenList tokenize(const char *src) {
             case ')':
                 tok.kind = TOK_RPAREN;
                 break;
+            case '{':
+                tok.kind = TOK_LBRACE;
+                break;
+            case '}':
+                tok.kind = TOK_RBRACE;
+                break;
             case '=':
                 if (src[i+1] == '=') {
                     tok.kind = TOK_EQUALS;
@@ -114,6 +129,9 @@ TokenList tokenize(const char *src) {
                 break;
             case ';':
                 tok.kind = TOK_SEMICOLON;
+                break;
+            case ',':
+                tok.kind = TOK_COMMA;
                 break;
 
             default: {
@@ -136,7 +154,22 @@ TokenList tokenize(const char *src) {
 
                 --i; // move back, as i gets incremented by the for loop
                 size_t len = i - start + 1;
-                strncpy(tok.value, &src[start], len);
+
+                if (!strncmp(src+start, "proc", len)) {
+                    tok.kind = TOK_KW_FUNCTION;
+
+                } else if (!strncmp(src+start, "if", len)) {
+                    tok.kind = TOK_KW_IF;
+
+                } else if (!strncmp(src+start, "else", len)) {
+                    tok.kind = TOK_KW_ELSE;
+
+                } else if (!strncmp(src+start, "while", len)) {
+                    tok.kind = TOK_KW_WHILE;
+
+                } else {
+                    strncpy(tok.value, &src[start], len);
+                }
 
             } break;
         }
@@ -149,5 +182,3 @@ TokenList tokenize(const char *src) {
     return tokens;
 
 }
-
-

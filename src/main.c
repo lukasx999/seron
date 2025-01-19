@@ -8,6 +8,7 @@
 
 #include "./util.h"
 #include "./lexer.h"
+#include "./parser.h"
 
 
 
@@ -30,12 +31,16 @@ static char *read_file(const char *filename) {
 int main(void) {
 
     char *file = read_file("example.spx");
-    const char *src = "foo() = 123;";
+    // const char *src = file;
+    const char *src = "1+2";
 
-    printf("Tokenizing: `%s`\n", src);
+    printf("Source: `%s`\n\n", src);
 
     TokenList tokens = tokenize(src);
     tokenlist_print(&tokens);
+    puts("");
+
+    // AstNode *root = parse(&tokens);
 
     tokenlist_destroy(&tokens);
     free(file);
