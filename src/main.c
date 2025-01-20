@@ -32,6 +32,7 @@ static char *read_file(const char *filename) {
 // TODO: remove assertions -> central error handling
 // TODO: seperate TU for grammar rules, astnodelist and printing
 // TODO: unit tests for parser
+// TODO: fix unnamed structs
 
 int main(void) {
 
