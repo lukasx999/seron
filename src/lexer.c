@@ -20,6 +20,7 @@ const char *tokenkind_to_string(TokenKind tok) {
         [TOK_SLASH]       = "slash",
         [TOK_SEMICOLON]   = "semicolon",
         [TOK_COMMA]       = "comma",
+        [TOK_COLON]       = "colon",
         [TOK_IDENTIFIER]  = "identifier",
         [TOK_ASSIGN]      = "assign",
         [TOK_EQUALS]      = "equals",
@@ -27,7 +28,8 @@ const char *tokenkind_to_string(TokenKind tok) {
         [TOK_RPAREN]      = "rparen",
         [TOK_LBRACE]      = "lbrace",
         [TOK_RBRACE]      = "rbrace",
-        [TOK_KW_FUNCTION] = "function",
+        [TOK_KW_FUNCTION] = "func",
+        [TOK_KW_VARDECL]  = "val",
         [TOK_KW_IF]       = "if",
         [TOK_KW_ELSE]     = "else",
         [TOK_KW_WHILE]    = "while",
@@ -133,6 +135,9 @@ TokenList tokenize(const char *src) {
             case ',':
                 tok.kind = TOK_COMMA;
                 break;
+            case ':':
+                tok.kind = TOK_COLON;
+                break;
 
             default: {
                 size_t start = i;
@@ -159,6 +164,9 @@ TokenList tokenize(const char *src) {
 
                 if (!strncmp(src+start, "proc", len)) {
                     tok.kind = TOK_KW_FUNCTION;
+
+                } else if (!strncmp(src+start, "val", len)) {
+                    tok.kind = TOK_KW_VARDECL;
 
                 } else if (!strncmp(src+start, "if", len)) {
                     tok.kind = TOK_KW_IF;

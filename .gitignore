@@ -1,3 +1,4 @@
 compiler
 *.o
 a.out
+vgcore.*

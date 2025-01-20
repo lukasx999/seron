@@ -4,17 +4,20 @@ BIN=compiler
 DEPS=lexer.h parser.h util.h
 SOURCES=lexer.o parser.o
 
-all: compiler test
+all: compiler test memtest
 
 compiler: main.o $(SOURCES)
 	@$(CC) $(CFLAGS) $^ -o $(BIN)
 	@echo CC $^
 
-test: test.o $(SOURCES)
+test: scripts/test.o $(SOURCES)
 	@$(CC) $(CFLAGS) $^ -o test
 	@echo CC $^
 	@./test
 	@rm test
+
+memtest:
+	@./scripts/memtest.sh ./$(BIN)
 
 %.o: %.c Makefile $(DEPS)
 	@$(CC) $(CFLAGS) -c $< -o $@
@@ -23,4 +26,4 @@ test: test.o $(SOURCES)
 clean:
 	rm *.o $(BIN)
 
-.PHONY: clean
+.PHONY: clean, memtest

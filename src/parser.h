@@ -28,6 +28,10 @@ typedef struct {
 } ExprLiteral;
 
 typedef struct {
+    AstNode *expr;
+} ExprGrouping;
+
+typedef struct {
     AstNode *lhs, *rhs;
     Token op;
 } ExprBinOp;
@@ -43,40 +47,37 @@ typedef struct {
 } StmtFunc;
 
 typedef struct {
-    Token op;
-    AstNode *condition, *then_body, *else_body;
-} StmtIf;
-
-typedef struct {
-    Token op;
-    AstNode *condition, *body;
-} StmtWhile;
+    Token op, identifier;
+    AstNode *value;
+} StmtVarDecl;
 
 struct AstNode {
     enum {
         ASTNODE_LITERAL,
+        ASTNODE_GROUPING,
         ASTNODE_BINOP,
         ASTNODE_BLOCK,
         ASTNODE_FUNC,
-        ASTNODE_IF,
-        ASTNODE_WHILE,
+        ASTNODE_VARDECL,
     } kind;
     union {
-        ExprLiteral expr_literal;
-        ExprBinOp   expr_binop;
-        Block       block;
-        StmtFunc    stmt_func;
-        StmtIf      stmt_if;
-        StmtWhile   stmt_while;
+        ExprLiteral  expr_literal;
+        ExprGrouping expr_grouping;
+        ExprBinOp    expr_binop;
+        Block        block;
+        StmtFunc     stmt_func;
+        StmtVarDecl  stmt_vardecl;
     };
 };
 
 typedef void (*AstCallback)(AstNode *node, int depth);
 
-extern AstNode *parser_parse       (const TokenList *tokens);
-extern void     parser_traverse_ast(AstNode *root, AstCallback callback);
-extern void     parser_print_ast   (AstNode *root);
-extern void     parser_free_ast    (AstNode *root);
+extern AstNode *parser_parse(const TokenList *tokens);
+// top_down == true: callback will be called for root node first, and for leaf nodes last
+// top_down == false: callback will be called for leaf nodes first, and for root node last
+extern void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down);
+extern void parser_print_ast(AstNode *root);
+extern void parser_free_ast(AstNode *root);
 
 
 

@@ -1,0 +1,7 @@
+proc add(a: int, b: int) -> int {
+}
+
+proc main(a: int, b: char, c: bool) {
+    val foo: int = 1;
+    foo = 2;
+}

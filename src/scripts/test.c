@@ -5,13 +5,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "./util.h"
-#include "./lexer.h"
+#include "../util.h"
+#include "../lexer.h"
 
 
 
 void lexer_testcase(const char *src, const Token *testcase, size_t case_size) {
-    printf("[TEST] Testing with: `%s`\n", src);
+    printf("[TEST] [Lexer] Testing with: `%s`\n", src);
 
     TokenList tokens = tokenize(src);
 
@@ -24,9 +24,9 @@ void lexer_testcase(const char *src, const Token *testcase, size_t case_size) {
     }
 
     if (passed)
-        printf("[TEST] %s%sPASSED%s\n", COLOR_BOLD, COLOR_GREEN, COLOR_END);
+        printf("[TEST] [Lexer] %s%sPASSED%s\n", COLOR_BOLD, COLOR_GREEN, COLOR_END);
     else
-        printf("[TEST] %s%sFAILED%s\n", COLOR_BOLD, COLOR_RED, COLOR_END);
+        printf("[TEST] [Lexer] %s%sFAILED%s\n", COLOR_BOLD, COLOR_RED, COLOR_END);
 
     tokenlist_destroy(&tokens);
 }

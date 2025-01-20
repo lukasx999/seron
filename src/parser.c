@@ -1,4 +1,3 @@
-#include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -82,9 +81,10 @@ static bool parser_match_tokenkinds(const Parser *p, ...) {
     assert(false);
 }
 
-void parser_traverse_ast(AstNode *root, AstCallback callback) {
+void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down) {
     static int depth = 0;
-    callback(root, depth);
+    if (top_down)
+        callback(root, depth);
 
     switch (root->kind) {
 
@@ -92,38 +92,46 @@ void parser_traverse_ast(AstNode *root, AstCallback callback) {
             depth++;
             AstNodeList list = root->block.stmts;
             for (size_t i=0; i < list.size; ++i)
-                parser_traverse_ast(list.items[i], callback);
+                parser_traverse_ast(list.items[i], callback, top_down);
+            depth--;
         } break;
+
+        case ASTNODE_GROUPING:
+            depth++;
+            parser_traverse_ast(root->expr_grouping.expr, callback, top_down);
+            depth--;
+            break;
 
         case ASTNODE_FUNC:
             depth++;
-            parser_traverse_ast(root->stmt_func.body, callback);
+            parser_traverse_ast(root->stmt_func.body, callback, top_down);
+            depth--;
             break;
 
-        case ASTNODE_WHILE:
+        case ASTNODE_VARDECL:
             depth++;
-            parser_traverse_ast(root->stmt_while.body, callback);
-            break;
-
-        case ASTNODE_IF:
-            depth++;
-            parser_traverse_ast(root->stmt_if.then_body, callback);
-            parser_traverse_ast(root->stmt_if.else_body, callback);
+            parser_traverse_ast(root->stmt_vardecl.value, callback, top_down);
             depth--;
             break;
 
         case ASTNODE_BINOP: {
             depth++;
             ExprBinOp binop = root->expr_binop;
-            parser_traverse_ast(binop.lhs, callback);
-            parser_traverse_ast(binop.rhs, callback);
+            parser_traverse_ast(binop.lhs, callback, top_down);
+            parser_traverse_ast(binop.rhs, callback, top_down);
             depth--;
         } break;
 
         case ASTNODE_LITERAL: {
         } break;
 
+        default:
+            assert(!"Unexpected Node Kind");
+            break;
     }
+
+    if (!top_down)
+        callback(root, depth);
 
 }
 
@@ -147,6 +155,10 @@ void parser_print_ast_callback(AstNode *root, int depth) {
             print_ast_value("block", COLOR_BLUE, block->global ? "global" : NULL);
         } break;
 
+        case ASTNODE_GROUPING: {
+            print_ast_value("grouping", COLOR_BLUE, NULL);
+        } break;
+
         case ASTNODE_BINOP: {
             ExprBinOp *binop = &root->expr_binop;
             print_ast_value(tokenkind_to_string(binop->op.kind), COLOR_PURPLE, NULL);
@@ -154,17 +166,12 @@ void parser_print_ast_callback(AstNode *root, int depth) {
 
         case ASTNODE_FUNC: {
             StmtFunc *func = &root->stmt_func;
-            puts(tokenkind_to_string(func->op.kind));
+            print_ast_value(tokenkind_to_string(func->op.kind), COLOR_RED, func->identifier.value);
         } break;
 
-        case ASTNODE_IF: {
-            StmtIf *stmt_if = &root->stmt_if;
-            puts(tokenkind_to_string(stmt_if->op.kind));
-        } break;
-
-        case ASTNODE_WHILE: {
-            StmtWhile *stmt_while = &root->stmt_while;
-            puts(tokenkind_to_string(stmt_while->op.kind));
+        case ASTNODE_VARDECL: {
+            StmtVarDecl *vardecl = &root->stmt_vardecl;
+            print_ast_value(tokenkind_to_string(vardecl->op.kind), COLOR_RED, vardecl->identifier.value);
         } break;
 
         case ASTNODE_LITERAL: {
@@ -172,11 +179,15 @@ void parser_print_ast_callback(AstNode *root, int depth) {
             Token *tok = &literal->op;
             print_ast_value(tokenkind_to_string(tok->kind), COLOR_RED, tok->value);
         } break;
+
+        default:
+            assert(!"Unexpected Node Kind");
+            break;
     }
 }
 
 void parser_print_ast(AstNode *root) {
-    parser_traverse_ast(root, parser_print_ast_callback);
+    parser_traverse_ast(root, parser_print_ast_callback, true);
 }
 
 static void parser_free_ast_callback(AstNode *node, int _depth) {
@@ -187,10 +198,10 @@ static void parser_free_ast_callback(AstNode *node, int _depth) {
             astnodelist_destroy(&node->block.stmts);
             break;
 
-        case ASTNODE_IF:
-        case ASTNODE_WHILE:
+        case ASTNODE_GROUPING:
         case ASTNODE_LITERAL:
         case ASTNODE_FUNC:
+        case ASTNODE_VARDECL:
         case ASTNODE_BINOP:
             break;
 
@@ -202,7 +213,7 @@ static void parser_free_ast_callback(AstNode *node, int _depth) {
 }
 
 void parser_free_ast(AstNode *root) {
-    parser_traverse_ast(root, parser_free_ast_callback);
+    parser_traverse_ast(root, parser_free_ast_callback, false);
 }
 
 
@@ -215,6 +226,8 @@ static AstNode *rule_primary   (Parser *p);
 static AstNode *rule_term      (Parser *p);
 static AstNode *rule_expression(Parser *p);
 static AstNode *rule_exprstmt  (Parser *p);
+static AstNode *rule_function  (Parser *p);
+static AstNode *rule_vardecl   (Parser *p);
 static AstNode *rule_stmt      (Parser *p);
 static AstNode *rule_block     (Parser *p);
 static AstNode *rule_program   (Parser *p);
@@ -230,7 +243,18 @@ static AstNode *rule_primary(Parser *p) {
 
     if (parser_match_tokenkinds(p, TOK_NUMBER, TOK_IDENTIFIER, SENTINEL)) {
         astnode->kind         = ASTNODE_LITERAL;
-        astnode->expr_literal = (ExprLiteral) { .op = parser_get_current_token(p) };
+        astnode->expr_literal = (ExprLiteral) {
+            .op = parser_get_current_token(p)
+        };
+        parser_advance(p);
+
+    } else if (parser_match_tokenkinds(p, TOK_LPAREN, SENTINEL)) {
+        parser_advance(p);
+        astnode->kind          = ASTNODE_GROUPING;
+        astnode->expr_grouping = (ExprGrouping) {
+            .expr = rule_expression(p)
+        };
+        assert(parser_match_tokenkinds(p, TOK_RPAREN, SENTINEL));
         parser_advance(p);
 
     } else {
@@ -263,6 +287,62 @@ static AstNode *rule_term(Parser *p) {
     }
 
     return lhs;
+}
+
+static AstNode *rule_vardecl(Parser *p) {
+    // vardecl ::= "val" <identifier> "=" <expression> ";"
+
+    // TODO: type annotation
+
+    assert(parser_match_tokenkinds(p, TOK_KW_VARDECL, SENTINEL));
+    Token op = parser_get_current_token(p);
+    parser_advance(p);
+
+    Token identifier = parser_get_current_token(p);
+    parser_advance(p);
+
+    assert(parser_match_tokenkinds(p, TOK_ASSIGN, SENTINEL));
+    parser_advance(p);
+
+    AstNode *vardecl      = malloc(sizeof(AstNode));
+    vardecl->kind         = ASTNODE_VARDECL;
+    vardecl->stmt_vardecl = (StmtVarDecl) {
+        .op         = op,
+        .identifier = identifier,
+        .value      = rule_expression(p),
+    };
+
+    assert(parser_match_tokenkinds(p, TOK_SEMICOLON, SENTINEL));
+    parser_advance(p);
+
+    return vardecl;
+}
+
+static AstNode *rule_function(Parser *p) {
+    // function ::= "proc" <identifier> "(" ")" <block>
+
+    // TODO: paramlist
+    // TODO: returntype
+
+    assert(parser_match_tokenkinds(p, TOK_KW_FUNCTION, SENTINEL));
+    Token op = parser_get_current_token(p);
+    parser_advance(p);
+    Token identifier = parser_get_current_token(p);
+    parser_advance(p);
+    assert(parser_match_tokenkinds(p, TOK_LPAREN, SENTINEL));
+    parser_advance(p);
+    assert(parser_match_tokenkinds(p, TOK_RPAREN, SENTINEL));
+    parser_advance(p);
+
+    AstNode *function   = malloc(sizeof(AstNode));
+    function->kind      = ASTNODE_FUNC;
+    function->stmt_func = (StmtFunc) {
+        .op         = op,
+        .body       = rule_block(p),
+        .identifier = identifier,
+    };
+
+    return function;
 }
 
 static AstNode *rule_block(Parser *p) {
@@ -305,6 +385,13 @@ static AstNode *rule_stmt(Parser *p) {
 
     if (parser_match_tokenkinds(p, TOK_LBRACE, SENTINEL))
         return rule_block(p);
+
+    else if (parser_match_tokenkinds(p, TOK_KW_FUNCTION, SENTINEL))
+        return rule_function(p);
+
+    else if (parser_match_tokenkinds(p, TOK_KW_VARDECL, SENTINEL))
+        return rule_vardecl(p);
+
     else
         return rule_exprstmt(p);
 
