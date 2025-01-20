@@ -29,8 +29,9 @@ static char *read_file(const char *filename) {
 
 
 
-// TODO: remove assertions
-// TODO seperate TU for grammar rules
+// TODO: remove assertions -> central error handling
+// TODO: seperate TU for grammar rules, astnodelist and printing
+// TODO: unit tests for parser
 
 int main(void) {
 

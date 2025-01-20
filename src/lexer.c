@@ -155,6 +155,8 @@ TokenList tokenize(const char *src) {
                 --i; // move back, as i gets incremented by the for loop
                 size_t len = i - start + 1;
 
+                // TODO: check first char, to not waste time parsing full strings
+
                 if (!strncmp(src+start, "proc", len)) {
                     tok.kind = TOK_KW_FUNCTION;
 

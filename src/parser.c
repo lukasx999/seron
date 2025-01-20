@@ -50,7 +50,7 @@ typedef struct {
     const TokenList *tokens;
 } Parser;
 
-static Token parser_get_current_token(const Parser *p) {
+static inline Token parser_get_current_token(const Parser *p) {
     const Token *tok = tokenlist_get(p->tokens, p->current);
     assert(tok != NULL);
     return *tok;
@@ -61,7 +61,7 @@ static inline void parser_advance(Parser *p) {
 }
 
 static inline bool parser_is_at_end(const Parser *p) {
-    return p->current == p->tokens->size - 1;
+    return p->current == p->tokens->size;
 }
 
 // Checks if the current token is of one of the supplied kinds
@@ -283,6 +283,7 @@ static AstNode *rule_block(Parser *p) {
         astnodelist_append(&node->block.stmts, rule_stmt(p));
     }
 
+    parser_advance(p);
     return node;
 }
 
