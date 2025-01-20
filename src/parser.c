@@ -17,7 +17,6 @@
 
 
 
-
 AstNodeList astnodelist_new(void) {
     AstNodeList list = {
         .capacity = 5,
@@ -44,12 +43,6 @@ void astnodelist_destroy(AstNodeList *list) {
 
 
 
-// TODO: remove assertions
-
-
-
-
-
 
 
 typedef struct {
@@ -63,12 +56,12 @@ static Token parser_get_current_token(const Parser *p) {
     return *tok;
 }
 
-static void parser_advance(Parser *p) {
+static inline void parser_advance(Parser *p) {
     p->current++;
 }
 
-static bool parser_is_at_end(const Parser *p) {
-    return p->tokens->size == p->current;
+static inline bool parser_is_at_end(const Parser *p) {
+    return p->current == p->tokens->size - 1;
 }
 
 // Checks if the current token is of one of the supplied kinds
@@ -89,110 +82,6 @@ static bool parser_match_tokenkinds(const Parser *p, ...) {
     assert(false);
 }
 
-
-
-
-
-
-
-
-static AstNode *rule_primary(Parser *p) {
-    // primary ::= <number> | <identifier>
-
-    AstNode *astnode = malloc(sizeof(AstNode));
-
-    if (parser_get_current_token(p).kind == TOK_NUMBER ||
-        parser_get_current_token(p).kind == TOK_IDENTIFIER ) {
-
-        astnode->kind    = ASTNODE_LITERAL;
-        astnode->expr_literal = (ExprLiteral) { .op = parser_get_current_token(p) };
-
-        parser_advance(p);
-
-    } else {
-        assert(!"Unexpected Token");
-    }
-
-    return astnode;
-}
-
-static AstNode *rule_term(Parser *p) {
-    // term ::= primary (("+" | "-") primary)*
-
-    AstNode *lhs = rule_primary(p);
-
-    while (parser_match_tokenkinds(p, TOK_PLUS, TOK_MINUS, SENTINEL)) {
-
-        Token op = parser_get_current_token(p);
-        parser_advance(p);
-
-        AstNode *rhs = rule_primary(p);
-
-        AstNode *astnode = malloc(sizeof(AstNode));
-        astnode->kind    = ASTNODE_BINOP;
-        astnode->expr_binop   = (ExprBinOp) {
-            .lhs = lhs,
-            .op  = op,
-            .rhs = rhs,
-        };
-
-        // FIX: get_current_token() out of bounds
-        lhs = astnode;
-    }
-
-    return lhs;
-
-}
-
-static AstNode *rule_exprstmt(Parser *p) {
-    // exprstmt ::= expr ";"
-
-    AstNode *node = rule_term(p);
-    assert(parser_match_tokenkinds(p, TOK_SEMICOLON, SENTINEL));
-    parser_advance(p);
-    return node;
-}
-
-static AstNode *rule_stmt(Parser *p) {
-    // statement ::= block | function | if | while | expr ";"
-
-    // TODO: add statements
-    return rule_exprstmt(p);
-
-}
-
-static AstNode *rule_block(Parser *p) {
-    // block ::= "{" statement* "}"
-
-    assert(parser_match_tokenkinds(p, TOK_LBRACE, SENTINEL));
-    parser_advance(p);
-
-    AstNode *node = malloc(sizeof(AstNode));
-    node->kind    = ASTNODE_BLOCK;
-    node->block   = (Block) { .stmts = astnodelist_new() };
-
-    while (!parser_match_tokenkinds(p, TOK_RBRACE, SENTINEL)) {
-        assert(!parser_is_at_end(p) && "Unmatching brace");
-        astnodelist_append(&node->block.stmts, rule_stmt(p));
-    }
-
-    return node;
-}
-
-static AstNode *rule_program(Parser *p) {
-    return rule_block(p);
-}
-
-
-
-
-AstNode *parser_parse(const TokenList *tokens) {
-    Parser parser = { .current = 0, .tokens = tokens };
-    AstNode *root = rule_program(&parser);
-    return root;
-}
-
-
 void parser_traverse_ast(AstNode *root, AstCallback callback) {
     static int depth = 0;
     callback(root, depth);
@@ -200,8 +89,8 @@ void parser_traverse_ast(AstNode *root, AstCallback callback) {
     switch (root->kind) {
 
         case ASTNODE_BLOCK: {
-            AstNodeList list = root->block.stmts;
             depth++;
+            AstNodeList list = root->block.stmts;
             for (size_t i=0; i < list.size; ++i)
                 parser_traverse_ast(list.items[i], callback);
         } break;
@@ -238,42 +127,50 @@ void parser_traverse_ast(AstNode *root, AstCallback callback) {
 
 }
 
+// Prints a value in the following format: `<str>: <arg>`
+// <arg> is omitted if arg == NULL
+static void print_ast_value(const char *str, const char *color, const char *arg) {
+    printf("%s%s%s", color, str, COLOR_END);
+    if (arg != NULL)
+        printf("%s: %s%s", COLOR_GRAY, arg, COLOR_END);
+    puts("");
+}
+
 void parser_print_ast_callback(AstNode *root, int depth) {
     const int spacing = 3; // TODO: pass this in through void* argument
-    for (int i=0; i < depth * spacing; ++i)
+    for (int _=0; _ < depth * spacing; ++_)
         printf("%s⋅%s", COLOR_GRAY, COLOR_END);
 
     switch (root->kind) {
         case ASTNODE_BLOCK: {
-            printf("block\n");
+            Block *block = &root->block;
+            print_ast_value("block", COLOR_BLUE, block->global ? "global" : NULL);
         } break;
 
         case ASTNODE_BINOP: {
-            ExprBinOp binop = root->expr_binop;
-            puts(tokenkind_to_string(binop.op.kind));
+            ExprBinOp *binop = &root->expr_binop;
+            print_ast_value(tokenkind_to_string(binop->op.kind), COLOR_PURPLE, NULL);
         } break;
 
         case ASTNODE_FUNC: {
-            StmtFunc func = root->stmt_func;
-            puts(tokenkind_to_string(func.op.kind));
+            StmtFunc *func = &root->stmt_func;
+            puts(tokenkind_to_string(func->op.kind));
         } break;
 
         case ASTNODE_IF: {
-            StmtIf if_ = root->stmt_if;
-            puts(tokenkind_to_string(if_.op.kind));
+            StmtIf *stmt_if = &root->stmt_if;
+            puts(tokenkind_to_string(stmt_if->op.kind));
         } break;
 
         case ASTNODE_WHILE: {
-            StmtWhile while_ = root->stmt_while;
-            puts(tokenkind_to_string(while_.op.kind));
+            StmtWhile *stmt_while = &root->stmt_while;
+            puts(tokenkind_to_string(stmt_while->op.kind));
         } break;
 
         case ASTNODE_LITERAL: {
-            Token tok = root->expr_literal.op;
-            printf("%s", tokenkind_to_string(tok.kind));
-            if (strcmp(tok.value, ""))
-                printf("(%s)", tok.value);
-            puts("");
+            ExprLiteral *literal = &root->expr_literal;
+            Token *tok = &literal->op;
+            print_ast_value(tokenkind_to_string(tok->kind), COLOR_RED, tok->value);
         } break;
     }
 }
@@ -281,8 +178,6 @@ void parser_print_ast_callback(AstNode *root, int depth) {
 void parser_print_ast(AstNode *root) {
     parser_traverse_ast(root, parser_print_ast_callback);
 }
-
-
 
 static void parser_free_ast_callback(AstNode *node, int _depth) {
     (void) _depth;
@@ -308,4 +203,133 @@ static void parser_free_ast_callback(AstNode *node, int _depth) {
 
 void parser_free_ast(AstNode *root) {
     parser_traverse_ast(root, parser_free_ast_callback);
+}
+
+
+
+
+
+
+// forward-decl. because some grammar rules have circular dependencies
+static AstNode *rule_primary   (Parser *p);
+static AstNode *rule_term      (Parser *p);
+static AstNode *rule_expression(Parser *p);
+static AstNode *rule_exprstmt  (Parser *p);
+static AstNode *rule_stmt      (Parser *p);
+static AstNode *rule_block     (Parser *p);
+static AstNode *rule_program   (Parser *p);
+
+
+
+
+
+static AstNode *rule_primary(Parser *p) {
+    // primary ::= <number> | <identifier>
+
+    AstNode *astnode = malloc(sizeof(AstNode));
+
+    if (parser_match_tokenkinds(p, TOK_NUMBER, TOK_IDENTIFIER, SENTINEL)) {
+        astnode->kind         = ASTNODE_LITERAL;
+        astnode->expr_literal = (ExprLiteral) { .op = parser_get_current_token(p) };
+        parser_advance(p);
+
+    } else {
+        assert(!"Unexpected Token");
+    }
+
+    return astnode;
+}
+
+static AstNode *rule_term(Parser *p) {
+    // term ::= primary (("+" | "-") primary)*
+
+    AstNode *lhs = rule_primary(p);
+
+    while (parser_match_tokenkinds(p, TOK_PLUS, TOK_MINUS, SENTINEL)) {
+        Token op = parser_get_current_token(p);
+        parser_advance(p);
+
+        AstNode *rhs = rule_primary(p);
+
+        AstNode *astnode = malloc(sizeof(AstNode));
+        astnode->kind    = ASTNODE_BINOP;
+        astnode->expr_binop   = (ExprBinOp) {
+            .lhs = lhs,
+            .op  = op,
+            .rhs = rhs,
+        };
+
+        lhs = astnode;
+    }
+
+    return lhs;
+}
+
+static AstNode *rule_block(Parser *p) {
+    // block ::= "{" statement* "}"
+
+    assert(parser_match_tokenkinds(p, TOK_LBRACE, SENTINEL));
+    parser_advance(p);
+
+    AstNode *node = malloc(sizeof(AstNode));
+    node->kind    = ASTNODE_BLOCK;
+    node->block   = (Block) {
+        .stmts  = astnodelist_new(),
+        .global = false
+    };
+
+    while (!parser_match_tokenkinds(p, TOK_RBRACE, SENTINEL)) {
+        assert(!parser_is_at_end(p) && "Unmatching brace");
+        astnodelist_append(&node->block.stmts, rule_stmt(p));
+    }
+
+    return node;
+}
+
+static AstNode *rule_expression(Parser *p) {
+    return rule_term(p);
+}
+
+static AstNode *rule_exprstmt(Parser *p) {
+    // exprstmt ::= expr ";"
+
+    AstNode *node = rule_expression(p);
+    assert(parser_match_tokenkinds(p, TOK_SEMICOLON, SENTINEL) && "Expected Semicolon");
+    parser_advance(p);
+    return node;
+}
+
+static AstNode *rule_stmt(Parser *p) {
+    // statement ::= block | function | if | while | expr ";"
+
+    if (parser_match_tokenkinds(p, TOK_LBRACE, SENTINEL))
+        return rule_block(p);
+    else
+        return rule_exprstmt(p);
+
+}
+
+static AstNode *rule_program(Parser *p) {
+    // program ::= statement*
+
+    AstNode *node = malloc(sizeof(AstNode));
+    node->kind    = ASTNODE_BLOCK;
+    node->block   = (Block) {
+        .stmts  = astnodelist_new(),
+        .global = true
+    };
+
+    while (!parser_is_at_end(p)) {
+        astnodelist_append(&node->block.stmts, rule_stmt(p));
+    }
+
+    return node;
+}
+
+
+
+AstNode *parser_parse(const TokenList *tokens) {
+    Parser parser = { .current = 0, .tokens = tokens };
+    AstNode *root = rule_program(&parser);
+    return root;
 }

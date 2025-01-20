@@ -29,7 +29,8 @@ static char *read_file(const char *filename) {
 
 
 
-// TODO: free() ast
+// TODO: remove assertions
+// TODO seperate TU for grammar rules
 
 int main(void) {
 

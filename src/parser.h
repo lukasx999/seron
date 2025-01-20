@@ -34,6 +34,7 @@ typedef struct {
 
 typedef struct {
     AstNodeList stmts;
+    bool global; // true if block represents the global scope
 } Block;
 
 typedef struct {
@@ -73,8 +74,8 @@ struct AstNode {
 typedef void (*AstCallback)(AstNode *node, int depth);
 
 extern AstNode *parser_parse       (const TokenList *tokens);
-extern void     parser_print_ast(AstNode *root);
 extern void     parser_traverse_ast(AstNode *root, AstCallback callback);
+extern void     parser_print_ast   (AstNode *root);
 extern void     parser_free_ast    (AstNode *root);
 
 
