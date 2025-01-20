@@ -188,41 +188,47 @@ static AstNode *rule_program(Parser *p) {
 
 AstNode *parser_parse(const TokenList *tokens) {
     Parser parser = { .current = 0, .tokens = tokens };
-
     AstNode *root = rule_program(&parser);
-
     return root;
 }
 
 
-void parser_traverse_ast(const AstNode *root, AstCallback callback) {
-    callback(root);
+void parser_traverse_ast(AstNode *root, AstCallback callback) {
+    static int depth = 0;
+    callback(root, depth);
 
     switch (root->kind) {
 
         case ASTNODE_BLOCK: {
             AstNodeList list = root->block.stmts;
+            depth++;
             for (size_t i=0; i < list.size; ++i)
                 parser_traverse_ast(list.items[i], callback);
         } break;
 
-        case ASTNODE_FUNC: {
+        case ASTNODE_FUNC:
+            depth++;
             parser_traverse_ast(root->stmt_func.body, callback);
-        } break;
+            break;
 
-        case ASTNODE_WHILE: {
+        case ASTNODE_WHILE:
+            depth++;
             parser_traverse_ast(root->stmt_while.body, callback);
-        } break;
+            break;
 
-        case ASTNODE_IF: {
+        case ASTNODE_IF:
+            depth++;
             parser_traverse_ast(root->stmt_if.then_body, callback);
             parser_traverse_ast(root->stmt_if.else_body, callback);
-        } break;
+            depth--;
+            break;
 
         case ASTNODE_BINOP: {
+            depth++;
             ExprBinOp binop = root->expr_binop;
-            parser_print_ast(binop.lhs);
-            parser_print_ast(binop.rhs);
+            parser_traverse_ast(binop.lhs, callback);
+            parser_traverse_ast(binop.rhs, callback);
+            depth--;
         } break;
 
         case ASTNODE_LITERAL: {
@@ -232,31 +238,34 @@ void parser_traverse_ast(const AstNode *root, AstCallback callback) {
 
 }
 
-void parser_print_ast(const AstNode *root) {
-    static int indent = 0;
-
-    const int spacing = 3;
-    for (int i=0; i < indent*spacing; ++i)
+void parser_print_ast_callback(AstNode *root, int depth) {
+    const int spacing = 3; // TODO: pass this in through void* argument
+    for (int i=0; i < depth * spacing; ++i)
         printf("%s⋅%s", COLOR_GRAY, COLOR_END);
 
     switch (root->kind) {
-
         case ASTNODE_BLOCK: {
             printf("block\n");
-            AstNodeList list = root->block.stmts;
-            indent++;
-            for (size_t i=0; i < list.size; ++i)
-                parser_print_ast(list.items[i]);
         } break;
 
         case ASTNODE_BINOP: {
             ExprBinOp binop = root->expr_binop;
-            const char *repr = tokenkind_to_string(binop.op.kind);
-            puts(repr);
-            indent++;
-            parser_print_ast(binop.lhs);
-            parser_print_ast(binop.rhs);
-            indent--;
+            puts(tokenkind_to_string(binop.op.kind));
+        } break;
+
+        case ASTNODE_FUNC: {
+            StmtFunc func = root->stmt_func;
+            puts(tokenkind_to_string(func.op.kind));
+        } break;
+
+        case ASTNODE_IF: {
+            StmtIf if_ = root->stmt_if;
+            puts(tokenkind_to_string(if_.op.kind));
+        } break;
+
+        case ASTNODE_WHILE: {
+            StmtWhile while_ = root->stmt_while;
+            puts(tokenkind_to_string(while_.op.kind));
         } break;
 
         case ASTNODE_LITERAL: {
@@ -266,21 +275,37 @@ void parser_print_ast(const AstNode *root) {
                 printf("(%s)", tok.value);
             puts("");
         } break;
-
     }
 }
 
-void parser_free_ast(AstNode *root) {
-    switch (root->kind) {
+void parser_print_ast(AstNode *root) {
+    parser_traverse_ast(root, parser_print_ast_callback);
+}
 
-        case ASTNODE_BLOCK: {
-            astnodelist_destroy(&root->block.stmts);
-            free(root);
-        } break;
 
-        default: {
+
+static void parser_free_ast_callback(AstNode *node, int _depth) {
+    (void) _depth;
+
+    switch (node->kind) {
+        case ASTNODE_BLOCK:
+            astnodelist_destroy(&node->block.stmts);
+            break;
+
+        case ASTNODE_IF:
+        case ASTNODE_WHILE:
+        case ASTNODE_LITERAL:
+        case ASTNODE_FUNC:
+        case ASTNODE_BINOP:
+            break;
+
+        default:
             assert(!"Unexpected Node Kind");
-        } break;
-
+            break;
     }
+    free(node);
+}
+
+void parser_free_ast(AstNode *root) {
+    parser_traverse_ast(root, parser_free_ast_callback);
 }

@@ -70,11 +70,12 @@ struct AstNode {
     };
 };
 
-extern AstNode *parser_parse(const TokenList *tokens);
-extern void parser_print_ast(const AstNode *root);
-typedef void (*AstCallback)(const AstNode*);
-extern void parser_traverse_ast(const AstNode *root, AstCallback callback);
-extern void parser_free_ast(AstNode *root);
+typedef void (*AstCallback)(AstNode *node, int depth);
+
+extern AstNode *parser_parse       (const TokenList *tokens);
+extern void     parser_print_ast(AstNode *root);
+extern void     parser_traverse_ast(AstNode *root, AstCallback callback);
+extern void     parser_free_ast    (AstNode *root);
 
 
 

@@ -27,8 +27,6 @@ static char *read_file(const char *filename) {
 }
 
 
-void callback(const AstNode *node) {
-}
 
 
 // TODO: free() ast
@@ -46,8 +44,8 @@ int main(void) {
     // puts("");
 
     AstNode *root = parser_parse(&tokens);
-    parser_traverse_ast(root, callback);
-    // parser_print_ast(root);
+    parser_print_ast(root);
+    parser_free_ast(root);
 
     tokenlist_destroy(&tokens);
     free(file);
