@@ -27,6 +27,9 @@ static char *read_file(const char *filename) {
 }
 
 
+void callback(const AstNode *node) {
+}
+
 
 // TODO: free() ast
 
@@ -34,16 +37,17 @@ int main(void) {
 
     char *file = read_file("example.spx");
     const char *src = file;
-    // const char *src = "1+2";
+    // const char *src = "";
 
     printf("Source: `%s`\n\n", src);
 
     TokenList tokens = tokenize(src);
-    tokenlist_print(&tokens);
-    puts("");
+    // tokenlist_print(&tokens);
+    // puts("");
 
-    AstNode *root = parse(&tokens);
-    print_ast(root);
+    AstNode *root = parser_parse(&tokens);
+    parser_traverse_ast(root, callback);
+    // parser_print_ast(root);
 
     tokenlist_destroy(&tokens);
     free(file);

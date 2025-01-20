@@ -7,7 +7,7 @@
 
 
 typedef enum {
-    TOK_INVALID,
+    TOK_INVALID, // Used only for error checking and as a sentinel value
     TOK_NUMBER,
     TOK_PLUS,
     TOK_MINUS,
