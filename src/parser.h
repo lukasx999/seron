@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-#include "./lexer.h"
+#include "lexer.h"
 
 
 
@@ -71,12 +71,12 @@ struct AstNode {
     };
 };
 
-typedef void (*AstCallback)(AstNode *node, int depth);
+typedef void (*AstCallback)(AstNode *node, int depth, void *args);
 
 extern AstNode *parser_parse(const TokenList *tokens);
 // top_down == true: callback will be called for root node first, and for leaf nodes last
 // top_down == false: callback will be called for leaf nodes first, and for root node last
-extern void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down);
+extern void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down, void *args);
 extern void parser_print_ast(AstNode *root);
 extern void parser_free_ast(AstNode *root);
 

@@ -1,6 +1,12 @@
 #ifndef _UTIL_H
 #define _UTIL_H
 
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+
+
 
 #define ARRAY_LEN(arr) (sizeof((arr)) / sizeof(*(arr)))
 
@@ -20,6 +26,17 @@
 #define COLOR_ITALIC        "\33[3m"
 #define COLOR_STRIKETHROUGH "\33[9m"
 #define COLOR_END           "\33[0m"
+
+static inline void throw_error(const char *fmt, ...) {
+    va_list va;
+    va_start(va, fmt);
+    fprintf(stderr, "%s%sERROR: %s", COLOR_BOLD, COLOR_RED, COLOR_END);
+    vfprintf(stderr, fmt, va);
+    fprintf(stderr, "\n");
+    va_end(va);
+    exit(EXIT_FAILURE);
+}
+
 
 
 #endif // _UTIL_H

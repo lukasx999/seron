@@ -6,13 +6,13 @@
 #include <stdbool.h>
 #include <stdarg.h>
 
-#include "./util.h"
-#include "./lexer.h"
-#include "./parser.h"
+#include "util.h"
+#include "lexer.h"
+#include "parser.h"
+
+
 
 #define SENTINEL TOK_INVALID
-
-
 
 
 
@@ -81,10 +81,10 @@ static bool parser_match_tokenkinds(const Parser *p, ...) {
     assert(false);
 }
 
-void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down) {
+void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down, void *args) {
     static int depth = 0;
     if (top_down)
-        callback(root, depth);
+        callback(root, depth, args);
 
     switch (root->kind) {
 
@@ -92,33 +92,33 @@ void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down) {
             depth++;
             AstNodeList list = root->block.stmts;
             for (size_t i=0; i < list.size; ++i)
-                parser_traverse_ast(list.items[i], callback, top_down);
+                parser_traverse_ast(list.items[i], callback, top_down, args);
             depth--;
         } break;
 
         case ASTNODE_GROUPING:
             depth++;
-            parser_traverse_ast(root->expr_grouping.expr, callback, top_down);
+            parser_traverse_ast(root->expr_grouping.expr, callback, top_down, args);
             depth--;
             break;
 
         case ASTNODE_FUNC:
             depth++;
-            parser_traverse_ast(root->stmt_func.body, callback, top_down);
+            parser_traverse_ast(root->stmt_func.body, callback, top_down, args);
             depth--;
             break;
 
         case ASTNODE_VARDECL:
             depth++;
-            parser_traverse_ast(root->stmt_vardecl.value, callback, top_down);
+            parser_traverse_ast(root->stmt_vardecl.value, callback, top_down, args);
             depth--;
             break;
 
         case ASTNODE_BINOP: {
             depth++;
             ExprBinOp binop = root->expr_binop;
-            parser_traverse_ast(binop.lhs, callback, top_down);
-            parser_traverse_ast(binop.rhs, callback, top_down);
+            parser_traverse_ast(binop.lhs, callback, top_down, args);
+            parser_traverse_ast(binop.rhs, callback, top_down, args);
             depth--;
         } break;
 
@@ -131,7 +131,7 @@ void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down) {
     }
 
     if (!top_down)
-        callback(root, depth);
+        callback(root, depth, args);
 
 }
 
@@ -144,7 +144,9 @@ static void print_ast_value(const char *str, const char *color, const char *arg)
     puts("");
 }
 
-void parser_print_ast_callback(AstNode *root, int depth) {
+void parser_print_ast_callback(AstNode *root, int depth, void *_args) {
+    (void) _args;
+
     const int spacing = 3; // TODO: pass this in through void* argument
     for (int _=0; _ < depth * spacing; ++_)
         printf("%s⋅%s", COLOR_GRAY, COLOR_END);
@@ -187,11 +189,12 @@ void parser_print_ast_callback(AstNode *root, int depth) {
 }
 
 void parser_print_ast(AstNode *root) {
-    parser_traverse_ast(root, parser_print_ast_callback, true);
+    parser_traverse_ast(root, parser_print_ast_callback, true, NULL);
 }
 
-static void parser_free_ast_callback(AstNode *node, int _depth) {
+static void parser_free_ast_callback(AstNode *node, int _depth, void *_args) {
     (void) _depth;
+    (void) _args;
 
     switch (node->kind) {
         case ASTNODE_BLOCK:
@@ -213,7 +216,7 @@ static void parser_free_ast_callback(AstNode *node, int _depth) {
 }
 
 void parser_free_ast(AstNode *root) {
-    parser_traverse_ast(root, parser_free_ast_callback, false);
+    parser_traverse_ast(root, parser_free_ast_callback, false, NULL);
 }
 
 
@@ -237,11 +240,11 @@ static AstNode *rule_program   (Parser *p);
 
 
 static AstNode *rule_primary(Parser *p) {
-    // primary ::= <number> | <identifier>
+    // primary ::= NUMBER | IDENTIFIER | STRING
 
     AstNode *astnode = malloc(sizeof(AstNode));
 
-    if (parser_match_tokenkinds(p, TOK_NUMBER, TOK_IDENTIFIER, SENTINEL)) {
+    if (parser_match_tokenkinds(p, TOK_NUMBER, TOK_IDENTIFIER, TOK_STRING, SENTINEL)) {
         astnode->kind         = ASTNODE_LITERAL;
         astnode->expr_literal = (ExprLiteral) {
             .op = parser_get_current_token(p)

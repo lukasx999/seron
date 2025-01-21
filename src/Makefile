@@ -1,8 +1,8 @@
 CC=gcc
 CFLAGS=-Wall -Wextra -ggdb -std=c11 -pedantic
 BIN=compiler
-DEPS=lexer.h parser.h util.h
-SOURCES=lexer.o parser.o
+DEPS=util.h lexer.h parser.h codegen.h
+SOURCES=lexer.o parser.o codegen.o
 
 all: compiler test memtest
 

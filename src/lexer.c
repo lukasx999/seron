@@ -5,8 +5,8 @@
 #include <assert.h>
 #include <stdbool.h>
 
-#include "./util.h"
-#include "./lexer.h"
+#include "util.h"
+#include "lexer.h"
 
 
 
@@ -15,6 +15,7 @@ const char *tokenkind_to_string(TokenKind tok) {
     const char *repr[] = {
         [TOK_INVALID]     = "invalid",
         [TOK_NUMBER]      = "number",
+        [TOK_STRING]      = "string",
         [TOK_PLUS]        = "plus",
         [TOK_MINUS]       = "minus",
         [TOK_ASTERISK]    = "asterisk",
@@ -152,10 +153,8 @@ TokenList tokenize(const char *src) {
                     ++i;
                     while (true) {
                         c = src[++i];
-                        if (c == '\0') {
-                            fprintf(stderr, "ERROR: Unterminated multi-line comment\n");
-                            exit(EXIT_FAILURE);
-                        }
+                        if (c == '\0')
+                            throw_error("Unterminated multi-line comment\n");
                         if (c == '#' && src[i+1] == '#')
                             break;
                     }
@@ -194,6 +193,17 @@ TokenList tokenize(const char *src) {
             case ':':
                 tok.kind = TOK_COLON;
                 break;
+            case '\"': {
+                tok.kind = TOK_STRING;
+
+                size_t start = i + 1;
+                while ((c = src[++i]) != '\"' && c != '\0');
+                if (c == '\0')
+                    throw_error("Unterminated string literal");
+
+                size_t len = i - start;
+                strncpy(tok.value, &src[start], len);
+            } break;
 
             default: {
                 size_t start = i;
@@ -207,11 +217,8 @@ TokenList tokenize(const char *src) {
                     while (isalpha(c) || c == '_' || isdigit(c))
                         c = src[++i];
 
-                } else {
-                    // TODO: centralized error handling
-                    fprintf(stderr, "ERROR: Unknown token: `%c`\n", c);
-                    exit(EXIT_FAILURE);
-                }
+                } else
+                    throw_error("Unknown token: `%c`\n", c);
 
                 --i; // move back, as i gets incremented by the for loop
                 size_t len = i - start + 1;

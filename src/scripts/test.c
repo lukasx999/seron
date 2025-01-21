@@ -133,6 +133,17 @@ static void test(void) {
     };
     lexer_testcase("1+2 ## abc#####abc12 ## 3+4", case8, ARRAY_LEN(case8));
 
+    Token case9[] = {
+        (Token) { TOK_IDENTIFIER, "a"       },
+        (Token) { TOK_ASSIGN,     ""        },
+        (Token) { TOK_STRING,     "str"     },
+        (Token) { TOK_SEMICOLON,  ""        },
+        (Token) { TOK_IDENTIFIER, "b"       },
+        (Token) { TOK_ASSIGN,     ""        },
+        (Token) { TOK_STRING,     "string"  },
+    };
+    lexer_testcase("a = \"str\"; b = \"string\"", case9, ARRAY_LEN(case9));
+
 }
 
 

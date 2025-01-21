@@ -8,26 +8,33 @@
 
 typedef enum {
     TOK_INVALID, // Used only for error checking and as a sentinel value
+
+    TOK_IDENTIFIER,
     TOK_NUMBER,
+    TOK_STRING,
+
     TOK_PLUS,
     TOK_MINUS,
     TOK_ASTERISK,
     TOK_SLASH,
+
     TOK_SEMICOLON,
     TOK_COMMA,
     TOK_COLON,
-    TOK_IDENTIFIER,
     TOK_ASSIGN,
     TOK_EQUALS,
+
     TOK_LPAREN,
     TOK_RPAREN,
     TOK_LBRACE,
     TOK_RBRACE,
+
     TOK_KW_FUNCTION,
     TOK_KW_VARDECL,
     TOK_KW_IF,
     TOK_KW_ELSE,
     TOK_KW_WHILE,
+
     TOKENKIND_COUNT,
 } TokenKind;
 

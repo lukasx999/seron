@@ -6,9 +6,10 @@
 #include <stdbool.h>
 #include <sys/stat.h>
 
-#include "./util.h"
-#include "./lexer.h"
-#include "./parser.h"
+#include "util.h"
+#include "lexer.h"
+#include "parser.h"
+#include "codegen.h"
 
 
 
@@ -32,9 +33,6 @@ static char *read_file(const char *filename) {
 // TODO: remove assertions -> central error handling
 // TODO: seperate TU for grammar rules, astnodelist and printing
 // TODO: unit tests for parser
-// TODO: fix unnamed structs
-// TODO: strings
-// TODO: comments
 // TODO: lexer track token position
 
 int main(void) {
@@ -46,16 +44,19 @@ int main(void) {
     printf("Source: `%s`\n\n", src);
 
     TokenList tokens = tokenize(src);
-    // tokenlist_print(&tokens);
-    // puts("");
+    tokenlist_print(&tokens);
+    printf("\n");
 
     AstNode *root = parser_parse(&tokens);
     parser_print_ast(root);
-    parser_free_ast(root);
+    printf("\n");
 
+    generate_code(root);
+
+
+    parser_free_ast(root);
     tokenlist_destroy(&tokens);
     free(file);
-
 
     return EXIT_SUCCESS;
 }
