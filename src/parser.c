@@ -407,9 +407,8 @@ static AstNode *rule_program(Parser *p) {
         .global = true
     };
 
-    while (!parser_is_at_end(p)) {
+    while (!parser_is_at_end(p))
         astnodelist_append(&node->block.stmts, rule_stmt(p));
-    }
 
     return node;
 }

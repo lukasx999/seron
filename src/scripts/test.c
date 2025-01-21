@@ -7,19 +7,20 @@
 
 #include "../util.h"
 #include "../lexer.h"
+#include "../parser.h"
 
 
 
-void lexer_testcase(const char *src, const Token *testcase, size_t case_size) {
-    printf("[TEST] [Lexer] Testing with: `%s`\n", src);
+static TokenList lexer_testcase(const char *testcase, const Token *expected, size_t expected_size) {
+    printf("[TEST] Testing with: `%s`\n", testcase);
 
-    TokenList tokens = tokenize(src);
+    TokenList tokens = tokenize(testcase);
 
-    bool passed = tokens.size == case_size;
+    bool passed = tokens.size == expected_size;
 
     for (size_t i=0; i < tokens.size; ++i) {
         Token *tok = &tokens.items[i];
-        if (memcmp(tok, testcase+i, sizeof(Token)))
+        if (memcmp(tok, expected+i, sizeof(Token)))
             passed = false;
     }
 
@@ -28,10 +29,20 @@ void lexer_testcase(const char *src, const Token *testcase, size_t case_size) {
     else
         printf("[TEST] [Lexer] %s%sFAILED%s\n", COLOR_BOLD, COLOR_RED, COLOR_END);
 
-    tokenlist_destroy(&tokens);
+    return tokens;
 }
 
-void test_lexer(void) {
+#if 0
+static void parser_testcase(const AstNode *expected, TokenList tokens) {
+    AstNode *root = parser_parse(&tokens);
+
+    // TODO: this
+    parser_free_ast(root);
+    tokenlist_destroy(&tokens);
+}
+#endif
+
+static void test(void) {
 
     Token case1[] = {
         (Token) { TOK_NUMBER, "123" },
@@ -40,6 +51,8 @@ void test_lexer(void) {
         (Token) { TOK_MINUS,  ""    },
         (Token) { TOK_NUMBER, "3"   },
     };
+
+    // parser_testcase(NULL, lexer_testcase("123+2-3", case1, ARRAY_LEN(case1)));
     lexer_testcase("123+2-3", case1, ARRAY_LEN(case1));
 
     Token case2[] = {
@@ -88,14 +101,31 @@ void test_lexer(void) {
     };
     lexer_testcase("proc main(a, b, c) {}", case5, ARRAY_LEN(case5));
 
+    Token case6[] = {
+        (Token) { TOK_KW_VARDECL, ""    },
+        (Token) { TOK_IDENTIFIER, "foo" },
+        (Token) { TOK_ASSIGN,     ""    },
+        (Token) { TOK_NUMBER,     "1"   },
+        (Token) { TOK_PLUS,       ""    },
+        (Token) { TOK_LPAREN,     ""    },
+        (Token) { TOK_NUMBER,     "2"   },
+        (Token) { TOK_MINUS,      ""    },
+        (Token) { TOK_NUMBER,     "3"   },
+        (Token) { TOK_RPAREN,     ""    },
+        (Token) { TOK_SEMICOLON,  ""    },
+    };
+    lexer_testcase("val foo = 1+(2-3);", case6, ARRAY_LEN(case6));
+
 }
+
 
 
 int main(void) {
 
-    puts("");
-    test_lexer();
-    puts("");
+    printf("\n");
+    test();
+    printf("\n");
+
 
     return EXIT_SUCCESS;
 }

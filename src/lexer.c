@@ -3,6 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <assert.h>
+#include <stdbool.h>
 
 #include "./util.h"
 #include "./lexer.h"
@@ -84,6 +85,39 @@ void tokenlist_destroy(TokenList *tokens) {
 
 
 
+
+
+// returns the tokenkind to the corresponding keyword for str
+// returns TOK_INVALID if no keyword was matched
+// len is needed, as str must not be nullbyte terminated
+static TokenKind match_keywords(const char *str, size_t len) {
+
+    int keywords_tokens[] = {
+        TOK_KW_FUNCTION,
+        TOK_KW_VARDECL,
+        TOK_KW_IF,
+        TOK_KW_ELSE,
+        TOK_KW_WHILE,
+    };
+
+    const char *keywords[] = {
+        "proc",
+        "val",
+        "if",
+        "else",
+        "while",
+    };
+
+    assert(ARRAY_LEN(keywords_tokens) == ARRAY_LEN(keywords));
+
+    for (size_t i=0; i < ARRAY_LEN(keywords); ++i)
+        if (!strncmp(str, keywords[i], len))
+            return keywords_tokens[i];
+
+    return TOK_INVALID;
+}
+
+
 TokenList tokenize(const char *src) {
     TokenList tokens = tokenlist_new();
 
@@ -160,26 +194,11 @@ TokenList tokenize(const char *src) {
                 --i; // move back, as i gets incremented by the for loop
                 size_t len = i - start + 1;
 
-                // TODO: check first char, to not waste time parsing full strings
-
-                if (!strncmp(src+start, "proc", len)) {
-                    tok.kind = TOK_KW_FUNCTION;
-
-                } else if (!strncmp(src+start, "val", len)) {
-                    tok.kind = TOK_KW_VARDECL;
-
-                } else if (!strncmp(src+start, "if", len)) {
-                    tok.kind = TOK_KW_IF;
-
-                } else if (!strncmp(src+start, "else", len)) {
-                    tok.kind = TOK_KW_ELSE;
-
-                } else if (!strncmp(src+start, "while", len)) {
-                    tok.kind = TOK_KW_WHILE;
-
-                } else {
+                TokenKind kw = match_keywords(src+start, len);
+                if (kw == TOK_INVALID) // not a keyword, must be an identifier
                     strncpy(tok.value, &src[start], len);
-                }
+                else
+                    tok.kind = kw;
 
             } break;
         }

@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -Wextra -ggdb -std=c99 -pedantic
+CFLAGS=-Wall -Wextra -ggdb -std=c11 -pedantic
 BIN=compiler
 DEPS=lexer.h parser.h util.h
 SOURCES=lexer.o parser.o
