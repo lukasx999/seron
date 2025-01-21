@@ -122,8 +122,11 @@ TokenList tokenize(const char *src) {
     TokenList tokens = tokenlist_new();
 
     for (size_t i=0; i < strlen(src); ++i) {
-        char c = src[i];
-        Token tok = { .kind = TOK_INVALID, .value = { 0 } };
+        char c    = src[i];
+        Token tok = {
+            .kind  = TOK_INVALID,
+            .value = { 0 }
+        };
 
         switch (c) {
             case '\n':
@@ -144,6 +147,24 @@ TokenList tokenize(const char *src) {
             case '/':
                 tok.kind = TOK_SLASH;
                 break;
+            case '#':
+                if (src[i+1] == '#') { // multi line comments
+                    ++i;
+                    while (true) {
+                        c = src[++i];
+                        if (c == '\0') {
+                            fprintf(stderr, "ERROR: Unterminated multi-line comment\n");
+                            exit(EXIT_FAILURE);
+                        }
+                        if (c == '#' && src[i+1] == '#')
+                            break;
+                    }
+                    ++i;
+                } else { // inline comments
+                    while ((c = src[++i]) != '\n' && c != '\0');
+                }
+                continue;
+                break;
             case '(':
                 tok.kind = TOK_LPAREN;
                 break;
@@ -157,6 +178,7 @@ TokenList tokenize(const char *src) {
                 tok.kind = TOK_RBRACE;
                 break;
             case '=':
+                // TODO: refactor
                 if (src[i+1] == '=') {
                     tok.kind = TOK_EQUALS;
                     ++i;

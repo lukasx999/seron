@@ -41,7 +41,7 @@ int main(void) {
 
     char *file = read_file("example.spx");
     const char *src = file;
-    // const char *src = "";
+    // const char *src = "#foo";
 
     printf("Source: `%s`\n\n", src);
 

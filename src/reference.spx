@@ -1,7 +1,12 @@
-proc add(a: int, b: int) -> int {
-}
 
-proc main(a: int, b: char, c: bool) {
-    val foo: int = 1;
-    foo = 2;
+# A comment
+
+##
+multi
+line
+comment
+##
+
+proc main() {
+    val foo = 45;
 }
