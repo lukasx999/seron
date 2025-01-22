@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <alloca.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 
@@ -36,18 +37,18 @@ static void run_cmd(char *const argv[]) {
     wait(NULL);
 }
 
-static void build_binary(char *filename, bool link_with_libc) {
+static void build_binary(char *filename_asm, char *filename_bin, bool link_with_libc) {
     // TODO: ensure nasm and ld are installed
     // TODO: handle filenames
 
     // Assemble
-    run_cmd((char*[]) { "nasm", "-felf64", filename, NULL });
+    run_cmd((char*[]) { "nasm", "-felf64", filename_asm, NULL });
 
     // Link
     run_cmd(
         link_with_libc
-        ? (char*[]) { "ld", "-dynamic-linker", "/lib64/ld-linux-x86-64.so.2", "-lc", "out.o", "-o", "out", NULL }
-        : (char*[]) { "ld", "out.o", "-o", "out", NULL }
+        ? (char*[]) { "ld", "-dynamic-linker", "/lib64/ld-linux-x86-64.so.2", "-lc", "out.o", "-o", filename_bin, NULL }
+        : (char*[]) { "ld", "out.o", "-o", filename_bin, NULL }
     );
 
 }
@@ -65,18 +66,32 @@ static void build_binary(char *filename, bool link_with_libc) {
 
 int main(void) {
 
-    char *file = read_file("example.spx");
+    const char *filename = "example.spx";
+    char *file = read_file(filename);
 
     TokenList tokens = tokenize(file);
     tokenlist_print(&tokens);
 
     AstNode *root = parser_parse(&tokens);
     parser_print_ast(root);
-    // TODO: preserve input filename eg: foo.spx -> foo.s
-    generate_code(root, "out.s", true);
 
 
-    build_binary("out.s", false);
+    size_t bufsize = strlen(filename);
+
+    char *filename_bin = alloca(bufsize);
+    memset(filename_bin, 0, bufsize);
+    strncpy(filename_bin, filename, bufsize);
+    filename_bin[strcspn(filename_bin, ".")] = '\0';
+
+    char *filename_asm = alloca(bufsize);
+    memset(filename_asm, 0, bufsize);
+    snprintf(filename_asm, bufsize, "%s.s", filename_bin);
+
+
+    generate_code(root,filename_asm, true);
+
+
+    build_binary(filename_asm,filename_bin, false);
 
 
 

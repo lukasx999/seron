@@ -254,7 +254,7 @@ static AstNode *rule_program    (Parser *p);
 
 
 static AstNode *rule_primary(Parser *p) {
-    // primary ::= NUMBER | IDENTIFIER | STRING
+    // primary ::= NUMBER | IDENTIFIER | STRING | "(" <expression> ")"
 
     AstNode *astnode = malloc(sizeof(AstNode));
 
@@ -267,11 +267,16 @@ static AstNode *rule_primary(Parser *p) {
 
     } else if (parser_match_tokenkinds(p, TOK_LPAREN, SENTINEL)) {
         parser_advance(p);
+
+        if (parser_match_tokenkinds(p, TOK_RPAREN, SENTINEL))
+            throw_error("Don't write functional code!");
+
         astnode->kind          = ASTNODE_GROUPING;
         astnode->expr_grouping = (ExprGrouping) {
             .expr = rule_expression(p)
         };
-        assert(parser_match_tokenkinds(p, TOK_RPAREN, SENTINEL));
+
+        parser_expect_token(p, TOK_RPAREN, "`)`");
         parser_advance(p);
 
     } else
