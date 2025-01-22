@@ -2,3 +2,4 @@ compiler
 *.o
 a.out
 vgcore.*
+Session.vim
