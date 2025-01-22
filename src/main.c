@@ -18,6 +18,8 @@
 
 static char *read_file(const char *filename) {
     FILE *file = fopen(filename, "rb");
+    if (file == NULL)
+        throw_error("Source file `%s` does not exist", filename);
 
     struct stat statbuf = { 0 };
     stat(filename, &statbuf);
@@ -37,20 +39,35 @@ static void run_cmd(char *const argv[]) {
     wait(NULL);
 }
 
-static void build_binary(char *filename_asm, char *filename_bin, bool link_with_libc) {
+static void build_binary(
+    char *filename_asm,
+    char *filename_obj,
+    char *filename_bin,
+    bool link_with_libc
+) {
     // TODO: ensure nasm and ld are installed
     // TODO: handle filenames
 
     // Assemble
-    run_cmd((char*[]) { "nasm", "-felf64", filename_asm, NULL });
+    run_cmd((char*[]) { "nasm", "-felf64", filename_asm, "-o", filename_obj, NULL });
 
     // Link
     run_cmd(
         link_with_libc
-        ? (char*[]) { "ld", "-dynamic-linker", "/lib64/ld-linux-x86-64.so.2", "-lc", "out.o", "-o", filename_bin, NULL }
-        : (char*[]) { "ld", "out.o", "-o", filename_bin, NULL }
+        ? (char*[]) { "ld", "-dynamic-linker", "/lib64/ld-linux-x86-64.so.2", "-lc", filename_obj, "-o", filename_bin, NULL }
+        : (char*[]) { "ld", filename_obj, "-o", filename_bin, NULL }
     );
 
+}
+
+static void check_fileextension(const char *filename, const char *extension) {
+
+    size_t dot_offset = strcspn(filename, ".");
+    if (dot_offset == strlen(filename))
+        throw_error("File extension missing");
+
+    if (strncmp(filename + dot_offset + 1, extension, strlen(extension)))
+        throw_error("File extension must be `.%s`", extension);
 }
 
 
@@ -64,9 +81,13 @@ static void build_binary(char *filename_asm, char *filename_bin, bool link_with_
 // TODO: inlineasm arguments
 // TODO: asm grouping bug
 
+
 int main(void) {
 
     const char *filename = "example.spx";
+    check_fileextension(filename, "spx");
+
+
     char *file = read_file(filename);
 
     TokenList tokens = tokenize(file);
@@ -74,6 +95,7 @@ int main(void) {
 
     AstNode *root = parser_parse(&tokens);
     parser_print_ast(root);
+
 
 
     size_t bufsize = strlen(filename);
@@ -87,11 +109,12 @@ int main(void) {
     memset(filename_asm, 0, bufsize);
     snprintf(filename_asm, bufsize, "%s.s", filename_bin);
 
+    char *filename_obj = alloca(bufsize);
+    memset(filename_obj, 0, bufsize);
+    snprintf(filename_obj, bufsize, "%s.o", filename_bin);
 
     generate_code(root,filename_asm, true);
-
-
-    build_binary(filename_asm,filename_bin, false);
+    build_binary(filename_asm, filename_obj, filename_bin, false);
 
 
 
