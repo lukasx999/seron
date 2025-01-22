@@ -34,6 +34,8 @@ static char *read_file(const char *filename) {
 // TODO: seperate TU for grammar rules, astnodelist and printing
 // TODO: unit tests for parser
 // TODO: lexer track token position
+// TODO: type checking + semantic analysis
+// TODO: symbol table
 
 int main(void) {
 

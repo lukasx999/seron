@@ -36,6 +36,18 @@ static void asm_prelude(Codegen *c) {
 static void asm_postlude(Codegen *c) {
 }
 
+static void asm_addition(Codegen *c, size_t rbp_offset1, size_t rbp_offset2) {
+    fprintf(
+        c->file,
+        "mov rax, [rbp-%lu]\n"
+        "add qword [rbp-%lu], rax\n"
+        "mov rax, [rbp-%lu]\n"
+        "mov qword [rbp-%lu], rax\n",
+        rbp_offset1, rbp_offset2, rbp_offset2, c->rbp_offset
+    );
+    c->rbp_offset += 4;
+}
+
 static void asm_store_value_int(Codegen *c, int value) {
     fprintf(c->file, "mov dword [rbp-%lu], %d\n", c->rbp_offset, value);
     c->rbp_offset += 4;
@@ -90,6 +102,16 @@ static void traverse_ast(AstNode *root, Codegen *codegen) {
             ExprBinOp binop = root->expr_binop;
             traverse_ast(binop.lhs, codegen);
             traverse_ast(binop.rhs, codegen);
+
+            switch (binop.op.kind) {
+                case TOK_PLUS: {
+                    asm_addition(codegen, codegen->rbp_offset-4, codegen->rbp_offset-8);
+                } break;
+                default:
+                    assert(!"Unimplemented");
+                    break;
+            }
+
         } break;
 
         case ASTNODE_LITERAL: {
@@ -100,6 +122,7 @@ static void traverse_ast(AstNode *root, Codegen *codegen) {
                     int num = atoi(literal.op.value);
                     asm_store_value_int(codegen, num);
                 } break;
+                // TODO: ident literal symbol table lookup
                 default:
                     assert(!"Unimplemented");
                     break;

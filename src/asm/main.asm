@@ -5,8 +5,20 @@ _start:
     push rbp
     mov rbp, rsp
 
-    mov byte [rbp-4], 65
-    mov byte [rbp-3], 10
+    ; 1+2
+    mov dword [rbp], 1
+    mov dword [rbp-4], 2
+
+    mov rax, [rbp]
+    add qword [rbp-4], rax
+
+    mov rax, [rbp-4]
+    mov qword [rbp-8], rax
+
+
+
+    ; mov byte [rbp-4], 65
+    ; mov byte [rbp-3], 10
 
     mov rax, 1
     mov rdi, 1
