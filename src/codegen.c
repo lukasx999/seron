@@ -112,6 +112,17 @@ static void asm_function_end(Codegen *c) {
     asm_write_comment(c, "function(end)\n");
 }
 
+static void asm_call(Codegen *c, const char *identifier) {
+    asm_write_comment(c, "call(start)");
+
+    fprintf(
+        c->file,
+        "call %s\n", identifier
+    );
+
+    asm_write_comment(c, "call(end)\n");
+}
+
 
 
 static void traverse_ast(AstNode *node, Codegen *codegen) {
@@ -124,6 +135,17 @@ static void traverse_ast(AstNode *node, Codegen *codegen) {
             AstNodeList list = node->block.stmts;
             for (size_t i=0; i < list.size; ++i)
                 traverse_ast(list.items[i], codegen);
+        } break;
+
+        case ASTNODE_CALL: {
+            ExprCall call    = node->expr_call;
+            AstNodeList list = call.args;
+            for (size_t i=0; i < list.size; ++i)
+                traverse_ast(list.items[i], codegen);
+
+            // TODO: call into address instead of identifier
+            // HACK:
+            asm_call(codegen, call.callee->expr_literal.op.value);
         } break;
 
         case ASTNODE_GROUPING:

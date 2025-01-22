@@ -38,6 +38,11 @@ typedef struct {
 } ExprBinOp;
 
 typedef struct {
+    AstNode *callee;
+    AstNodeList args;
+} ExprCall;
+
+typedef struct {
     AstNodeList stmts;
     bool global; // true if block represents the global scope
 } Block;
@@ -61,6 +66,7 @@ struct AstNode {
         ASTNODE_LITERAL,
         ASTNODE_GROUPING,
         ASTNODE_BINOP,
+        ASTNODE_CALL,
         ASTNODE_BLOCK,
         ASTNODE_FUNC,
         ASTNODE_VARDECL,
@@ -70,6 +76,7 @@ struct AstNode {
         ExprLiteral   expr_literal;
         ExprGrouping  expr_grouping;
         ExprBinOp     expr_binop;
+        ExprCall      expr_call;
         Block         block;
         StmtFunc      stmt_func;
         StmtVarDecl   stmt_vardecl;

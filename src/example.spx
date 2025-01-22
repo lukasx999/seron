@@ -6,13 +6,8 @@
 proc _start() {
     val foo = 45;
 
-    asm "call sys_exit";
+    sys_exit();
 }
-
-
-
-
-
 
 proc sys_exit() {
     asm "

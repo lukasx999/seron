@@ -97,8 +97,23 @@ void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down, voi
         case ASTNODE_BLOCK: {
             depth++;
             AstNodeList list = root->block.stmts;
+
             for (size_t i=0; i < list.size; ++i)
                 parser_traverse_ast(list.items[i], callback, top_down, args);
+
+            depth--;
+        } break;
+
+        case ASTNODE_CALL: {
+            depth++;
+            ExprCall call = root->expr_call;
+
+            parser_traverse_ast(call.callee, callback, top_down, args);
+
+            AstNodeList list = call.args;
+            for (size_t i=0; i < list.size; ++i)
+                parser_traverse_ast(list.items[i], callback, top_down, args);
+
             depth--;
         } break;
 
@@ -173,6 +188,10 @@ void parser_print_ast_callback(AstNode *root, int depth, void *_args) {
             print_ast_value(tokenkind_to_string(binop->op.kind), COLOR_PURPLE, NULL);
         } break;
 
+        case ASTNODE_CALL: {
+            print_ast_value("call", COLOR_BLUE,NULL);
+        } break;
+
         case ASTNODE_FUNC: {
             StmtFunc *func = &root->stmt_func;
             print_ast_value(tokenkind_to_string(func->op.kind), COLOR_RED, func->identifier.value);
@@ -213,6 +232,10 @@ static void parser_free_ast_callback(AstNode *node, int _depth, void *_args) {
             astnodelist_destroy(&node->block.stmts);
             break;
 
+        case ASTNODE_CALL:
+            astnodelist_destroy(&node->expr_call.args);
+            break;
+
         case ASTNODE_GROUPING:
         case ASTNODE_LITERAL:
         case ASTNODE_FUNC:
@@ -237,7 +260,7 @@ void parser_free_ast(AstNode *root) {
 
 
 
-// forward-decl. because some grammar rules have circular dependencies
+// forward-declaration because some grammar rules have circular dependencies
 static AstNode *rule_primary    (Parser *p);
 static AstNode *rule_term       (Parser *p);
 static AstNode *rule_expression (Parser *p);
@@ -248,8 +271,9 @@ static AstNode *rule_vardecl    (Parser *p);
 static AstNode *rule_stmt       (Parser *p);
 static AstNode *rule_block      (Parser *p);
 static AstNode *rule_program    (Parser *p);
-
-
+static AstNode *rule_call       (Parser *p);
+static AstNode *rule_unary      (Parser *p);
+static AstNode *rule_factor     (Parser *p);
 
 
 
@@ -285,16 +309,60 @@ static AstNode *rule_primary(Parser *p) {
     return astnode;
 }
 
-static AstNode *rule_term(Parser *p) {
-    // term ::= primary (("+" | "-") primary)*
+static AstNode *rule_call(Parser *p) {
+    // call ::= primary "(" ( <expr> ("," <expr>)* )? ")"
 
-    AstNode *lhs = rule_primary(p);
+    AstNode *node = rule_primary(p);
+
+    if (parser_match_tokenkinds(p, TOK_LPAREN, SENTINEL)) {
+        parser_advance(p);
+
+        AstNode *call   = malloc(sizeof(AstNode));
+        call->kind      = ASTNODE_CALL;
+        call->expr_call = (ExprCall) {
+            .callee = node,
+            .args   = astnodelist_new(),
+        };
+
+        while (!parser_match_tokenkinds(p, TOK_RPAREN, SENTINEL)) {
+            astnodelist_append(&call->expr_call.args, rule_expression(p));
+
+            if (parser_match_tokenkinds(p, TOK_COMMA, SENTINEL)) {
+                parser_advance(p);
+
+                if (parser_match_tokenkinds(p, TOK_RPAREN, SENTINEL))
+                    throw_error("Extraneous `,`");
+            }
+        }
+
+        parser_expect_token(p, TOK_RPAREN, "`)`");
+        parser_advance(p);
+        node = call;
+    }
+
+    return node;
+}
+
+static AstNode *rule_unary(Parser *p) {
+    // unary ::= ("!" | "-") unary | call
+    return rule_call(p);
+}
+
+static AstNode *rule_factor(Parser *p) {
+    // factor ::= unary (("/" | "*") unary)*
+    return rule_unary(p);
+}
+
+static AstNode *rule_term(Parser *p) {
+    // term ::= factor (("+" | "-") factor)*
+
+    AstNode *lhs = rule_factor(p);
 
     while (parser_match_tokenkinds(p, TOK_PLUS, TOK_MINUS, SENTINEL)) {
         Token op = parser_get_current_token(p);
         parser_advance(p);
 
-        AstNode *rhs = rule_primary(p);
+        AstNode *rhs = rule_factor(p);
 
         AstNode *astnode = malloc(sizeof(AstNode));
         astnode->kind    = ASTNODE_BINOP;
