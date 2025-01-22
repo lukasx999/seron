@@ -48,6 +48,7 @@ static void asm_addition(Codegen *c, size_t rbp_offset1, size_t rbp_offset2) {
     asm_write_comment(c, "addition(start)");
     c->rbp_offset += 4;
 
+    // TODO: use eac for 4 byte values
     fprintf(
         c->file,
         "mov rax, [rbp-%lu]\n"
@@ -114,6 +115,8 @@ static void asm_function_end(Codegen *c) {
 
 
 static void traverse_ast(AstNode *node, Codegen *codegen) {
+    // TODO: return address (rbp offset) of the evaluated value
+    // TODO free registers and keep track of allocated registers
 
     switch (node->kind) {
 

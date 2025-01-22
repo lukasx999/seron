@@ -1,3 +1,30 @@
+
+
+
+
+
+proc _start() {
+    val foo = 45;
+
+    asm "call sys_exit";
+}
+
+
+
+
+
+
+proc sys_exit() {
+    asm "
+    mov rax, 60
+    mov rdi, 0
+    syscall
+    ";
+}
+
+
+
+##
 proc print_bytes() {
     asm "
     mov rdx, rsi ; size
@@ -9,13 +36,6 @@ proc print_bytes() {
 }
 
 
-proc sys_exit() {
-    asm "
-    mov rax, 60
-    mov rdi, 0
-    syscall
-    ";
-}
 
 
 proc _start() {
@@ -46,3 +66,4 @@ proc _start() {
     ";
 
 }
+##

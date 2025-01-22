@@ -16,6 +16,16 @@
 
 
 
+static void check_fileextension(const char *filename, const char *extension) {
+
+    size_t dot_offset = strcspn(filename, ".");
+    if (dot_offset == strlen(filename))
+        throw_error("File extension missing");
+
+    if (strncmp(filename + dot_offset + 1, extension, strlen(extension)))
+        throw_error("File extension must be `.%s`", extension);
+}
+
 static char *read_file(const char *filename) {
     FILE *file = fopen(filename, "rb");
     if (file == NULL)
@@ -32,7 +42,6 @@ static char *read_file(const char *filename) {
     return buf;
 }
 
-
 static void run_cmd(char *const argv[]) {
     if (fork() == 0)
         execvp(argv[0], argv);
@@ -46,7 +55,6 @@ static void build_binary(
     bool link_with_libc
 ) {
     // TODO: ensure nasm and ld are installed
-    // TODO: handle filenames
 
     // Assemble
     run_cmd((char*[]) { "nasm", "-felf64", filename_asm, "-o", filename_obj, NULL });
@@ -60,19 +68,9 @@ static void build_binary(
 
 }
 
-static void check_fileextension(const char *filename, const char *extension) {
-
-    size_t dot_offset = strcspn(filename, ".");
-    if (dot_offset == strlen(filename))
-        throw_error("File extension missing");
-
-    if (strncmp(filename + dot_offset + 1, extension, strlen(extension)))
-        throw_error("File extension must be `.%s`", extension);
-}
 
 
 
-// TODO: remove assertions -> central error handling
 // TODO: seperate TU for grammar rules, astnodelist and printing
 // TODO: unit tests for parser
 // TODO: lexer track token position
@@ -80,13 +78,13 @@ static void check_fileextension(const char *filename, const char *extension) {
 // TODO: symbol table
 // TODO: inlineasm arguments
 // TODO: asm grouping bug
+// TODO: parser cmdline args
 
 
 int main(void) {
 
     const char *filename = "example.spx";
     check_fileextension(filename, "spx");
-
 
     char *file = read_file(filename);
 
@@ -98,6 +96,7 @@ int main(void) {
 
 
 
+    // TODO: refactor
     size_t bufsize = strlen(filename);
 
     char *filename_bin = alloca(bufsize);
