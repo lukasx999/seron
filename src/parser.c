@@ -60,6 +60,7 @@ static inline void parser_advance(Parser *p) {
 }
 
 static inline bool parser_is_at_end(const Parser *p) {
+    // TODO: refactor to TOK_EOF
     return p->current == p->tokens->size;
 }
 
