@@ -3,3 +3,5 @@ compiler
 a.out
 vgcore.*
 Session.vim
+out
+*.s
