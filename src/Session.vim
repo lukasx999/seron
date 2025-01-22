@@ -13,20 +13,19 @@ if &shortmess =~ 'A'
 else
   set shortmess=aoO
 endif
-badd +54 ~/Code/Projects/sprox/src/main.c
+badd +46 ~/Code/Projects/sprox/src/main.c
 badd +79 ~/Code/Projects/sprox/src/parser.h
 badd +84 ~/Code/Projects/sprox/src/parser.c
 badd +4 ~/Code/Projects/sprox/src/lexer.h
 badd +8 ~/Code/Projects/sprox/src/lexer.c
-badd +10 ~/Code/Projects/sprox/src/codegen.h
-badd +108 ~/Code/Projects/sprox/src/codegen.c
+badd +39 ~/Code/Projects/sprox/src/codegen.c
 badd +2 ~/Code/Projects/sprox/src/example.spx
-badd +12 ~/Code/Projects/sprox/src/asm/main.asm
 argglobal
 %argdel
 $argadd .
-edit ~/Code/Projects/sprox/src/codegen.c
+edit ~/Code/Projects/sprox/src/main.c
 argglobal
+balt ~/Code/Projects/sprox/src/example.spx
 setlocal fdm=manual
 setlocal fde=0
 setlocal fmr={{{,}}}
@@ -37,11 +36,11 @@ setlocal fdn=20
 setlocal nofen
 silent! normal! zE
 let &fdl = &fdl
-let s:l = 39 - ((18 * winheight(0) + 18) / 37)
+let s:l = 46 - ((26 * winheight(0) + 16) / 32)
 if s:l < 1 | let s:l = 1 | endif
 keepjumps exe s:l
 normal! zt
-keepjumps 39
+keepjumps 46
 normal! 0
 tabnext 1
 if exists('s:wipebuf') && len(win_findbuf(s:wipebuf)) == 0 && getbufvar(s:wipebuf, '&buftype') isnot# 'terminal'

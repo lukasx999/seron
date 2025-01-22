@@ -35,6 +35,7 @@ const char *tokenkind_to_string(TokenKind tok) {
         [TOK_KW_IF]       = "if",
         [TOK_KW_ELSE]     = "else",
         [TOK_KW_WHILE]    = "while",
+        [TOK_KW_ASM]      = "asm",
     };
     assert(ARRAY_LEN(repr) == TOKENKIND_COUNT);
     return repr[tok];
@@ -99,6 +100,7 @@ static TokenKind match_keywords(const char *str, size_t len) {
         TOK_KW_IF,
         TOK_KW_ELSE,
         TOK_KW_WHILE,
+        TOK_KW_ASM,
     };
 
     const char *keywords[] = {
@@ -107,13 +109,16 @@ static TokenKind match_keywords(const char *str, size_t len) {
         "if",
         "else",
         "while",
+        "asm",
     };
 
     assert(ARRAY_LEN(keywords_tokens) == ARRAY_LEN(keywords));
 
-    for (size_t i=0; i < ARRAY_LEN(keywords); ++i)
-        if (!strncmp(str, keywords[i], len))
+    for (size_t i=0; i < ARRAY_LEN(keywords); ++i) {
+        const char *kw = keywords[i];
+        if (!strncmp(str, kw, len) && len == strlen(kw))
             return keywords_tokens[i];
+    }
 
     return TOK_INVALID;
 }

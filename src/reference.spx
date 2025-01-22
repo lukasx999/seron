@@ -7,6 +7,21 @@ line
 comment
 ##
 
+proc add(a: int, b: int) -> int {
+    a + b;
+}
+
 proc main() {
     val foo = 45;
+
+    # Inline Assembly
+    asm "
+    mov byte [rbp-4], 65
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, [rbp-4]
+    mov rdx, 1
+    syscall
+    ";
+
 }

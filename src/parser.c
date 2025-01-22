@@ -122,8 +122,9 @@ void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down, voi
             depth--;
         } break;
 
-        case ASTNODE_LITERAL: {
-        } break;
+        case ASTNODE_INLINEASM:
+        case ASTNODE_LITERAL:
+            break;
 
         default:
             assert(!"Unexpected Node Kind");
@@ -171,6 +172,11 @@ void parser_print_ast_callback(AstNode *root, int depth, void *_args) {
             print_ast_value(tokenkind_to_string(func->op.kind), COLOR_RED, func->identifier.value);
         } break;
 
+        case ASTNODE_INLINEASM: {
+            StmtInlineAsm *inlineasm = &root->stmt_inlineasm;
+            print_ast_value(tokenkind_to_string(inlineasm->op.kind), COLOR_RED, NULL);
+        } break;
+
         case ASTNODE_VARDECL: {
             StmtVarDecl *vardecl = &root->stmt_vardecl;
             print_ast_value(tokenkind_to_string(vardecl->op.kind), COLOR_RED, vardecl->identifier.value);
@@ -206,6 +212,7 @@ static void parser_free_ast_callback(AstNode *node, int _depth, void *_args) {
         case ASTNODE_FUNC:
         case ASTNODE_VARDECL:
         case ASTNODE_BINOP:
+        case ASTNODE_INLINEASM:
             break;
 
         default:
@@ -225,15 +232,16 @@ void parser_free_ast(AstNode *root) {
 
 
 // forward-decl. because some grammar rules have circular dependencies
-static AstNode *rule_primary   (Parser *p);
-static AstNode *rule_term      (Parser *p);
-static AstNode *rule_expression(Parser *p);
-static AstNode *rule_exprstmt  (Parser *p);
-static AstNode *rule_function  (Parser *p);
-static AstNode *rule_vardecl   (Parser *p);
-static AstNode *rule_stmt      (Parser *p);
-static AstNode *rule_block     (Parser *p);
-static AstNode *rule_program   (Parser *p);
+static AstNode *rule_primary    (Parser *p);
+static AstNode *rule_term       (Parser *p);
+static AstNode *rule_expression (Parser *p);
+static AstNode *rule_exprstmt   (Parser *p);
+static AstNode *rule_function   (Parser *p);
+static AstNode *rule_builtin_asm(Parser *p);
+static AstNode *rule_vardecl    (Parser *p);
+static AstNode *rule_stmt       (Parser *p);
+static AstNode *rule_block      (Parser *p);
+static AstNode *rule_program    (Parser *p);
 
 
 
@@ -321,6 +329,29 @@ static AstNode *rule_vardecl(Parser *p) {
     return vardecl;
 }
 
+static AstNode *rule_builtin_asm(Parser *p) {
+    // asm ::= "asm" STRING ";"
+
+    assert(parser_match_tokenkinds(p, TOK_KW_ASM, SENTINEL));
+    Token op = parser_get_current_token(p);
+    parser_advance(p);
+
+    Token src = parser_get_current_token(p);
+    parser_advance(p);
+
+    assert(parser_match_tokenkinds(p, TOK_SEMICOLON, SENTINEL));
+    parser_advance(p);
+
+    AstNode *inlineasm   = malloc(sizeof(AstNode));
+    inlineasm->kind      = ASTNODE_INLINEASM;
+    inlineasm->stmt_inlineasm= (StmtInlineAsm) {
+        .op  = op,
+        .src = src,
+    };
+
+    return inlineasm;
+}
+
 static AstNode *rule_function(Parser *p) {
     // function ::= "proc" <identifier> "(" ")" <block>
 
@@ -391,6 +422,9 @@ static AstNode *rule_stmt(Parser *p) {
 
     else if (parser_match_tokenkinds(p, TOK_KW_FUNCTION, SENTINEL))
         return rule_function(p);
+
+    else if (parser_match_tokenkinds(p, TOK_KW_ASM, SENTINEL))
+        return rule_builtin_asm(p);
 
     else if (parser_match_tokenkinds(p, TOK_KW_VARDECL, SENTINEL))
         return rule_vardecl(p);

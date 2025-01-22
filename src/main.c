@@ -4,7 +4,9 @@
 #include <assert.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <unistd.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 
 #include "util.h"
 #include "lexer.h"
@@ -28,6 +30,28 @@ static char *read_file(const char *filename) {
 }
 
 
+static void run_cmd(char *const argv[]) {
+    if (fork() == 0)
+        execvp(argv[0], argv);
+    wait(NULL);
+}
+
+static void build_binary(char *filename, bool link_with_libc) {
+    // TODO: ensure nasm and ld are installed
+    // TODO: handle filenames
+
+    // Assemble
+    run_cmd((char*[]) { "nasm", "-felf64", filename, NULL });
+
+    // Link
+    run_cmd(
+        link_with_libc
+        ? (char*[]) { "ld", "-dynamic-linker", "/lib64/ld-linux-x86-64.so.2", "-lc", "out.o", "-o", "out", NULL }
+        : (char*[]) { "ld", "out.o", "-o", "out", NULL }
+    );
+
+}
+
 
 
 // TODO: remove assertions -> central error handling
@@ -36,24 +60,23 @@ static char *read_file(const char *filename) {
 // TODO: lexer track token position
 // TODO: type checking + semantic analysis
 // TODO: symbol table
+// TODO: inlineasm arguments
 
 int main(void) {
 
     char *file = read_file("example.spx");
-    const char *src = file;
-    // const char *src = "#foo";
 
-    printf("Source: `%s`\n\n", src);
-
-    TokenList tokens = tokenize(src);
+    TokenList tokens = tokenize(file);
     tokenlist_print(&tokens);
-    printf("\n");
 
     AstNode *root = parser_parse(&tokens);
     parser_print_ast(root);
-    printf("\n");
+    // TODO: preserve input filename eg: foo.spx -> foo.s
+    generate_code(root, "out.s");
 
-    generate_code(root);
+
+    build_binary("out.s", false);
+
 
 
     parser_free_ast(root);

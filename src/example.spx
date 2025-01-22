@@ -1,3 +1,4 @@
 proc _start() {
     1+2;
+    asm "xor rax, rax";
 }

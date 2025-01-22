@@ -30,13 +30,14 @@ static void asm_destroy(Codegen *c) {
 }
 
 static void asm_prelude(Codegen *c) {
-    fprintf(c->file, "section .text\n");
+    fprintf(c->file, "section .text\n\n");
 }
 
 static void asm_postlude(Codegen *c) {
 }
 
 static void asm_addition(Codegen *c, size_t rbp_offset1, size_t rbp_offset2) {
+    fprintf(c->file, "; addition(start)\n");
     fprintf(
         c->file,
         "mov rax, [rbp-%lu]\n"
@@ -45,6 +46,7 @@ static void asm_addition(Codegen *c, size_t rbp_offset1, size_t rbp_offset2) {
         "mov qword [rbp-%lu], rax\n",
         rbp_offset1, rbp_offset2, rbp_offset2, c->rbp_offset
     );
+    fprintf(c->file, "; addition(end)\n\n");
     c->rbp_offset += 4;
 }
 
@@ -53,7 +55,15 @@ static void asm_store_value_int(Codegen *c, int value) {
     c->rbp_offset += 4;
 }
 
+static void asm_inlineasm(Codegen *c, const char *src) {
+    fprintf(c->file, "; inline(start)\n");
+    fprintf(c->file, "%s\n", src);
+    fprintf(c->file, "; inline(end)\n\n");
+}
+
 static void asm_function_start(Codegen *c, const char *identifier) {
+    fprintf(c->file, "; function(start)\n");
+    fprintf(c->file, "; function_prelude(start)\n");
     fprintf(
         c->file,
         "global %s\n"
@@ -61,14 +71,18 @@ static void asm_function_start(Codegen *c, const char *identifier) {
     "push rbp\n"
     "mov rbp, rsp\n", identifier, identifier
     );
+    fprintf(c->file, "; function_prelude(end)\n\n");
 }
 
 static void asm_function_end(Codegen *c) {
+    fprintf(c->file, "\n; function_postlude(start)\n");
     fprintf(
         c->file,
         "pop rbp\n"
         "ret\n"
     );
+    fprintf(c->file, "; function_postlude(end)\n");
+    fprintf(c->file, "; function(end)\n\n");
 }
 
 
@@ -92,6 +106,11 @@ static void traverse_ast(AstNode *root, Codegen *codegen) {
             asm_function_start(codegen, func.identifier.value);
             traverse_ast(func.body, codegen);
             asm_function_end(codegen);
+        } break;
+
+        case ASTNODE_INLINEASM: {
+            StmtInlineAsm inlineasm = root->stmt_inlineasm;
+            asm_inlineasm(codegen, inlineasm.src.value);
         } break;
 
         case ASTNODE_VARDECL:
@@ -139,8 +158,8 @@ static void traverse_ast(AstNode *root, Codegen *codegen) {
 
 
 
-void generate_code(AstNode *root) {
-    Codegen codegen = asm_new("out.s");
+void generate_code(AstNode *root, const char *filename) {
+    Codegen codegen = asm_new(filename);
     asm_prelude(&codegen);
     traverse_ast(root, &codegen);
     asm_destroy(&codegen);

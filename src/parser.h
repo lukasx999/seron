@@ -48,6 +48,10 @@ typedef struct {
 } StmtFunc;
 
 typedef struct {
+    Token op, src;
+} StmtInlineAsm;
+
+typedef struct {
     Token op, identifier;
     AstNode *value;
 } StmtVarDecl;
@@ -60,14 +64,16 @@ struct AstNode {
         ASTNODE_BLOCK,
         ASTNODE_FUNC,
         ASTNODE_VARDECL,
+        ASTNODE_INLINEASM,
     } kind;
     union {
-        ExprLiteral  expr_literal;
-        ExprGrouping expr_grouping;
-        ExprBinOp    expr_binop;
-        Block        block;
-        StmtFunc     stmt_func;
-        StmtVarDecl  stmt_vardecl;
+        ExprLiteral   expr_literal;
+        ExprGrouping  expr_grouping;
+        ExprBinOp     expr_binop;
+        Block         block;
+        StmtFunc      stmt_func;
+        StmtVarDecl   stmt_vardecl;
+        StmtInlineAsm stmt_inlineasm;
     };
 };
 

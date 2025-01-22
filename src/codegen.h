@@ -7,7 +7,7 @@
 #include "parser.h"
 
 
-extern void generate_code(AstNode *root);
+extern void generate_code(AstNode *root, const char *filename);
 
 
 
