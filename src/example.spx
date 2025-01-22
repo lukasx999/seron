@@ -1,6 +1,12 @@
 
 
-proc
+
+
+proc main() {
+    1+2;
+    val foo = 45;
+    asm"";
+}
 
 
 

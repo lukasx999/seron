@@ -66,6 +66,7 @@ static void test(void) {
         (Token) { TOK_NUMBER,   "2"    },
         (Token) { TOK_ASTERISK, ""     },
         (Token) { TOK_NUMBER,   "3"    },
+        (Token) { TOK_EOF,      ""     },
     };
     lexer_testcase("4312 + 12-4/2*3", case2, ARRAY_LEN(case2));
 
@@ -75,6 +76,7 @@ static void test(void) {
         (Token) { TOK_NUMBER,     "123"     },
         (Token) { TOK_PLUS,       ""        },
         (Token) { TOK_NUMBER,     "456"     },
+        (Token) { TOK_EOF,        ""        },
     };
     lexer_testcase("foo_123 = 123 + 456", case3, ARRAY_LEN(case3));
 
@@ -84,6 +86,7 @@ static void test(void) {
         (Token) { TOK_RPAREN,     ""     },
         (Token) { TOK_EQUALS,     ""     },
         (Token) { TOK_NUMBER,     "1"    },
+        (Token) { TOK_EOF,        ""     },
     };
     lexer_testcase("func() == 1", case4, ARRAY_LEN(case4));
 
@@ -99,6 +102,7 @@ static void test(void) {
         (Token) { TOK_RPAREN,      ""     },
         (Token) { TOK_LBRACE,      ""     },
         (Token) { TOK_RBRACE,      ""     },
+        (Token) { TOK_EOF,         ""     },
     };
     lexer_testcase("proc main(a, b, c) {}", case5, ARRAY_LEN(case5));
 
@@ -114,6 +118,7 @@ static void test(void) {
         (Token) { TOK_NUMBER,     "3"   },
         (Token) { TOK_RPAREN,     ""    },
         (Token) { TOK_SEMICOLON,  ""    },
+        (Token) { TOK_EOF,        ""    },
     };
     lexer_testcase("val foo = 1+(2-3);", case6, ARRAY_LEN(case6));
 
@@ -121,6 +126,7 @@ static void test(void) {
         (Token) { TOK_IDENTIFIER, "foo" },
         (Token) { TOK_IDENTIFIER, "bar" },
         (Token) { TOK_SEMICOLON,  ""    },
+        (Token) { TOK_EOF,        ""    },
     };
     lexer_testcase("foo#abcABC12!§$%üäö+#-.,\nbar;", case7, ARRAY_LEN(case7));
 
@@ -131,6 +137,7 @@ static void test(void) {
         (Token) { TOK_NUMBER, "3" },
         (Token) { TOK_PLUS,   ""  },
         (Token) { TOK_NUMBER, "4" },
+        (Token) { TOK_EOF,    ""  },
     };
     lexer_testcase("1+2 ## abc#####abc12 ## 3+4", case8, ARRAY_LEN(case8));
 
@@ -142,6 +149,7 @@ static void test(void) {
         (Token) { TOK_IDENTIFIER, "b"       },
         (Token) { TOK_ASSIGN,     ""        },
         (Token) { TOK_STRING,     "string"  },
+        (Token) { TOK_EOF,        ""        },
     };
     lexer_testcase("a = \"str\"; b = \"string\"", case9, ARRAY_LEN(case9));
 

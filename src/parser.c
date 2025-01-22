@@ -59,11 +59,6 @@ static inline void parser_advance(Parser *p) {
     p->current++;
 }
 
-static inline bool parser_is_at_end(const Parser *p) {
-    // TODO: refactor to TOK_EOF
-    return p->current == p->tokens->size;
-}
-
 // Checks if the current token is of one of the supplied kinds
 // Last variadic argument should be `TOK_INVALID`
 static bool parser_match_tokenkinds(const Parser *p, ...) {
@@ -80,6 +75,16 @@ static bool parser_match_tokenkinds(const Parser *p, ...) {
     }
 
     assert(false);
+}
+
+// Exit if current token is not of the given kind
+static void parser_expect_token(const Parser *p, TokenKind tokenkind, const char *expected_token) {
+    if (!parser_match_tokenkinds(p, tokenkind, SENTINEL))
+        throw_error("Expected %s", expected_token);
+}
+
+static inline bool parser_is_at_end(const Parser *p) {
+    return parser_match_tokenkinds(p, TOK_EOF, SENTINEL);
 }
 
 void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down, void *args) {
@@ -269,9 +274,8 @@ static AstNode *rule_primary(Parser *p) {
         assert(parser_match_tokenkinds(p, TOK_RPAREN, SENTINEL));
         parser_advance(p);
 
-    } else {
+    } else
         assert(!"Unexpected Token");
-    }
 
     return astnode;
 }
@@ -310,10 +314,11 @@ static AstNode *rule_vardecl(Parser *p) {
     Token op = parser_get_current_token(p);
     parser_advance(p);
 
+    parser_expect_token(p, TOK_IDENTIFIER, "identifier");
     Token identifier = parser_get_current_token(p);
     parser_advance(p);
 
-    assert(parser_match_tokenkinds(p, TOK_ASSIGN, SENTINEL));
+    parser_expect_token(p, TOK_ASSIGN, "`=`");
     parser_advance(p);
 
     AstNode *vardecl      = malloc(sizeof(AstNode));
@@ -324,7 +329,7 @@ static AstNode *rule_vardecl(Parser *p) {
         .value      = rule_expression(p),
     };
 
-    assert(parser_match_tokenkinds(p, TOK_SEMICOLON, SENTINEL));
+    parser_expect_token(p, TOK_SEMICOLON, "`;`");
     parser_advance(p);
 
     return vardecl;
@@ -337,10 +342,12 @@ static AstNode *rule_builtin_asm(Parser *p) {
     Token op = parser_get_current_token(p);
     parser_advance(p);
 
+    parser_expect_token(p, TOK_STRING, "string");
+
     Token src = parser_get_current_token(p);
     parser_advance(p);
 
-    assert(parser_match_tokenkinds(p, TOK_SEMICOLON, SENTINEL));
+    parser_expect_token(p, TOK_SEMICOLON, "`;`");
     parser_advance(p);
 
     AstNode *inlineasm   = malloc(sizeof(AstNode));
@@ -363,13 +370,15 @@ static AstNode *rule_function(Parser *p) {
     Token op = parser_get_current_token(p);
     parser_advance(p);
 
+    parser_expect_token(p, TOK_IDENTIFIER, "identifier");
+
     Token identifier = parser_get_current_token(p);
     parser_advance(p);
 
-    assert(parser_match_tokenkinds(p, TOK_LPAREN, SENTINEL));
+    parser_expect_token(p, TOK_LPAREN, "`(`");
     parser_advance(p);
 
-    assert(parser_match_tokenkinds(p, TOK_RPAREN, SENTINEL));
+    parser_expect_token(p, TOK_RPAREN, "`)`");
     parser_advance(p);
 
     AstNode *function   = malloc(sizeof(AstNode));
@@ -386,7 +395,7 @@ static AstNode *rule_function(Parser *p) {
 static AstNode *rule_block(Parser *p) {
     // block ::= "{" statement* "}"
 
-    assert(parser_match_tokenkinds(p, TOK_LBRACE, SENTINEL));
+    parser_expect_token(p, TOK_LBRACE, "`{`");
     parser_advance(p);
 
     AstNode *node = malloc(sizeof(AstNode));
@@ -397,7 +406,9 @@ static AstNode *rule_block(Parser *p) {
     };
 
     while (!parser_match_tokenkinds(p, TOK_RBRACE, SENTINEL)) {
-        assert(!parser_is_at_end(p) && "Unmatching brace");
+        if (parser_is_at_end(p))
+            throw_error("Unmatching brace");
+
         astnodelist_append(&node->block.stmts, rule_stmt(p));
     }
 
@@ -413,7 +424,8 @@ static AstNode *rule_exprstmt(Parser *p) {
     // exprstmt ::= expr ";"
 
     AstNode *node = rule_expression(p);
-    assert(parser_match_tokenkinds(p, TOK_SEMICOLON, SENTINEL) && "Expected Semicolon");
+    parser_expect_token(p, TOK_SEMICOLON, "`;`");
+
     parser_advance(p);
     return node;
 }

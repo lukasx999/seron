@@ -124,16 +124,19 @@ static TokenKind match_keywords(const char *str, size_t len) {
     return TOK_INVALID;
 }
 
+static Token token_new(void) {
+    return (Token) {
+        .kind  = TOK_INVALID,
+        .value = { 0 },
+    };
+}
 
 TokenList tokenize(const char *src) {
     TokenList tokens = tokenlist_new();
 
     for (size_t i=0; i < strlen(src); ++i) {
         char c    = src[i];
-        Token tok = {
-            .kind  = TOK_INVALID,
-            .value = { 0 }
-        };
+        Token tok = token_new();
 
         switch (c) {
             case '\n':
@@ -243,11 +246,8 @@ TokenList tokenize(const char *src) {
 
     }
 
-    // TODO: token_new() for initializing new token
-    Token tok_eof = {
-        .kind  = TOK_EOF,
-        .value = { 0 },
-    };
+    Token tok_eof = token_new();
+    tok_eof.kind  = TOK_EOF;
     tokenlist_append(&tokens, tok_eof);
 
     return tokens;
