@@ -50,6 +50,7 @@ static void test(void) {
         (Token) { TOK_NUMBER, "2"   },
         (Token) { TOK_MINUS,  ""    },
         (Token) { TOK_NUMBER, "3"   },
+        (Token) { TOK_EOF,    ""    },
     };
 
     // parser_testcase(NULL, lexer_testcase("123+2-3", case1, ARRAY_LEN(case1)));

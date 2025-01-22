@@ -36,6 +36,8 @@ typedef enum {
     TOK_KW_WHILE,
     TOK_KW_ASM,
 
+    TOK_EOF,
+
     TOKENKIND_COUNT,
 } TokenKind;
 

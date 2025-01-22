@@ -1,4 +1,10 @@
 
+
+proc
+
+
+
+##
 proc print_bytes() {
     asm "
     mov rdx, rsi ; size
@@ -47,3 +53,4 @@ proc _start() {
     ";
 
 }
+##

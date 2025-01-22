@@ -36,6 +36,7 @@ const char *tokenkind_to_string(TokenKind tok) {
         [TOK_KW_ELSE]     = "else",
         [TOK_KW_WHILE]    = "while",
         [TOK_KW_ASM]      = "asm",
+        [TOK_EOF]         = "eof",
     };
     assert(ARRAY_LEN(repr) == TOKENKIND_COUNT);
     return repr[tok];
@@ -241,6 +242,13 @@ TokenList tokenize(const char *src) {
         tokenlist_append(&tokens, tok);
 
     }
+
+    // TODO: token_new() for initializing new token
+    Token tok_eof = {
+        .kind  = TOK_EOF,
+        .value = { 0 },
+    };
+    tokenlist_append(&tokens, tok_eof);
 
     return tokens;
 }

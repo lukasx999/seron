@@ -63,6 +63,8 @@ static void build_binary(char *filename, bool link_with_libc) {
 // TODO: inlineasm arguments
 // TODO: asm grouping bug
 
+// TODO: refactor for TOK_EOF
+
 int main(void) {
 
     char *file = read_file("example.spx");

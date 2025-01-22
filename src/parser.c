@@ -361,10 +361,13 @@ static AstNode *rule_function(Parser *p) {
     assert(parser_match_tokenkinds(p, TOK_KW_FUNCTION, SENTINEL));
     Token op = parser_get_current_token(p);
     parser_advance(p);
+
     Token identifier = parser_get_current_token(p);
     parser_advance(p);
+
     assert(parser_match_tokenkinds(p, TOK_LPAREN, SENTINEL));
     parser_advance(p);
+
     assert(parser_match_tokenkinds(p, TOK_RPAREN, SENTINEL));
     parser_advance(p);
 
