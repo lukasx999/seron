@@ -15,13 +15,20 @@
 typedef struct {
     FILE *file;
     size_t rbp_offset;
+    bool print_comments;
 } Codegen;
 
-static Codegen asm_new(const char *filename) {
+static void asm_write_comment(Codegen *c, const char *str) {
+    if (c->print_comments)
+        fprintf(c->file, "; %s\n", str);
+}
+
+static Codegen asm_new(const char *filename, bool print_comments) {
     FILE *file = fopen(filename, "w");
     return (Codegen) {
-        .file       = file,
-        .rbp_offset = 0,
+        .file           = file,
+        .rbp_offset     = 0,
+        .print_comments = print_comments,
     };
 }
 
@@ -30,6 +37,7 @@ static void asm_destroy(Codegen *c) {
 }
 
 static void asm_prelude(Codegen *c) {
+    // TODO: different sections
     fprintf(c->file, "section .text\n\n");
 }
 
@@ -37,33 +45,48 @@ static void asm_postlude(Codegen *c) {
 }
 
 static void asm_addition(Codegen *c, size_t rbp_offset1, size_t rbp_offset2) {
-    fprintf(c->file, "; addition(start)\n");
+    asm_write_comment(c, "addition(start)");
+    c->rbp_offset += 4;
+
     fprintf(
         c->file,
         "mov rax, [rbp-%lu]\n"
         "add qword [rbp-%lu], rax\n"
         "mov rax, [rbp-%lu]\n"
+        "sub rsp, 4\n"
         "mov qword [rbp-%lu], rax\n",
         rbp_offset1, rbp_offset2, rbp_offset2, c->rbp_offset
     );
-    fprintf(c->file, "; addition(end)\n\n");
-    c->rbp_offset += 4;
+
+    asm_write_comment(c, "addition(end)\n");
 }
 
 static void asm_store_value_int(Codegen *c, int value) {
-    fprintf(c->file, "mov dword [rbp-%lu], %d\n", c->rbp_offset, value);
+    asm_write_comment(c, "store(start)");
     c->rbp_offset += 4;
+
+    fprintf(
+        c->file,
+        "sub rsp, 4\n"
+        "mov dword [rbp-%lu], %d\n",
+        c->rbp_offset, value
+    );
+
+    asm_write_comment(c, "store(end)\n");
 }
 
 static void asm_inlineasm(Codegen *c, const char *src) {
-    fprintf(c->file, "; inline(start)\n");
+    asm_write_comment(c, "inline(start)");
+
     fprintf(c->file, "%s\n", src);
-    fprintf(c->file, "; inline(end)\n\n");
+
+    asm_write_comment(c, "inline(end)\n");
 }
 
 static void asm_function_start(Codegen *c, const char *identifier) {
-    fprintf(c->file, "; function(start)\n");
-    fprintf(c->file, "; function_prelude(start)\n");
+    asm_write_comment(c, "function(start)");
+    asm_write_comment(c, "function_prelude(start)");
+
     fprintf(
         c->file,
         "global %s\n"
@@ -71,60 +94,63 @@ static void asm_function_start(Codegen *c, const char *identifier) {
     "push rbp\n"
     "mov rbp, rsp\n", identifier, identifier
     );
-    fprintf(c->file, "; function_prelude(end)\n\n");
+
+    asm_write_comment(c, "function_prelude(end)\n");
 }
 
 static void asm_function_end(Codegen *c) {
-    fprintf(c->file, "\n; function_postlude(start)\n");
+    asm_write_comment(c, "function_postlude(start)");
+
     fprintf(
         c->file,
         "pop rbp\n"
         "ret\n"
     );
-    fprintf(c->file, "; function_postlude(end)\n");
-    fprintf(c->file, "; function(end)\n\n");
+
+    asm_write_comment(c, "function_postlude(end)");
+    asm_write_comment(c, "function(end)\n");
 }
 
 
 
-static void traverse_ast(AstNode *root, Codegen *codegen) {
+static void traverse_ast(AstNode *node, Codegen *codegen) {
 
-    switch (root->kind) {
+    switch (node->kind) {
 
         case ASTNODE_BLOCK: {
-            AstNodeList list = root->block.stmts;
+            AstNodeList list = node->block.stmts;
             for (size_t i=0; i < list.size; ++i)
                 traverse_ast(list.items[i], codegen);
         } break;
 
         case ASTNODE_GROUPING:
-            traverse_ast(root->expr_grouping.expr, codegen);
+            traverse_ast(node->expr_grouping.expr, codegen);
             break;
 
         case ASTNODE_FUNC: {
-            StmtFunc func = root->stmt_func;
+            StmtFunc func = node->stmt_func;
             asm_function_start(codegen, func.identifier.value);
             traverse_ast(func.body, codegen);
             asm_function_end(codegen);
         } break;
 
         case ASTNODE_INLINEASM: {
-            StmtInlineAsm inlineasm = root->stmt_inlineasm;
+            StmtInlineAsm inlineasm = node->stmt_inlineasm;
             asm_inlineasm(codegen, inlineasm.src.value);
         } break;
 
         case ASTNODE_VARDECL:
-            traverse_ast(root->stmt_vardecl.value, codegen);
+            traverse_ast(node->stmt_vardecl.value, codegen);
             break;
 
         case ASTNODE_BINOP: {
-            ExprBinOp binop = root->expr_binop;
+            ExprBinOp binop = node->expr_binop;
             traverse_ast(binop.lhs, codegen);
             traverse_ast(binop.rhs, codegen);
 
             switch (binop.op.kind) {
                 case TOK_PLUS: {
-                    asm_addition(codegen, codegen->rbp_offset-4, codegen->rbp_offset-8);
+                    asm_addition(codegen, codegen->rbp_offset-4, codegen->rbp_offset);
                 } break;
                 default:
                     assert(!"Unimplemented");
@@ -134,11 +160,12 @@ static void traverse_ast(AstNode *root, Codegen *codegen) {
         } break;
 
         case ASTNODE_LITERAL: {
-            ExprLiteral literal = root->expr_literal;
+            ExprLiteral literal = node->expr_literal;
 
             switch (literal.op.kind) {
                 case TOK_NUMBER: {
                     int num = atoi(literal.op.value);
+                    assert(num != 0);
                     asm_store_value_int(codegen, num);
                 } break;
                 // TODO: ident literal symbol table lookup
@@ -155,12 +182,11 @@ static void traverse_ast(AstNode *root, Codegen *codegen) {
 
 }
 
+void generate_code(AstNode *root, const char *filename, bool print_comments) {
+    Codegen codegen = asm_new(filename, print_comments);
 
-
-
-void generate_code(AstNode *root, const char *filename) {
-    Codegen codegen = asm_new(filename);
     asm_prelude(&codegen);
     traverse_ast(root, &codegen);
+
     asm_destroy(&codegen);
 }

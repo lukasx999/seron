@@ -1,4 +1,49 @@
+
+proc print_bytes() {
+    asm "
+    mov rdx, rsi ; size
+    mov rsi, rdi ; buf
+    mov rax, 1
+    mov rdi, 1
+    syscall
+    ";
+}
+
+
+proc sys_exit() {
+    asm "
+    mov rax, 60
+    mov rdi, 0
+    syscall
+    ";
+}
+
+
 proc _start() {
-    1+2;
-    asm "xor rax, rax";
+
+    10;
+    33;
+    100;
+    108;
+    114;
+    111;
+    87;
+    32;
+    44;
+    111;
+    108;
+    108;
+    101;
+    72;
+
+    asm "
+    mov rdi, rsp
+    mov rsi, 56
+    call print_bytes
+    ";
+
+    asm "
+    call sys_exit
+    ";
+
 }

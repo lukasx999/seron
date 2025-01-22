@@ -61,6 +61,7 @@ static void build_binary(char *filename, bool link_with_libc) {
 // TODO: type checking + semantic analysis
 // TODO: symbol table
 // TODO: inlineasm arguments
+// TODO: asm grouping bug
 
 int main(void) {
 
@@ -72,7 +73,7 @@ int main(void) {
     AstNode *root = parser_parse(&tokens);
     parser_print_ast(root);
     // TODO: preserve input filename eg: foo.spx -> foo.s
-    generate_code(root, "out.s");
+    generate_code(root, "out.s", true);
 
 
     build_binary("out.s", false);
