@@ -57,13 +57,32 @@ static void build_binary(
     // TODO: ensure nasm and ld are installed
 
     // Assemble
-    run_cmd((char*[]) { "nasm", "-felf64", filename_asm, "-o", filename_obj, "-gdwarf", NULL });
+    run_cmd((char*[]) {
+        "nasm",
+        filename_asm,
+        "-felf64",
+        "-o", filename_obj,
+        "-gdwarf",
+        NULL
+    });
 
     // Link
     run_cmd(
         link_with_libc
-        ? (char*[]) { "ld", "-dynamic-linker", "/lib64/ld-linux-x86-64.so.2", "-lc", filename_obj, "-o", filename_bin, NULL }
-        : (char*[]) { "ld", filename_obj, "-o", filename_bin, NULL }
+        ? (char*[]) {
+            "ld",
+            filename_obj,
+            "-lc",
+            "-dynamic-linker", "/lib64/ld-linux-x86-64.so.2",
+            "-o", filename_bin,
+            NULL
+        }
+        : (char*[]) {
+            "ld",
+            filename_obj,
+            "-o", filename_bin,
+            NULL
+        }
     );
 
 }
