@@ -1,8 +1,8 @@
 CC=gcc
 CFLAGS=-Wall -Wextra -ggdb -std=c11 -pedantic
 BIN=compiler
-DEPS=util.h lexer.h parser.h codegen.h
-SOURCES=lexer.o parser.o codegen.o
+DEPS=util.h lexer.h parser.h codegen.h hashtable.h
+SOURCES=lexer.o parser.o codegen.o hashtable.o
 
 all: compiler test memtest
 
@@ -15,6 +15,7 @@ test: scripts/test.o $(SOURCES)
 	@echo CC $^
 	@./test
 	@rm test
+	@rm $<
 
 memtest:
 	@./scripts/memtest.sh ./$(BIN)

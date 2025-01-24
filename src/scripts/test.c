@@ -8,10 +8,15 @@
 #include "../util.h"
 #include "../lexer.h"
 #include "../parser.h"
+#include "../hashtable.h"
 
 
 
-static TokenList lexer_testcase(const char *testcase, const Token *expected, size_t expected_size) {
+static TokenList lexer_testcase(
+    const char  *testcase,
+    const Token *expected,
+    size_t       expected_size
+) {
     printf("[TEST] Testing with: `%s`\n", testcase);
 
     TokenList tokens = tokenize(testcase);
@@ -32,17 +37,7 @@ static TokenList lexer_testcase(const char *testcase, const Token *expected, siz
     return tokens;
 }
 
-#if 0
-static void parser_testcase(const AstNode *expected, TokenList tokens) {
-    AstNode *root = parser_parse(&tokens);
-
-    // TODO: this
-    parser_free_ast(root);
-    tokenlist_destroy(&tokens);
-}
-#endif
-
-static void test(void) {
+static void test_parser_lexer(void) {
 
     Token case1[] = {
         (Token) { TOK_NUMBER, "123" },
@@ -53,7 +48,6 @@ static void test(void) {
         (Token) { TOK_EOF,    ""    },
     };
 
-    // parser_testcase(NULL, lexer_testcase("123+2-3", case1, ARRAY_LEN(case1)));
     lexer_testcase("123\n\n\t\t    +2-3", case1, ARRAY_LEN(case1));
 
     Token case2[] = {
@@ -155,14 +149,39 @@ static void test(void) {
 
 }
 
+static void hashtable_testcase(Hashtable *ht, const char *key, HashtableValue value) {
+    hashtable_insert(ht, key, value);
+    HashtableValue *v = hashtable_get(ht, key);
+    assert(v != NULL && *v == value);
+}
+
+static void test_hashtable(void) {
+    Hashtable ht = hashtable_new();
+
+    hashtable_testcase(&ht, "foo", 1);
+    hashtable_testcase(&ht, "bar", 2);
+    hashtable_testcase(&ht, "baz", 0);
+    hashtable_testcase(&ht, "qux", 454432);
+    hashtable_testcase(&ht, "quux", 321);
+    hashtable_testcase(&ht, "_432jkjfge_54j2kl54", 483902482);
+    hashtable_testcase(&ht, "$+p+#+*#", 432);
+    hashtable_testcase(&ht, "$=)()=$(§3", 483290);
+
+    assert(hashtable_get(&ht, "not_in_the_table") == NULL);
+    assert(hashtable_insert(&ht, "a", 1) == 0);
+    assert(hashtable_insert(&ht, "a", 2) == -1);
+
+    hashtable_destroy(&ht);
+}
 
 
 int main(void) {
 
     printf("\n");
-    test();
+    test_parser_lexer();
     printf("\n");
 
+    test_hashtable();
 
     return EXIT_SUCCESS;
 }
