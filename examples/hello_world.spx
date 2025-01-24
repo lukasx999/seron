@@ -1,0 +1,4 @@
+proc main() 'int {
+    write("Hello, World!", 13);
+    return 0;
+}

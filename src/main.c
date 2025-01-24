@@ -81,7 +81,7 @@ static void build_binary(
 
 int main(void) {
 
-    const char *filename = "example/example.spx";
+    const char *filename = "example/main.spx";
     check_fileextension(filename, "spx");
 
     char *file = read_file(filename);

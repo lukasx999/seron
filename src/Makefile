@@ -10,7 +10,7 @@ compiler: main.o $(SOURCES)
 	@$(CC) $(CFLAGS) $^ -o $(BIN)
 	@echo CC $^
 
-test: scripts/test.o $(SOURCES)
+test: tests/test.o $(SOURCES)
 	@$(CC) $(CFLAGS) $^ -o test
 	@echo CC $^
 	@./test
@@ -18,7 +18,7 @@ test: scripts/test.o $(SOURCES)
 	@rm $<
 
 memtest:
-	@./scripts/memtest.sh ./$(BIN)
+	@./tests/memtest.sh ./$(BIN)
 
 %.o: %.c Makefile $(DEPS)
 	@$(CC) $(CFLAGS) -c $< -o $@
