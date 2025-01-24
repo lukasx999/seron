@@ -77,6 +77,7 @@ static void build_binary(
 // TODO: symbol table
 // TODO: inlineasm arguments
 // TODO: cmdline args
+// TODO: metaprogramming
 
 
 int main(void) {

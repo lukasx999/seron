@@ -9,6 +9,10 @@ syn keyword spxKeyword
       \ define
       \ return
       \ macro
+      \ char
+      \ short
+      \ int
+      \ size
 
 syn match spxNumber "\d+"
 syn match spxOperator "[,.=+-\*/;(){}'`]"
