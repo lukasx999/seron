@@ -57,7 +57,7 @@ static void build_binary(
     // TODO: ensure nasm and ld are installed
 
     // Assemble
-    run_cmd((char*[]) { "nasm", "-felf64", filename_asm, "-o", filename_obj, NULL });
+    run_cmd((char*[]) { "nasm", "-felf64", filename_asm, "-o", filename_obj, "-gdwarf", NULL });
 
     // Link
     run_cmd(
@@ -71,14 +71,12 @@ static void build_binary(
 
 
 
-// TODO: seperate TU for grammar rules, astnodelist and printing
 // TODO: unit tests for parser
 // TODO: lexer track token position
 // TODO: type checking + semantic analysis
 // TODO: symbol table
 // TODO: inlineasm arguments
-// TODO: asm grouping bug
-// TODO: parser cmdline args
+// TODO: cmdline args
 
 
 int main(void) {

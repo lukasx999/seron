@@ -26,6 +26,7 @@ extern void        astnodelist_destroy(AstNodeList *list);
 
 typedef struct {
     Token op;
+    // TODO: add type information
 } ExprLiteral;
 
 typedef struct {
@@ -57,7 +58,7 @@ typedef struct {
 } StmtInlineAsm;
 
 typedef struct {
-    Token op, identifier;
+    Token op, identifier, type;
     AstNode *value;
 } StmtVarDecl;
 

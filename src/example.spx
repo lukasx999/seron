@@ -1,9 +1,11 @@
-
+##
 proc _start() {
+    1+2+3;
     val foo = 45;
 
     sys_exit();
 }
+##
 
 proc sys_exit() {
     asm "
@@ -13,9 +15,6 @@ proc sys_exit() {
     ";
 }
 
-
-
-##
 proc print_bytes() {
     asm "
     mov rdx, rsi ; size
@@ -26,11 +25,29 @@ proc print_bytes() {
     ";
 }
 
-
-
-
 proc _start() {
 
+    val foo 'int = 45;
+    val x 'char = 65;
+    val x 'size = 65;
+
+    60+(3+(1+1));
+
+    asm "
+    mov rdi, rsp
+    mov rsi, 1
+    call print_bytes
+    ";
+
+    asm "
+    call sys_exit
+    ";
+
+}
+
+
+##
+proc _start() {
     10;
     33;
     100;

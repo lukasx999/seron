@@ -159,10 +159,12 @@ void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down, voi
 
 // Prints a value in the following format: `<str>: <arg>`
 // <arg> is omitted if arg == NULL
-static void print_ast_value(const char *str, const char *color, const char *arg) {
+static void print_ast_value(const char *str, const char *color, const char *value, const char *opt) {
     printf("%s%s%s", color, str, COLOR_END);
-    if (arg != NULL)
-        printf("%s: %s%s", COLOR_GRAY, arg, COLOR_END);
+    if (value != NULL)
+        printf("%s: %s%s", COLOR_GRAY, value, COLOR_END);
+    if (opt != NULL)
+        printf(" %s(%s)%s", COLOR_GRAY, opt, COLOR_END);
     puts("");
 }
 
@@ -176,41 +178,46 @@ void parser_print_ast_callback(AstNode *root, int depth, void *_args) {
     switch (root->kind) {
         case ASTNODE_BLOCK: {
             Block *block = &root->block;
-            print_ast_value("block", COLOR_BLUE, block->global ? "global" : NULL);
+            print_ast_value("block", COLOR_BLUE, block->global ? "global" : NULL, NULL);
         } break;
 
         case ASTNODE_GROUPING: {
-            print_ast_value("grouping", COLOR_BLUE, NULL);
+            print_ast_value("grouping", COLOR_BLUE, NULL, NULL);
         } break;
 
         case ASTNODE_BINOP: {
             ExprBinOp *binop = &root->expr_binop;
-            print_ast_value(tokenkind_to_string(binop->op.kind), COLOR_PURPLE, NULL);
+            print_ast_value(tokenkind_to_string(binop->op.kind), COLOR_PURPLE, NULL, NULL);
         } break;
 
         case ASTNODE_CALL: {
-            print_ast_value("call", COLOR_BLUE,NULL);
+            print_ast_value("call", COLOR_BLUE, NULL, NULL);
         } break;
 
         case ASTNODE_FUNC: {
             StmtFunc *func = &root->stmt_func;
-            print_ast_value(tokenkind_to_string(func->op.kind), COLOR_RED, func->identifier.value);
+            print_ast_value(tokenkind_to_string(func->op.kind), COLOR_RED, func->identifier.value, NULL);
         } break;
 
         case ASTNODE_INLINEASM: {
             StmtInlineAsm *inlineasm = &root->stmt_inlineasm;
-            print_ast_value(tokenkind_to_string(inlineasm->op.kind), COLOR_RED, NULL);
+            print_ast_value(tokenkind_to_string(inlineasm->op.kind), COLOR_RED, NULL, NULL);
         } break;
 
         case ASTNODE_VARDECL: {
             StmtVarDecl *vardecl = &root->stmt_vardecl;
-            print_ast_value(tokenkind_to_string(vardecl->op.kind), COLOR_RED, vardecl->identifier.value);
+            print_ast_value(
+                tokenkind_to_string(vardecl->op.kind),
+                COLOR_RED,
+                vardecl->identifier.value,
+                tokenkind_to_string(vardecl->type.kind)
+            );
         } break;
 
         case ASTNODE_LITERAL: {
             ExprLiteral *literal = &root->expr_literal;
             Token *tok = &literal->op;
-            print_ast_value(tokenkind_to_string(tok->kind), COLOR_RED, tok->value);
+            print_ast_value(tokenkind_to_string(tok->kind), COLOR_RED, tok->value, NULL);
         } break;
 
         default:
@@ -379,9 +386,7 @@ static AstNode *rule_term(Parser *p) {
 }
 
 static AstNode *rule_vardecl(Parser *p) {
-    // vardecl ::= "val" <identifier> "=" <expression> ";"
-
-    // TODO: type annotation
+    // vardecl ::= "val" <identifier> "'" TYPE "=" <expression> ";"
 
     assert(parser_match_tokenkinds(p, TOK_KW_VARDECL, SENTINEL));
     Token op = parser_get_current_token(p);
@@ -389,6 +394,14 @@ static AstNode *rule_vardecl(Parser *p) {
 
     parser_expect_token(p, TOK_IDENTIFIER, "identifier");
     Token identifier = parser_get_current_token(p);
+    parser_advance(p);
+
+    parser_expect_token(p, TOK_TICK, "`'`");
+    parser_advance(p);
+
+    Token type = parser_get_current_token(p);
+    if (!tokenkind_is_type(type.kind))
+        throw_error("Unknown type `%s`", type.value);
     parser_advance(p);
 
     parser_expect_token(p, TOK_ASSIGN, "`=`");
@@ -399,6 +412,7 @@ static AstNode *rule_vardecl(Parser *p) {
     vardecl->stmt_vardecl = (StmtVarDecl) {
         .op         = op,
         .identifier = identifier,
+        .type       = type,
         .value      = rule_expression(p),
     };
 

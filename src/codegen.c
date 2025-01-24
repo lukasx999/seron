@@ -4,12 +4,60 @@
 #include <assert.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <sys/stat.h>
 
 #include "util.h"
 #include "lexer.h"
 #include "parser.h"
 #include "codegen.h"
+
+
+// Enum value is size of type in bytes
+typedef enum {
+    TYPE_CHAR  = 1,
+    TYPE_SHORT = 2,
+    TYPE_INT   = 4,
+    TYPE_SIZE  = 8,
+} Type;
+
+static const char *get_type_register_rax(Type type) {
+    switch (type) {
+        case TYPE_CHAR:
+            return "al";
+            break;
+        case TYPE_SHORT:
+            return "ax";
+            break;
+        case TYPE_INT:
+            return "eax";
+            break;
+        case TYPE_SIZE:
+            return "rax";
+            break;
+        default:
+            assert(!"Unknown type");
+            break;
+    }
+}
+
+static const char *get_type_asm_keyword(Type type) {
+    switch (type) {
+        case TYPE_CHAR:
+            return "byte";
+            break;
+        case TYPE_SHORT:
+            return "word";
+            break;
+        case TYPE_INT:
+            return "dword";
+            break;
+        case TYPE_SIZE:
+            return "qword";
+            break;
+        default:
+            assert(!"Unknown type");
+            break;
+    }
+}
 
 
 typedef struct {
@@ -48,7 +96,7 @@ static void asm_addition(Codegen *c, size_t rbp_offset1, size_t rbp_offset2) {
     asm_write_comment(c, "addition(start)");
     c->rbp_offset += 4;
 
-    // TODO: use eac for 4 byte values
+    // TODO: size!
     fprintf(
         c->file,
         "mov rax, [rbp-%lu]\n"
@@ -62,15 +110,15 @@ static void asm_addition(Codegen *c, size_t rbp_offset1, size_t rbp_offset2) {
     asm_write_comment(c, "addition(end)\n");
 }
 
-static void asm_store_value_int(Codegen *c, int value) {
+static void asm_store_value(Codegen *c, size_t value, Type type) {
     asm_write_comment(c, "store(start)");
-    c->rbp_offset += 4;
+    c->rbp_offset += type;
 
     fprintf(
         c->file,
-        "sub rsp, 4\n"
-        "mov dword [rbp-%lu], %d\n",
-        c->rbp_offset, value
+        "sub rsp, %d\n"
+        "mov %s [rbp-%lu], %lu\n",
+        type, get_type_asm_keyword(type), c->rbp_offset, value
     );
 
     asm_write_comment(c, "store(end)\n");
@@ -78,9 +126,7 @@ static void asm_store_value_int(Codegen *c, int value) {
 
 static void asm_inlineasm(Codegen *c, const char *src) {
     asm_write_comment(c, "inline(start)");
-
     fprintf(c->file, "%s\n", src);
-
     asm_write_comment(c, "inline(end)\n");
 }
 
@@ -92,8 +138,8 @@ static void asm_function_start(Codegen *c, const char *identifier) {
         c->file,
         "global %s\n"
         "%s:\n"
-    "push rbp\n"
-    "mov rbp, rsp\n", identifier, identifier
+        "push rbp\n"
+        "mov rbp, rsp\n", identifier, identifier
     );
 
     asm_write_comment(c, "function_prelude(end)\n");
@@ -125,9 +171,9 @@ static void asm_call(Codegen *c, const char *identifier) {
 
 
 
-static void traverse_ast(AstNode *node, Codegen *codegen) {
-    // TODO: return address (rbp offset) of the evaluated value
-    // TODO free registers and keep track of allocated registers
+// returns the location of the evaluated expression in memory
+static size_t traverse_ast(AstNode *node, Codegen *codegen) {
+    // TODO: free registers and keep track of allocated registers
 
     switch (node->kind) {
 
@@ -143,8 +189,7 @@ static void traverse_ast(AstNode *node, Codegen *codegen) {
             for (size_t i=0; i < list.size; ++i)
                 traverse_ast(list.items[i], codegen);
 
-            // TODO: call into address instead of identifier
-            // HACK:
+            // HACK: call into address instead of identifier
             asm_call(codegen, call.callee->expr_literal.op.value);
         } break;
 
@@ -170,12 +215,12 @@ static void traverse_ast(AstNode *node, Codegen *codegen) {
 
         case ASTNODE_BINOP: {
             ExprBinOp binop = node->expr_binop;
-            traverse_ast(binop.lhs, codegen);
-            traverse_ast(binop.rhs, codegen);
+            size_t addr_lhs = traverse_ast(binop.lhs, codegen);
+            size_t addr_rhs = traverse_ast(binop.rhs, codegen);
 
             switch (binop.op.kind) {
                 case TOK_PLUS: {
-                    asm_addition(codegen, codegen->rbp_offset-4, codegen->rbp_offset);
+                    asm_addition(codegen, addr_lhs, addr_rhs);
                 } break;
                 default:
                     assert(!"Unimplemented");
@@ -191,7 +236,7 @@ static void traverse_ast(AstNode *node, Codegen *codegen) {
                 case TOK_NUMBER: {
                     int num = atoi(literal.op.value);
                     assert(num != 0);
-                    asm_store_value_int(codegen, num);
+                    asm_store_value(codegen, num, TYPE_INT);
                 } break;
                 // TODO: ident literal symbol table lookup
                 default:
@@ -205,6 +250,8 @@ static void traverse_ast(AstNode *node, Codegen *codegen) {
             break;
     }
 
+    return codegen->rbp_offset;
+
 }
 
 void generate_code(AstNode *root, const char *filename, bool print_comments) {
@@ -212,6 +259,7 @@ void generate_code(AstNode *root, const char *filename, bool print_comments) {
 
     asm_prelude(&codegen);
     traverse_ast(root, &codegen);
+    asm_postlude(&codegen);
 
     asm_destroy(&codegen);
 }

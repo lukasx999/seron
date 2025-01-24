@@ -23,6 +23,7 @@ const char *tokenkind_to_string(TokenKind tok) {
         [TOK_SEMICOLON]   = "semicolon",
         [TOK_COMMA]       = "comma",
         [TOK_COLON]       = "colon",
+        [TOK_TICK]        = "tick",
         [TOK_IDENTIFIER]  = "identifier",
         [TOK_ASSIGN]      = "assign",
         [TOK_EQUALS]      = "equals",
@@ -36,6 +37,8 @@ const char *tokenkind_to_string(TokenKind tok) {
         [TOK_KW_ELSE]     = "else",
         [TOK_KW_WHILE]    = "while",
         [TOK_KW_ASM]      = "asm",
+        [TOK_TYPE_CHAR]   = "char",
+        [TOK_TYPE_INT]    = "int",
         [TOK_EOF]         = "eof",
     };
     assert(ARRAY_LEN(repr) == TOKENKIND_COUNT);
@@ -90,38 +93,64 @@ void tokenlist_destroy(TokenList *tokens) {
 
 
 
-// returns the tokenkind to the corresponding keyword for str
-// returns TOK_INVALID if no keyword was matched
-// len is needed, as str must not be nullbyte terminated
+// returns the tokenkind to the corresponding string
+// returns TOK_INVALID if no string was matched
+// len is needed, as str could possibly not be nullbyte terminated
 static TokenKind match_keywords(const char *str, size_t len) {
 
-    int keywords_tokens[] = {
+    TokenKind tokenkinds[] = {
         TOK_KW_FUNCTION,
         TOK_KW_VARDECL,
         TOK_KW_IF,
         TOK_KW_ELSE,
         TOK_KW_WHILE,
         TOK_KW_ASM,
+
+        TOK_TYPE_CHAR,
+        TOK_TYPE_SHORT,
+        TOK_TYPE_INT,
+        TOK_TYPE_SIZE,
     };
 
-    const char *keywords[] = {
+    const char *strings[] = {
         "proc",
         "val",
         "if",
         "else",
         "while",
         "asm",
+
+        "char",
+        "short",
+        "int",
+        "size",
     };
 
-    assert(ARRAY_LEN(keywords_tokens) == ARRAY_LEN(keywords));
+    assert(ARRAY_LEN(tokenkinds) == ARRAY_LEN(strings));
 
-    for (size_t i=0; i < ARRAY_LEN(keywords); ++i) {
-        const char *kw = keywords[i];
-        if (!strncmp(str, kw, len) && len == strlen(kw))
-            return keywords_tokens[i];
+    for (size_t i=0; i < ARRAY_LEN(tokenkinds); ++i) {
+        const char *s = strings[i];
+        if (!strncmp(str, s, len) && len == strlen(s))
+            return tokenkinds[i];
     }
 
     return TOK_INVALID;
+}
+
+bool tokenkind_is_type(TokenKind kind) {
+
+    TokenKind types[] = {
+        TOK_TYPE_CHAR,
+        TOK_TYPE_SHORT,
+        TOK_TYPE_INT,
+        TOK_TYPE_SIZE,
+    };
+
+    for (size_t i=0; i < ARRAY_LEN(types); ++i)
+        if (kind == types[i])
+            return true;
+
+    return false;
 }
 
 static Token token_new(void) {
@@ -201,6 +230,9 @@ TokenList tokenize(const char *src) {
                 break;
             case ':':
                 tok.kind = TOK_COLON;
+                break;
+            case '\'':
+                tok.kind = TOK_TICK;
                 break;
             case '\"': {
                 tok.kind = TOK_STRING;

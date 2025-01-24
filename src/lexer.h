@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 #include <stddef.h>
+#include <stddef.h>
+#include <stdbool.h>
 
 
 
@@ -21,6 +23,7 @@ typedef enum {
     TOK_SEMICOLON,
     TOK_COMMA,
     TOK_COLON,
+    TOK_TICK,
     TOK_ASSIGN,
     TOK_EQUALS,
 
@@ -36,11 +39,17 @@ typedef enum {
     TOK_KW_WHILE,
     TOK_KW_ASM,
 
+    TOK_TYPE_CHAR,
+    TOK_TYPE_SHORT,
+    TOK_TYPE_INT,
+    TOK_TYPE_SIZE,
+
     TOK_EOF,
 
     TOKENKIND_COUNT,
 } TokenKind;
 
+extern bool tokenkind_is_type(TokenKind kind);
 extern const char *tokenkind_to_string(TokenKind tok);
 
 typedef struct {

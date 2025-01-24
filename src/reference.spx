@@ -1,27 +1,41 @@
+# Declaring external symbols
+extern putchar;
 
-# A comment
+# Metaprogramming
 
-##
-multi
-line
-comment
-##
+define FOO 45;
 
-proc add(a: int, b: int) -> int {
-    a + b;
+macro BAR(x, y, z) {
+    val x 'y = z;
 }
 
-proc main() {
-    val foo = 45;
+
+# Function definition
+proc add(a 'int, b 'int) 'int {
+    val result 'int = a + b;
+    return result;
+}
+
+
+
+proc main() 'void {
+
+    # Function calls
+    add(1, 2);
+
+    # Variables
+    val foo 'char  = 1;
+    val bar 'short = 2;
+    val baz 'int   = 4;
+    val qux 'size  = 8;
+
+    # Conditionals
+    if foo == bar { } else { }
+
+    # Loops
+    while baz { }
 
     # Inline Assembly
-    asm "
-    mov byte [rbp-4], 65
-    mov rax, 1
-    mov rdi, 1
-    lea rsi, [rbp-4]
-    mov rdx, 1
-    syscall
-    ";
+    asm "xor rax, rax";
 
 }

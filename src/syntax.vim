@@ -1,16 +1,28 @@
-syntax keyword spxKeyword
+syn keyword spxKeyword
       \ if
+      \ else
       \ while
       \ val
       \ proc
       \ asm
+      \ extern
+      \ define
+      \ return
+      \ macro
 
-syntax match spxNumber "\d+"
-syntax match spxOperator "[,.=+-\*/;(){}]"
+syn match spxNumber "\d+"
+syn match spxOperator "[,.=+-\*/;(){}'`]"
 
-syntax region spxString start=/"/ end=/"/
-syntax match spxComment "#.*$"
-syntax region spxMultilineComment start=/##/ end=/##/
+syn region spxString start=/"/ end=/"/
+syn match spxComment "#.*$"
+syn region spxMultilineComment start=/##/ end=/##/
+
+
+" TODO:
+" syn region spxAsm start=/asm\s*\zs{/ end=/}/ contains=spxAsmKw
+" syn region spxAsm start=/{/ end=/}/ containedin=spxAsmKw
+" highlight default link spxAsm String
+
 
 highlight default link spxKeyword Keyword
 highlight default link spxString String
