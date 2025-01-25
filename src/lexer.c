@@ -36,6 +36,7 @@ const char *tokenkind_to_string(TokenKind tok) {
         [TOK_KW_IF]       = "if",
         [TOK_KW_ELSE]     = "else",
         [TOK_KW_WHILE]    = "while",
+        [TOK_KW_RETURN]   = "return",
         [TOK_KW_ASM]      = "asm",
         [TOK_TYPE_CHAR]   = "char",
         [TOK_TYPE_INT]    = "int",
@@ -104,6 +105,7 @@ static TokenKind match_keywords(const char *str, size_t len) {
         TOK_KW_IF,
         TOK_KW_ELSE,
         TOK_KW_WHILE,
+        TOK_KW_RETURN,
         TOK_KW_ASM,
 
         TOK_TYPE_CHAR,
@@ -118,6 +120,7 @@ static TokenKind match_keywords(const char *str, size_t len) {
         "if",
         "else",
         "while",
+        "return",
         "asm",
 
         "char",

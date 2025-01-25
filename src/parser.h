@@ -60,10 +60,10 @@ typedef struct {
 typedef struct {
     Token op, identifier, type;
     AstNode *value;
+    // Type type;
 } StmtVarDecl;
 
-struct AstNode {
-    enum {
+typedef enum {
         ASTNODE_LITERAL,
         ASTNODE_GROUPING,
         ASTNODE_BINOP,
@@ -72,7 +72,10 @@ struct AstNode {
         ASTNODE_FUNC,
         ASTNODE_VARDECL,
         ASTNODE_INLINEASM,
-    } kind;
+} AstNodeKind;
+
+struct AstNode {
+    AstNodeKind kind;
     union {
         ExprLiteral   expr_literal;
         ExprGrouping  expr_grouping;

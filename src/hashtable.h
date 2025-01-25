@@ -4,7 +4,7 @@
 #include <stddef.h>
 
 
-typedef int HashtableValue;
+typedef size_t HashtableValue;
 
 typedef struct HashtableEntry {
     const char *key;

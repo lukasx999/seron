@@ -13,6 +13,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "codegen.h"
+#include "analysis.h"
 
 
 
@@ -91,12 +92,12 @@ static void build_binary(
 
 
 // TODO: unit tests for parser
-// TODO: lexer track token position
+// TODO: inlineasm arguments
+// TODO: metaprogramming
+// TODO: cmdline args
 // TODO: type checking + semantic analysis
 // TODO: symbol table
-// TODO: inlineasm arguments
-// TODO: cmdline args
-// TODO: metaprogramming
+// TODO: lexer track token position
 
 
 int main(void) {
@@ -111,6 +112,8 @@ int main(void) {
 
     AstNode *root = parser_parse(&tokens);
     parser_print_ast(root);
+
+    check_semantics(root);
 
 
 

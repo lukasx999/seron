@@ -9,6 +9,7 @@
 #include "util.h"
 #include "lexer.h"
 #include "parser.h"
+#include "asm.h"
 
 
 
