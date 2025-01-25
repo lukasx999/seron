@@ -113,7 +113,7 @@ int main(void) {
     AstNode *root = parser_parse(&tokens);
     parser_print_ast(root);
 
-    check_semantics(root);
+    // check_semantics(root);
 
 
 

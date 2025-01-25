@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <stdarg.h>
 
 #include "lexer.h"
 #include "asm.h"
@@ -75,9 +76,17 @@ const char *inttype_asm_operand(IntegerType type) {
 
 
 
-void gen_comment(CodeGenerator *c, const char *str) {
-    if (c->print_comments)
-        fprintf(c->file, "; %s\n", str);
+void gen_comment(CodeGenerator *c, const char *fmt, ...) {
+    va_list va;
+    va_start(va, fmt);
+
+    if (c->print_comments) {
+        fprintf(c->file, "; ");
+        vfprintf(c->file, fmt, va);
+        fprintf(c->file, "\n");
+    }
+
+    va_end(va);
 }
 
 CodeGenerator gen_new(const char *filename, bool print_comments) {
@@ -102,7 +111,7 @@ void gen_postlude(CodeGenerator *c) {
 }
 
 void gen_addition(CodeGenerator *c, size_t rbp_offset1, size_t rbp_offset2) {
-    gen_comment(c, "addition(start)");
+    gen_comment(c, "START: addition([rbp-%lu] + [rbp-%lu])", rbp_offset1, rbp_offset2);
     c->rbp_offset += 4;
 
     // TODO: size!
@@ -116,11 +125,11 @@ void gen_addition(CodeGenerator *c, size_t rbp_offset1, size_t rbp_offset2) {
         rbp_offset1, rbp_offset2, rbp_offset2, c->rbp_offset
     );
 
-    gen_comment(c, "addition(end)\n");
+    gen_comment(c, "END: addition\n");
 }
 
 void gen_copy_value(CodeGenerator *c, size_t addr, IntegerType type) {
-    gen_comment(c, "copy(start)");
+    gen_comment(c, "copy(start) { [rbp-%lu] }", addr);
     c->rbp_offset += type;
 
     fprintf(

@@ -32,7 +32,7 @@ typedef struct {
 
 extern CodeGenerator gen_new           (const char *filename, bool print_comments);
 extern void          gen_destroy       (CodeGenerator *c);
-extern void          gen_comment       (CodeGenerator *c, const char *str);
+extern void          gen_comment       (CodeGenerator *c, const char *fmt, ...);
 extern void          gen_prelude       (CodeGenerator *c);
 extern void          gen_postlude      (CodeGenerator *c);
 extern void          gen_addition      (CodeGenerator *c, size_t rbp_offset1, size_t rbp_offset2);
