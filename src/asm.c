@@ -111,8 +111,14 @@ void gen_postlude(CodeGenerator *c) {
 }
 
 void gen_addition(CodeGenerator *c, size_t rbp_offset1, size_t rbp_offset2) {
-    gen_comment(c, "START: addition([rbp-%lu] + [rbp-%lu])", rbp_offset1, rbp_offset2);
     c->rbp_offset += 4;
+    gen_comment(
+        c,
+        "START: addition([rbp-%lu] + [rbp-%lu] -> [rbp-%lu])",
+        rbp_offset1,
+        rbp_offset2,
+        c->rbp_offset
+    );
 
     // TODO: size!
     fprintf(
@@ -129,8 +135,8 @@ void gen_addition(CodeGenerator *c, size_t rbp_offset1, size_t rbp_offset2) {
 }
 
 void gen_copy_value(CodeGenerator *c, size_t addr, IntegerType type) {
-    gen_comment(c, "copy(start) { [rbp-%lu] }", addr);
     c->rbp_offset += type;
+    gen_comment(c, "START: copy([rbp-%lu] -> [rbp-%lu])", addr, c->rbp_offset);
 
     fprintf(
         c->file,
@@ -142,12 +148,12 @@ void gen_copy_value(CodeGenerator *c, size_t addr, IntegerType type) {
         inttype_asm_operand(type), c->rbp_offset, inttype_reg_rax(type)
     );
 
-    gen_comment(c, "copy(end)\n");
+    gen_comment(c, "END: copy\n");
 }
 
 void gen_store_value(CodeGenerator *c, size_t value, IntegerType type) {
-    gen_comment(c, "store(start)");
     c->rbp_offset += type;
+    gen_comment(c, "START: store(%lu -> [rbp-%lu])", value, c->rbp_offset);
 
     fprintf(
         c->file,
@@ -157,18 +163,18 @@ void gen_store_value(CodeGenerator *c, size_t value, IntegerType type) {
         inttype_asm_operand(type), c->rbp_offset, value
     );
 
-    gen_comment(c, "store(end)\n");
+    gen_comment(c, "END: store\n");
 }
 
 void gen_inlineasm(CodeGenerator *c, const char *src) {
-    gen_comment(c, "inline(start)");
+    gen_comment(c, "START: inline");
     fprintf(c->file, "%s\n", src);
-    gen_comment(c, "inline(end)\n");
+    gen_comment(c, "END: inline\n");
 }
 
 void gen_func_start(CodeGenerator *c, const char *identifier) {
-    gen_comment(c, "function(start)");
-    gen_comment(c, "function_prelude(start)");
+    gen_comment(c, "START: function");
+    gen_comment(c, "START: function_prelude");
 
     fprintf(
         c->file,
@@ -178,11 +184,11 @@ void gen_func_start(CodeGenerator *c, const char *identifier) {
         "mov rbp, rsp\n", identifier, identifier
     );
 
-    gen_comment(c, "function_prelude(end)\n");
+    gen_comment(c, "END: function_prelude\n");
 }
 
 void gen_func_end(CodeGenerator *c) {
-    gen_comment(c, "function_postlude(start)");
+    gen_comment(c, "START: function_postlude");
 
     fprintf(
         c->file,
@@ -190,8 +196,8 @@ void gen_func_end(CodeGenerator *c) {
         "ret\n"
     );
 
-    gen_comment(c, "function_postlude(end)");
-    gen_comment(c, "function(end)\n");
+    gen_comment(c, "END: function_postlude");
+    gen_comment(c, "END: function\n");
 }
 
 void gen_call(CodeGenerator *c, const char *identifier) {
