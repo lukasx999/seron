@@ -110,7 +110,7 @@ int main(void) {
     TokenList tokens = tokenize(file);
     tokenlist_print(&tokens);
 
-    AstNode *root = parser_parse(&tokens, file, filename);
+    AstNode *root = parser_parse(&tokens, filename);
     parser_print_ast(root);
 
     // check_semantics(root);

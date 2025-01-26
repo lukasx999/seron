@@ -98,7 +98,7 @@ struct AstNode {
 typedef void (*AstCallback)(AstNode *node, int depth, void *args);
 
 // src/filename is only needed for errors
-extern AstNode *parser_parse(const TokenList *tokens, const char *src, const char *filename);
+extern AstNode *parser_parse(const TokenList *tokens, const char *filename);
 // top_down == true: callback will be called for root node first, and for leaf nodes last
 // top_down == false: callback will be called for leaf nodes first, and for root node last
 extern void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down, void *args);

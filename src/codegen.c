@@ -13,6 +13,53 @@
 #include "asm.h"
 
 
+
+#if 0
+// TODO: do sth with this
+static void parser_print_error_cool(Parser *p) {
+
+    Token tok = parser_get_current_token(p);
+    throw_cool_error(p->filename, &tok, "you messed up!");
+
+    // TODO: wrapper for dealing with this mess
+    int linecounter = 1;
+    for (size_t i=0; i < strlen(p->src); ++i) {
+        char c = p->src[i];
+
+        if (linecounter == tok.pos_line) {
+            if (i == tok.pos_absolute) {
+                fprintf(stderr, "%s%.*s%s", COLOR_RED, (int) tok.length, p->src+i, COLOR_END);
+                i += tok.length - 1;
+            }
+            fprintf(stderr, "%c", c);
+        }
+
+        if (c == '\n')
+            linecounter++;
+
+    }
+
+    exit(1);
+
+}
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 typedef struct {
     size_t size, capacity;
     Hashtable *items;

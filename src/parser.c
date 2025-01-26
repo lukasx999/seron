@@ -50,7 +50,7 @@ void astnodelist_destroy(AstNodeList *list) {
 typedef struct {
     size_t current;
     const TokenList *tokens;
-    const char *src, *filename;
+    const char *filename;
 } Parser;
 
 static inline Token parser_get_current_token(const Parser *p) {
@@ -81,72 +81,20 @@ static bool parser_match_tokenkinds(const Parser *p, ...) {
     assert(false);
 }
 
-// Exit if current token is not of the given kind
-// static inline void parser_expect_token(const Parser *p, TokenKind tokenkind, const char *expected_token) {
-//     if (!parser_match_tokenkinds(p, tokenkind, SENTINEL))
-//         throw_error("Expected %s", expected_token);
-// }
-
 static inline void parser_expect_token(
     const Parser *p,
     TokenKind tokenkind,
     const char *expected
 ) {
-
     if (!parser_match_tokenkinds(p, tokenkind, SENTINEL)) {
-
         Token tok = parser_get_current_token(p);
-        fprintf(
-            stderr,
-            "%s:%d:%d: %s%sERROR%s: Expected `%s`\n\n",
-            p->filename, tok.pos_line, tok.pos_column,
-            COLOR_BOLD, COLOR_RED, COLOR_END, expected
-        );
-
-        exit(EXIT_FAILURE);
+        throw_cool_error(p->filename, &tok, "Expected `%s`", expected);
     }
 }
 
 static inline bool parser_is_at_end(const Parser *p) {
     return parser_match_tokenkinds(p, TOK_EOF, SENTINEL);
 }
-
-static void parser_print_error_cool(Parser *p) {
-    Token tok = parser_get_current_token(p);
-    fprintf(
-        stderr,
-        "%s:%d:%d: ERROR: you messed up!\n",
-        p->filename,
-        tok.pos_line,
-        tok.pos_column
-    );
-    fprintf(stderr, "");
-    int linecounter = 1;
-    for (size_t i=0; i < strlen(p->src); ++i) {
-        char c = p->src[i];
-
-        if (linecounter == tok.pos_line) {
-            if (i == tok.pos_absolute) {
-                fprintf(stderr, "%s%.*s%s", COLOR_RED, (int) tok.length, p->src+i, COLOR_END);
-                i += tok.length - 1;
-            }
-            fprintf(stderr, "%c", c);
-        }
-
-        if (c == '\n')
-            linecounter++;
-
-    }
-
-    exit(1);
-
-}
-
-
-
-
-
-
 
 void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down, void *args) {
     static int depth = 0;
@@ -646,11 +594,10 @@ static AstNode *rule_program(Parser *p) {
 
 
 
-AstNode *parser_parse(const TokenList *tokens, const char *src, const char *filename) {
+AstNode *parser_parse(const TokenList *tokens, const char *filename) {
     Parser parser = {
         .current  = 0,
         .tokens   = tokens,
-        .src      = src,
         .filename = filename,
     };
     AstNode *root = rule_program(&parser);

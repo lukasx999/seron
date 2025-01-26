@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
+#include "lexer.h"
 
 
 #define ARRAY_LEN(arr) (sizeof((arr)) / sizeof(*(arr)))
@@ -27,25 +28,14 @@
 #define COLOR_STRIKETHROUGH "\33[9m"
 #define COLOR_END           "\33[0m"
 
-static inline void throw_error(const char *fmt, ...) {
-    va_list va;
-    va_start(va, fmt);
-    fprintf(stderr, "%s%sERROR: %s", COLOR_BOLD, COLOR_RED, COLOR_END);
-    vfprintf(stderr, fmt, va);
-    fprintf(stderr, "\n");
-    va_end(va);
-    exit(EXIT_FAILURE);
-}
 
-static inline void throw_warning(const char *fmt, ...) {
-    va_list va;
-    va_start(va, fmt);
-    fprintf(stderr, "%s%sWARNING: %s", COLOR_BOLD, COLOR_YELLOW, COLOR_END);
-    vfprintf(stderr, fmt, va);
-    fprintf(stderr, "\n");
-    va_end(va);
-}
-
+extern void throw_error(const char *fmt, ...);
+extern void throw_warning(const char *fmt, ...);
+extern void throw_cool_error(
+    const char *filename,
+    const Token *tok,
+    const char *fmt, ...
+);
 
 
 #endif // _UTIL_H
