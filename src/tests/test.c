@@ -11,6 +11,8 @@
 #include "../hashtable.h"
 
 
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+
 
 static TokenList lexer_testcase(
     const char  *testcase,

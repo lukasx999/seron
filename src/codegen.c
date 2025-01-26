@@ -11,6 +11,7 @@
 #include "codegen.h"
 #include "hashtable.h"
 #include "asm.h"
+#include "symboltable.h"
 
 
 
@@ -47,96 +48,39 @@ static void parser_print_error_cool(Parser *p) {
 
 
 
+static size_t traverse_ast(AstNode *node, CodeGenerator *codegen, Symboltable *symboltable);
 
 
+static void builtinasm(
+    AstNode       *node,
+    CodeGenerator *codegen,
+    Symboltable   *symboltable
+) {
 
+    ExprCall *call = &node->expr_call;
+    AstNodeList list = call->args;
 
+    AstNode *first = list.items[0];
 
+    bool is_literal = first->kind == ASTNODE_LITERAL;
+    if (!(is_literal && first->expr_literal.op.kind == TOK_STRING))
+        throw_error(codegen->filename_src, &call->op, "First argument to `asm()` must be a string");
 
+    assert(!"TODO");
 
-
-
-
-
-
-
-typedef struct {
-    size_t size, capacity;
-    Hashtable *items;
-} Symboltable; // Symboltable is a stack of hashtables
-
-
-static Symboltable symboltable_new(void) {
-    Symboltable st = {
-        .size     = 0,
-        .capacity = 5,
-        .items    = NULL,
-    };
-
-    st.items = malloc(st.capacity * sizeof(Hashtable));
-
-    return st;
-}
-
-static void symboltable_destroy(Symboltable *st) {
-    free(st->items);
-    st->items = NULL;
-}
-
-static void symboltable_push(Symboltable *st) {
-    if (st->size == st->capacity) {
-        st->capacity *= 2;
-        st->items = realloc(st->items, st->capacity * sizeof(Hashtable));
+    const char *assembly = first->expr_literal.op.value;
+    for (size_t i=0; i < strlen(assembly); ++i) {
+        // TODO: enforce count of arguments
     }
 
-    st->items[st->size++] = hashtable_new();
-}
 
-static void symboltable_pop(Symboltable *st) {
-    Hashtable *ht = &st->items[st->size-1];
-    hashtable_destroy(ht);
-    st->size--;
-}
+    gen_inlineasm(codegen, "");
 
-static int symboltable_insert(Symboltable *st, const char *key, HashtableValue value) {
-    Hashtable *ht = &st->items[st->size-1];
-    return hashtable_insert(ht, key, value);
-}
-
-static HashtableValue *symboltable_get(const Symboltable *st, const char *key) {
-
-    for (size_t i=0; i < st->size; ++i) {
-        size_t rev = st->size - 1 - i;
-        Hashtable *ht = &st->items[rev];
-
-        HashtableValue *value = hashtable_get(ht, key);
-        if (value != NULL)
-            return value;
+    for (size_t i=1; i < list.size; ++i) {
+        size_t addr = traverse_ast(list.items[i], codegen, symboltable);
     }
 
-    return NULL;
 }
-
-static void symboltable_override(Symboltable *st, const char *key, HashtableValue value) {
-    Hashtable *ht = &st->items[st->size-1];
-    assert(hashtable_insert(ht, key, value) == -1);
-    *hashtable_get(ht, key) = value;
-}
-
-static void symboltable_print(const Symboltable *st) {
-    printf("== symboltable(start) ==\n");
-    for (size_t i=0; i < st->size; ++i) {
-        printf("\n");
-        hashtable_print(&st->items[i]);
-        printf("\n");
-    }
-    printf("== symboltable(end) ==\n\n");
-}
-
-
-
-
-
 
 
 
@@ -162,6 +106,21 @@ static size_t traverse_ast(
         case ASTNODE_CALL: {
             ExprCall *call = &node->expr_call;
 
+            if (call->builtin != BUILTINFUNC_NONE) {
+                switch (call->builtin) {
+
+                    case BUILTINFUNC_ASM: {
+                        builtinasm(node, codegen, symboltable);
+                    } break;
+
+                    default:
+                        assert(!"Unimplemented builtin function");
+                        break;
+                }
+
+                break;
+            }
+
             AstNodeList list = call->args;
             for (size_t i=0; i < list.size; ++i)
                 traverse_ast(list.items[i], codegen, symboltable);
@@ -179,11 +138,6 @@ static size_t traverse_ast(
             gen_func_start(codegen, func->identifier.value);
             traverse_ast(func->body, codegen, symboltable);
             gen_func_end(codegen);
-        } break;
-
-        case ASTNODE_INLINEASM: {
-            StmtInlineAsm *inlineasm = &node->stmt_inlineasm;
-            gen_inlineasm(codegen, inlineasm->src.value);
         } break;
 
         case ASTNODE_VARDECL: {
@@ -269,7 +223,7 @@ static size_t traverse_ast(
                 } break;
 
                 default:
-                    assert(!"Unimplemented");
+                    assert(!"Literal Unimplemented");
                     break;
             }
         } break;
@@ -290,7 +244,7 @@ void generate_code(
     const char *filename_src
 ) {
 
-    CodeGenerator codegen = gen_new(filename_asm, print_comments, filename_src);
+    CodeGenerator codegen   = gen_new(filename_asm, print_comments, filename_src);
     Symboltable symboltable = symboltable_new();
 
     gen_prelude(&codegen);

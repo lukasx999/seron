@@ -15,7 +15,6 @@
 
 
 
-#define SENTINEL TOK_INVALID
 
 
 
@@ -46,6 +45,8 @@ void astnodelist_destroy(AstNodeList *list) {
 
 
 
+
+#define SENTINEL TOK_INVALID
 
 typedef struct {
     size_t current;
@@ -164,7 +165,6 @@ void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down, voi
             depth--;
         } break;
 
-        case ASTNODE_INLINEASM:
         case ASTNODE_LITERAL:
             break;
 
@@ -199,7 +199,12 @@ void parser_print_ast_callback(AstNode *root, int depth, void *_args) {
     switch (root->kind) {
         case ASTNODE_BLOCK: {
             Block *block = &root->block;
-            print_ast_value("block", COLOR_BLUE, block->global ? "global" : NULL, NULL);
+            print_ast_value(
+                "block",
+                COLOR_BLUE,
+                NULL,
+                block->global ? "global" : NULL
+            );
         } break;
 
         case ASTNODE_GROUPING: {
@@ -217,17 +222,18 @@ void parser_print_ast_callback(AstNode *root, int depth, void *_args) {
         } break;
 
         case ASTNODE_CALL: {
-            print_ast_value("call", COLOR_BLUE, NULL, NULL);
+            ExprCall *call = &root->expr_call;
+            print_ast_value(
+                "call",
+                COLOR_BLUE,
+                NULL,
+                call->builtin == BUILTINFUNC_NONE ? NULL : "builtin"
+            );
         } break;
 
         case ASTNODE_FUNC: {
             StmtFunc *func = &root->stmt_func;
             print_ast_value(tokenkind_to_string(func->op.kind), COLOR_RED, func->identifier.value, NULL);
-        } break;
-
-        case ASTNODE_INLINEASM: {
-            StmtInlineAsm *inlineasm = &root->stmt_inlineasm;
-            print_ast_value(tokenkind_to_string(inlineasm->op.kind), COLOR_RED, NULL, NULL);
         } break;
 
         case ASTNODE_VARDECL: {
@@ -275,7 +281,6 @@ static void parser_free_ast_callback(AstNode *node, int _depth, void *_args) {
         case ASTNODE_VARDECL:
         case ASTNODE_BINOP:
         case ASTNODE_UNARYOP:
-        case ASTNODE_INLINEASM:
             break;
 
         default:
@@ -295,19 +300,19 @@ void parser_free_ast(AstNode *root) {
 
 
 // forward-declaration because some grammar rules have circular dependencies
-static AstNode *rule_primary    (Parser *p);
-static AstNode *rule_term       (Parser *p);
-static AstNode *rule_expression (Parser *p);
-static AstNode *rule_exprstmt   (Parser *p);
-static AstNode *rule_function   (Parser *p);
-static AstNode *rule_builtin_asm(Parser *p);
-static AstNode *rule_vardecl    (Parser *p);
-static AstNode *rule_stmt       (Parser *p);
-static AstNode *rule_block      (Parser *p);
-static AstNode *rule_program    (Parser *p);
-static AstNode *rule_call       (Parser *p);
-static AstNode *rule_unary      (Parser *p);
-static AstNode *rule_factor     (Parser *p);
+static AstNodeList rule_util_arglist (Parser *p);
+static AstNode *rule_primary         (Parser *p);
+static AstNode *rule_term            (Parser *p);
+static AstNode *rule_expression      (Parser *p);
+static AstNode *rule_exprstmt        (Parser *p);
+static AstNode *rule_function        (Parser *p);
+static AstNode *rule_vardecl         (Parser *p);
+static AstNode *rule_stmt            (Parser *p);
+static AstNode *rule_block           (Parser *p);
+static AstNode *rule_program         (Parser *p);
+static AstNode *rule_call            (Parser *p);
+static AstNode *rule_unary           (Parser *p);
+static AstNode *rule_factor          (Parser *p);
 
 
 
@@ -343,38 +348,61 @@ static AstNode *rule_primary(Parser *p) {
     return astnode;
 }
 
-static AstNode *rule_call(Parser *p) {
-    // call ::= primary "(" ( <expr> ("," <expr>)* )? ")"
+static AstNodeList rule_util_arglist(Parser *p) {
+    // arglist ::= "(" ( <expr> ("," <expr>)* )? ")"
 
-    AstNode *node = rule_primary(p);
+    parser_expect_token(p, TOK_LPAREN, "(");
+    parser_advance(p);
 
-    if (parser_match_tokenkinds(p, TOK_LPAREN, SENTINEL)) {
-        parser_advance(p);
+    AstNodeList args = astnodelist_new();
 
-        AstNode *call   = malloc(sizeof(AstNode));
-        call->kind      = ASTNODE_CALL;
-        call->expr_call = (ExprCall) {
-            .callee = node,
-            .args   = astnodelist_new(),
-        };
+    while (!parser_match_tokenkinds(p, TOK_RPAREN, SENTINEL)) {
+        astnodelist_append(&args, rule_expression(p));
 
-        while (!parser_match_tokenkinds(p, TOK_RPAREN, SENTINEL)) {
-            astnodelist_append(&call->expr_call.args, rule_expression(p));
+        if (parser_match_tokenkinds(p, TOK_COMMA, SENTINEL)) {
+            parser_advance(p);
 
-            if (parser_match_tokenkinds(p, TOK_COMMA, SENTINEL)) {
-                parser_advance(p);
-
-                if (parser_match_tokenkinds(p, TOK_RPAREN, SENTINEL))
-                    parser_throw_error(p,"Extraneous `,`");
-            }
+            if (parser_match_tokenkinds(p, TOK_RPAREN, SENTINEL))
+                parser_throw_error(p,"Extraneous `,`");
         }
 
-        parser_expect_token(p, TOK_RPAREN, ")");
-        parser_advance(p);
-        node = call;
     }
 
-    return node;
+    parser_expect_token(p, TOK_RPAREN, ")");
+    parser_advance(p);
+
+    return args;
+}
+
+static AstNode *rule_call(Parser *p) {
+    // call ::= (primary | "asm") "(" ( <expr> ("," <expr>)* )? ")"
+
+    bool is_ident = parser_match_tokenkinds(p, TOK_IDENTIFIER, SENTINEL);
+    AstNode *node = rule_primary(p);
+
+    if (!parser_match_tokenkinds(p, TOK_LPAREN, SENTINEL))
+        return node;
+
+    BuiltinFunc builtin = BUILTINFUNC_NONE;
+    if (is_ident) {
+        const char *value = node->expr_literal.op.value;
+
+        if (!strcmp(value, "asm"))
+            builtin = BUILTINFUNC_ASM;
+    }
+
+    Token op = parser_get_current_token(p);
+
+    AstNode *call   = malloc(sizeof(AstNode));
+    call->kind      = ASTNODE_CALL;
+    call->expr_call = (ExprCall) {
+        .op      = op,
+        .callee  = node,
+        .args    = rule_util_arglist(p),
+        .builtin = builtin,
+    };
+
+    return call;
 }
 
 static AstNode *rule_unary(Parser *p) {
@@ -403,6 +431,7 @@ static AstNode *rule_unary(Parser *p) {
 static AstNode *rule_factor(Parser *p) {
     // factor ::= unary (("/" | "*") unary)*
     return rule_unary(p);
+    // TODO:
 }
 
 static AstNode *rule_term(Parser *p) {
@@ -466,30 +495,6 @@ static AstNode *rule_vardecl(Parser *p) {
     parser_advance(p);
 
     return vardecl;
-}
-
-static AstNode *rule_builtin_asm(Parser *p) {
-    // asm ::= "asm" STRING ";"
-
-    assert(parser_match_tokenkinds(p, TOK_KW_ASM, SENTINEL));
-    Token op = parser_get_current_token(p);
-    parser_advance(p);
-
-    parser_expect_token(p, TOK_STRING, "string");
-    Token src = parser_get_current_token(p);
-    parser_advance(p);
-
-    parser_expect_token(p, TOK_SEMICOLON, ";");
-    parser_advance(p);
-
-    AstNode *inlineasm   = malloc(sizeof(AstNode));
-    inlineasm->kind      = ASTNODE_INLINEASM;
-    inlineasm->stmt_inlineasm= (StmtInlineAsm) {
-        .op  = op,
-        .src = src,
-    };
-
-    return inlineasm;
 }
 
 static AstNode *rule_function(Parser *p) {
@@ -570,9 +575,6 @@ static AstNode *rule_stmt(Parser *p) {
 
     else if (parser_match_tokenkinds(p, TOK_KW_FUNCTION, SENTINEL))
         return rule_function(p);
-
-    else if (parser_match_tokenkinds(p, TOK_KW_ASM, SENTINEL))
-        return rule_builtin_asm(p);
 
     else if (parser_match_tokenkinds(p, TOK_KW_VARDECL, SENTINEL))
         return rule_vardecl(p);

@@ -21,7 +21,6 @@ static void check_global_scope(const AstNode *root) {
     AstNodeKind allowed_kinds[] = {
         ASTNODE_FUNC,
         ASTNODE_VARDECL,
-        ASTNODE_INLINEASM,
     };
 
     for (size_t i=0; i < globals.size; ++i) {
@@ -70,10 +69,6 @@ static void typechecking(AstNode *node) {
         case ASTNODE_FUNC: {
             StmtFunc func = node->stmt_func;
             typechecking(func.body);
-        } break;
-
-        case ASTNODE_INLINEASM: {
-            StmtInlineAsm inlineasm = node->stmt_inlineasm;
         } break;
 
         case ASTNODE_VARDECL:

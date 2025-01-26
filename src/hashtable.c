@@ -116,31 +116,3 @@ void hashtable_print(const Hashtable *ht) {
 
     }
 }
-
-
-int test(void) {
-
-    Hashtable ht = hashtable_new();
-
-    hashtable_insert(&ht, "a", 1);
-    hashtable_insert(&ht, "b", 2);
-    hashtable_insert(&ht, "c", 3);
-    hashtable_insert(&ht, "d", 4);
-    hashtable_insert(&ht, "e", 5);
-    printf("%d\n", hashtable_insert(&ht, "f", 6));
-    printf("%d\n", hashtable_insert(&ht, "f", 3));
-
-    hashtable_print(&ht);
-
-    HashtableValue *a = hashtable_get(&ht, "a");
-    HashtableValue *b = hashtable_get(&ht, "b");
-    HashtableValue *c = hashtable_get(&ht, "c");
-
-    HashtableValue *f = hashtable_get(&ht, "f");
-    printf("%d\n", *f);
-
-
-    hashtable_destroy(&ht);
-
-    return 0;
-}

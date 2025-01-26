@@ -39,7 +39,6 @@ typedef enum {
     TOK_KW_ELSE,
     TOK_KW_WHILE,
     TOK_KW_RETURN,
-    TOK_KW_ASM,
 
     TOK_TYPE_CHAR,
     TOK_TYPE_SHORT,

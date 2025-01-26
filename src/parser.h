@@ -22,6 +22,13 @@ extern void        astnodelist_append (AstNodeList *list, AstNode *node);
 extern void        astnodelist_destroy(AstNodeList *list);
 
 
+typedef enum {
+    BUILTINFUNC_NONE, // call is not a builtin
+    BUILTINFUNC_ASM,
+    // TODO: sizeof
+} BuiltinFunc;
+
+
 
 
 typedef struct {
@@ -39,8 +46,10 @@ typedef struct {
 } ExprBinOp;
 
 typedef struct {
+    Token op;
     AstNode *callee;
     AstNodeList args;
+    BuiltinFunc builtin; // None, if no builtin
 } ExprCall;
 
 typedef struct {
@@ -59,10 +68,6 @@ typedef struct {
 } StmtFunc;
 
 typedef struct {
-    Token op, src;
-} StmtInlineAsm;
-
-typedef struct {
     Token op, identifier, type;
     AstNode *value;
     // Type type;
@@ -77,7 +82,6 @@ typedef enum {
         ASTNODE_BLOCK,
         ASTNODE_FUNC,
         ASTNODE_VARDECL,
-        ASTNODE_INLINEASM,
 } AstNodeKind;
 
 struct AstNode {
@@ -91,7 +95,6 @@ struct AstNode {
         Block         block;
         StmtFunc      stmt_func;
         StmtVarDecl   stmt_vardecl;
-        StmtInlineAsm stmt_inlineasm;
     };
 };
 

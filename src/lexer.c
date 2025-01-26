@@ -38,7 +38,6 @@ const char *tokenkind_to_string(TokenKind tok) {
         [TOK_KW_ELSE]     = "else",
         [TOK_KW_WHILE]    = "while",
         [TOK_KW_RETURN]   = "return",
-        [TOK_KW_ASM]      = "asm",
         [TOK_TYPE_CHAR]   = "char",
         [TOK_TYPE_INT]    = "int",
         [TOK_EOF]         = "eof",
@@ -77,7 +76,7 @@ void tokenlist_print(const TokenList *tokens) {
         Token tok = tokens->items[i];
         const char *kind = tokenkind_to_string(tok.kind);
 
-        printf("%lu:%lu ", tok.pos_line, tok.pos_column);
+        printf("%d:%d ", tok.pos_line, tok.pos_column);
 
         printf("%s", kind);
         if (strcmp(tok.value, ""))
@@ -110,7 +109,6 @@ static TokenKind match_keywords(const char *str, size_t len) {
         TOK_KW_ELSE,
         TOK_KW_WHILE,
         TOK_KW_RETURN,
-        TOK_KW_ASM,
 
         TOK_TYPE_CHAR,
         TOK_TYPE_SHORT,
@@ -125,7 +123,6 @@ static TokenKind match_keywords(const char *str, size_t len) {
         "else",
         "while",
         "return",
-        "asm",
 
         "char",
         "short",

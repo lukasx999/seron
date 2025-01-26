@@ -6,13 +6,7 @@ proc f() {
 proc _start() {
 
     val foo 'int = 45;
-    # val foo 'int = 45;
-    # x;
 
-    asm "
-        mov rax, 60
-        mov rdi, 0
-        syscall
-        ";
+    asm("mov dword [rbp-{}], {}", foo, bar);
 
 }
