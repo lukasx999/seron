@@ -82,59 +82,34 @@ static bool parser_match_tokenkinds(const Parser *p, ...) {
 }
 
 // Exit if current token is not of the given kind
-static inline void parser_expect_token(const Parser *p, TokenKind tokenkind, const char *expected_token) {
-    if (!parser_match_tokenkinds(p, tokenkind, SENTINEL))
-        throw_error("Expected %s", expected_token);
-}
+// static inline void parser_expect_token(const Parser *p, TokenKind tokenkind, const char *expected_token) {
+//     if (!parser_match_tokenkinds(p, tokenkind, SENTINEL))
+//         throw_error("Expected %s", expected_token);
+// }
 
-static inline void parser_expect_token_cool(
+static inline void parser_expect_token(
     const Parser *p,
-    TokenKind     tokenkind,
-    const char   *msg,
-    const char   *expected_token
+    TokenKind tokenkind,
+    const char *expected
 ) {
+
     if (!parser_match_tokenkinds(p, tokenkind, SENTINEL)) {
 
-        // TODO: wrapper function for this mess
         Token tok = parser_get_current_token(p);
         fprintf(
             stderr,
-            "%s:%d:%d: %s%sERROR%s: %s\n",
+            "%s:%d:%d: %s%sERROR%s: Expected `%s`\n\n",
             p->filename, tok.pos_line, tok.pos_column,
-            COLOR_BOLD, COLOR_RED, COLOR_END, msg
+            COLOR_BOLD, COLOR_RED, COLOR_END, expected
         );
-        fprintf(stderr, "");
-        int linecounter = 1;
-        for (size_t i=0; i < strlen(p->src); ++i) {
-            char c = p->src[i];
 
-            if (linecounter == tok.pos_line) {
-                if (i == tok.pos_absolute) {
-                    fprintf(stderr, "%s%s%s", COLOR_GREEN, expected_token, COLOR_END);
-                    i += tok.length - 1;
-                }
-                fprintf(stderr, "%c", c);
-            }
-
-            if (c == '\n')
-                linecounter++;
-
-        }
-
-        exit(1);
-
-
-
-
-
+        exit(EXIT_FAILURE);
     }
 }
 
 static inline bool parser_is_at_end(const Parser *p) {
     return parser_match_tokenkinds(p, TOK_EOF, SENTINEL);
 }
-
-
 
 static void parser_print_error_cool(Parser *p) {
     Token tok = parser_get_current_token(p);
@@ -406,7 +381,7 @@ static AstNode *rule_primary(Parser *p) {
             .expr = rule_expression(p)
         };
 
-        parser_expect_token(p, TOK_RPAREN, "`)`");
+        parser_expect_token(p, TOK_RPAREN, ")");
         parser_advance(p);
 
     } else
@@ -441,7 +416,7 @@ static AstNode *rule_call(Parser *p) {
             }
         }
 
-        parser_expect_token(p, TOK_RPAREN, "`)`");
+        parser_expect_token(p, TOK_RPAREN, ")");
         parser_advance(p);
         node = call;
     }
@@ -513,7 +488,7 @@ static AstNode *rule_vardecl(Parser *p) {
     Token identifier = parser_get_current_token(p);
     parser_advance(p);
 
-    parser_expect_token(p, TOK_TICK, "`'`");
+    parser_expect_token(p, TOK_TICK, "type annotation");
     parser_advance(p);
 
     Token type = parser_get_current_token(p);
@@ -521,7 +496,7 @@ static AstNode *rule_vardecl(Parser *p) {
         throw_error("Unknown type `%s`", type.value);
     parser_advance(p);
 
-    parser_expect_token(p, TOK_ASSIGN, "`=`");
+    parser_expect_token(p, TOK_ASSIGN, "=");
     parser_advance(p);
 
     AstNode *vardecl      = malloc(sizeof(AstNode));
@@ -533,9 +508,7 @@ static AstNode *rule_vardecl(Parser *p) {
         .value      = rule_expression(p),
     };
 
-    // TODO: this
-    // parser_expect_token(p, TOK_SEMICOLON, "`;`");
-    parser_expect_token_cool(p, TOK_SEMICOLON, "Expected semicolon", ";");
+    parser_expect_token(p, TOK_SEMICOLON, ";");
     parser_advance(p);
 
     return vardecl;
@@ -549,11 +522,10 @@ static AstNode *rule_builtin_asm(Parser *p) {
     parser_advance(p);
 
     parser_expect_token(p, TOK_STRING, "string");
-
     Token src = parser_get_current_token(p);
     parser_advance(p);
 
-    parser_expect_token(p, TOK_SEMICOLON, "`;`");
+    parser_expect_token(p, TOK_SEMICOLON, ";");
     parser_advance(p);
 
     AstNode *inlineasm   = malloc(sizeof(AstNode));
@@ -581,10 +553,10 @@ static AstNode *rule_function(Parser *p) {
     Token identifier = parser_get_current_token(p);
     parser_advance(p);
 
-    parser_expect_token(p, TOK_LPAREN, "`(`");
+    parser_expect_token(p, TOK_LPAREN, "(");
     parser_advance(p);
 
-    parser_expect_token(p, TOK_RPAREN, "`)`");
+    parser_expect_token(p, TOK_RPAREN, ")");
     parser_advance(p);
 
     AstNode *function   = malloc(sizeof(AstNode));
@@ -601,7 +573,7 @@ static AstNode *rule_function(Parser *p) {
 static AstNode *rule_block(Parser *p) {
     // block ::= "{" statement* "}"
 
-    parser_expect_token(p, TOK_LBRACE, "`{`");
+    parser_expect_token(p, TOK_LBRACE, "{");
     parser_advance(p);
 
     AstNode *node = malloc(sizeof(AstNode));
@@ -630,7 +602,7 @@ static AstNode *rule_exprstmt(Parser *p) {
     // exprstmt ::= expr ";"
 
     AstNode *node = rule_expression(p);
-    parser_expect_token(p, TOK_SEMICOLON, "`;`");
+    parser_expect_token(p, TOK_SEMICOLON,";");
 
     parser_advance(p);
     return node;
