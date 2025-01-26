@@ -1,16 +1,11 @@
 proc _start() {
 
-    {
-        val foo 'int = 1;
-        val foo 'int = 2;
-        {
-        }
-    }
+    val foo 'int = 45
 
     asm "
-    mov rax, 60
-    mov rdi, 0
-    syscall
-    ";
+        mov rax, 60
+        mov rdi, 0
+        syscall
+        ";
 
 }

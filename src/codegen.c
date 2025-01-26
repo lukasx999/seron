@@ -113,13 +113,14 @@ static size_t traverse_ast(
         } break;
 
         case ASTNODE_CALL: {
-            ExprCall call    = node->expr_call;
-            AstNodeList list = call.args;
+            ExprCall *call = &node->expr_call;
+
+            AstNodeList list = call->args;
             for (size_t i=0; i < list.size; ++i)
                 traverse_ast(list.items[i], codegen, symboltable);
 
             // HACK: call into address instead of identifier
-            gen_call(codegen, call.callee->expr_literal.op.value);
+            gen_call(codegen, call->callee->expr_literal.op.value);
         } break;
 
         case ASTNODE_GROUPING:
@@ -127,15 +128,15 @@ static size_t traverse_ast(
             break;
 
         case ASTNODE_FUNC: {
-            StmtFunc func = node->stmt_func;
-            gen_func_start(codegen, func.identifier.value);
-            traverse_ast(func.body, codegen, symboltable);
+            StmtFunc *func = &node->stmt_func;
+            gen_func_start(codegen, func->identifier.value);
+            traverse_ast(func->body, codegen, symboltable);
             gen_func_end(codegen);
         } break;
 
         case ASTNODE_INLINEASM: {
-            StmtInlineAsm inlineasm = node->stmt_inlineasm;
-            gen_inlineasm(codegen, inlineasm.src.value);
+            StmtInlineAsm *inlineasm = &node->stmt_inlineasm;
+            gen_inlineasm(codegen, inlineasm->src.value);
         } break;
 
         case ASTNODE_VARDECL: {
@@ -153,19 +154,39 @@ static size_t traverse_ast(
         } break;
 
         case ASTNODE_BINOP: {
-            ExprBinOp binop = node->expr_binop;
-            size_t addr_lhs = traverse_ast(binop.lhs, codegen, symboltable);
-            size_t addr_rhs = traverse_ast(binop.rhs, codegen, symboltable);
+            ExprBinOp *binop = &node->expr_binop;
+            size_t addr_lhs = traverse_ast(binop->lhs, codegen, symboltable);
+            size_t addr_rhs = traverse_ast(binop->rhs, codegen, symboltable);
 
-            switch (binop.op.kind) {
+            switch (binop->op.kind) {
                 case TOK_PLUS: {
+                    // TODO: get type
                     gen_addition(codegen, addr_lhs, addr_rhs);
+                } break;
+                case TOK_MINUS: {
+                    // TODO:
+                    assert(!"TODO");
                 } break;
                 default:
                     assert(!"Unimplemented");
                     break;
             }
 
+        } break;
+
+        case ASTNODE_UNARYOP: {
+            ExprUnaryOp *unaryop = &node->expr_unaryop;
+            size_t addr = traverse_ast(unaryop->node, codegen, symboltable);
+
+            switch (unaryop->op.kind) {
+                case TOK_MINUS: {
+                    // TODO:
+                    assert(!"TODO");
+                } break;
+                default:
+                    assert(!"Unimplemented");
+                    break;
+            }
         } break;
 
         case ASTNODE_LITERAL: {

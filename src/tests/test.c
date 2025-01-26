@@ -25,7 +25,9 @@ static TokenList lexer_testcase(
 
     for (size_t i=0; i < tokens.size; ++i) {
         Token *tok = &tokens.items[i];
-        if (memcmp(tok, expected+i, sizeof(Token)))
+        if (tok->kind != expected[i].kind ||
+            strcmp(tok->value, expected[i].value))
+        // if (memcmp(tok, expected+i, sizeof(Token)))
             passed = false;
     }
 

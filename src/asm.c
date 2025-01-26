@@ -52,6 +52,26 @@ const char *inttype_reg_rax(IntegerType type) {
     }
 }
 
+const char *inttype_reg_rdi(IntegerType type) {
+    switch (type) {
+        case INTTYPE_CHAR:
+            return "dil";
+            break;
+        case INTTYPE_SHORT:
+            return "di";
+            break;
+        case INTTYPE_INT:
+            return "edi";
+            break;
+        case INTTYPE_SIZE:
+            return "rdi";
+            break;
+        default:
+            assert(!"Unknown type");
+            break;
+    }
+}
+
 const char *inttype_asm_operand(IntegerType type) {
     switch (type) {
         case INTTYPE_CHAR:
@@ -120,15 +140,16 @@ void gen_addition(CodeGenerator *c, size_t rbp_offset1, size_t rbp_offset2) {
         c->rbp_offset
     );
 
-    // TODO: size!
     fprintf(
         c->file,
         "mov rax, [rbp-%lu]\n"
-        "add qword [rbp-%lu], rax\n"
-        "mov rax, [rbp-%lu]\n"
+        "mov rdi, [rbp-%lu]\n"
+        "add rax, rdi\n"
         "sub rsp, 4\n"
         "mov qword [rbp-%lu], rax\n",
-        rbp_offset1, rbp_offset2, rbp_offset2, c->rbp_offset
+        rbp_offset1,
+        rbp_offset2,
+        c->rbp_offset
     );
 
     gen_comment(c, "END: addition\n");

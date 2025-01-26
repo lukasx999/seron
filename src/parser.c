@@ -13,6 +13,8 @@
 
 
 
+
+
 #define SENTINEL TOK_INVALID
 
 
@@ -48,6 +50,7 @@ void astnodelist_destroy(AstNodeList *list) {
 typedef struct {
     size_t current;
     const TokenList *tokens;
+    const char *src, *filename;
 } Parser;
 
 static inline Token parser_get_current_token(const Parser *p) {
@@ -79,14 +82,96 @@ static bool parser_match_tokenkinds(const Parser *p, ...) {
 }
 
 // Exit if current token is not of the given kind
-static void parser_expect_token(const Parser *p, TokenKind tokenkind, const char *expected_token) {
+static inline void parser_expect_token(const Parser *p, TokenKind tokenkind, const char *expected_token) {
     if (!parser_match_tokenkinds(p, tokenkind, SENTINEL))
         throw_error("Expected %s", expected_token);
+}
+
+static inline void parser_expect_token_cool(
+    const Parser *p,
+    TokenKind     tokenkind,
+    const char   *msg,
+    const char   *expected_token
+) {
+    if (!parser_match_tokenkinds(p, tokenkind, SENTINEL)) {
+
+        // TODO: wrapper function for this mess
+        Token tok = parser_get_current_token(p);
+        fprintf(
+            stderr,
+            "%s:%d:%d: %s%sERROR%s: %s\n",
+            p->filename, tok.pos_line, tok.pos_column,
+            COLOR_BOLD, COLOR_RED, COLOR_END, msg
+        );
+        fprintf(stderr, "");
+        int linecounter = 1;
+        for (size_t i=0; i < strlen(p->src); ++i) {
+            char c = p->src[i];
+
+            if (linecounter == tok.pos_line) {
+                if (i == tok.pos_absolute) {
+                    fprintf(stderr, "%s%s%s", COLOR_GREEN, expected_token, COLOR_END);
+                    i += tok.length - 1;
+                }
+                fprintf(stderr, "%c", c);
+            }
+
+            if (c == '\n')
+                linecounter++;
+
+        }
+
+        exit(1);
+
+
+
+
+
+    }
 }
 
 static inline bool parser_is_at_end(const Parser *p) {
     return parser_match_tokenkinds(p, TOK_EOF, SENTINEL);
 }
+
+
+
+static void parser_print_error_cool(Parser *p) {
+    Token tok = parser_get_current_token(p);
+    fprintf(
+        stderr,
+        "%s:%d:%d: ERROR: you messed up!\n",
+        p->filename,
+        tok.pos_line,
+        tok.pos_column
+    );
+    fprintf(stderr, "");
+    int linecounter = 1;
+    for (size_t i=0; i < strlen(p->src); ++i) {
+        char c = p->src[i];
+
+        if (linecounter == tok.pos_line) {
+            if (i == tok.pos_absolute) {
+                fprintf(stderr, "%s%.*s%s", COLOR_RED, (int) tok.length, p->src+i, COLOR_END);
+                i += tok.length - 1;
+            }
+            fprintf(stderr, "%c", c);
+        }
+
+        if (c == '\n')
+            linecounter++;
+
+    }
+
+    exit(1);
+
+}
+
+
+
+
+
+
 
 void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down, void *args) {
     static int depth = 0;
@@ -144,6 +229,13 @@ void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down, voi
             depth--;
         } break;
 
+        case ASTNODE_UNARYOP: {
+            depth++;
+            ExprUnaryOp unaryop = root->expr_unaryop;
+            parser_traverse_ast(unaryop.node, callback, top_down, args);
+            depth--;
+        } break;
+
         case ASTNODE_INLINEASM:
         case ASTNODE_LITERAL:
             break;
@@ -189,6 +281,11 @@ void parser_print_ast_callback(AstNode *root, int depth, void *_args) {
         case ASTNODE_BINOP: {
             ExprBinOp *binop = &root->expr_binop;
             print_ast_value(tokenkind_to_string(binop->op.kind), COLOR_PURPLE, NULL, NULL);
+        } break;
+
+        case ASTNODE_UNARYOP: {
+            ExprUnaryOp *unaryop = &root->expr_unaryop;
+            print_ast_value(tokenkind_to_string(unaryop->op.kind), COLOR_PURPLE, NULL, NULL);
         } break;
 
         case ASTNODE_CALL: {
@@ -249,6 +346,7 @@ static void parser_free_ast_callback(AstNode *node, int _depth, void *_args) {
         case ASTNODE_FUNC:
         case ASTNODE_VARDECL:
         case ASTNODE_BINOP:
+        case ASTNODE_UNARYOP:
         case ASTNODE_INLINEASM:
             break;
 
@@ -353,7 +451,25 @@ static AstNode *rule_call(Parser *p) {
 
 static AstNode *rule_unary(Parser *p) {
     // unary ::= ("!" | "-") unary | call
-    return rule_call(p);
+
+    if (parser_match_tokenkinds(p, TOK_MINUS, TOK_BANG, SENTINEL)) {
+        Token op = parser_get_current_token(p);
+        parser_advance(p);
+
+        AstNode *node = malloc(sizeof(AstNode));
+
+        node->kind = ASTNODE_UNARYOP;
+        node->expr_unaryop = (ExprUnaryOp) {
+            .op   = op,
+            .node = rule_unary(p),
+        };
+
+        return node;
+
+    } else {
+        return rule_call(p);
+    }
+
 }
 
 static AstNode *rule_factor(Parser *p) {
@@ -417,7 +533,9 @@ static AstNode *rule_vardecl(Parser *p) {
         .value      = rule_expression(p),
     };
 
-    parser_expect_token(p, TOK_SEMICOLON, "`;`");
+    // TODO: this
+    // parser_expect_token(p, TOK_SEMICOLON, "`;`");
+    parser_expect_token_cool(p, TOK_SEMICOLON, "Expected semicolon", ";");
     parser_advance(p);
 
     return vardecl;
@@ -556,8 +674,13 @@ static AstNode *rule_program(Parser *p) {
 
 
 
-AstNode *parser_parse(const TokenList *tokens) {
-    Parser parser = { .current = 0, .tokens = tokens };
+AstNode *parser_parse(const TokenList *tokens, const char *src, const char *filename) {
+    Parser parser = {
+        .current  = 0,
+        .tokens   = tokens,
+        .src      = src,
+        .filename = filename,
+    };
     AstNode *root = rule_program(&parser);
     return root;
 }

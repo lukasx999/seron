@@ -44,6 +44,11 @@ typedef struct {
 } ExprCall;
 
 typedef struct {
+    AstNode *node;
+    Token op;
+} ExprUnaryOp;
+
+typedef struct {
     AstNodeList stmts;
     bool global; // true if block represents the global scope
 } Block;
@@ -67,6 +72,7 @@ typedef enum {
         ASTNODE_LITERAL,
         ASTNODE_GROUPING,
         ASTNODE_BINOP,
+        ASTNODE_UNARYOP,
         ASTNODE_CALL,
         ASTNODE_BLOCK,
         ASTNODE_FUNC,
@@ -80,6 +86,7 @@ struct AstNode {
         ExprLiteral   expr_literal;
         ExprGrouping  expr_grouping;
         ExprBinOp     expr_binop;
+        ExprUnaryOp   expr_unaryop;
         ExprCall      expr_call;
         Block         block;
         StmtFunc      stmt_func;
@@ -90,7 +97,8 @@ struct AstNode {
 
 typedef void (*AstCallback)(AstNode *node, int depth, void *args);
 
-extern AstNode *parser_parse(const TokenList *tokens);
+// src/filename is only needed for errors
+extern AstNode *parser_parse(const TokenList *tokens, const char *src, const char *filename);
 // top_down == true: callback will be called for root node first, and for leaf nodes last
 // top_down == false: callback will be called for leaf nodes first, and for root node last
 extern void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down, void *args);

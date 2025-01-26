@@ -108,9 +108,9 @@ int main(void) {
     char *file = read_file(filename);
 
     TokenList tokens = tokenize(file);
-    // tokenlist_print(&tokens);
+    tokenlist_print(&tokens);
 
-    AstNode *root = parser_parse(&tokens);
+    AstNode *root = parser_parse(&tokens, file, filename);
     parser_print_ast(root);
 
     // check_semantics(root);

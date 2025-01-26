@@ -19,6 +19,7 @@ typedef enum {
     TOK_MINUS,
     TOK_ASTERISK,
     TOK_SLASH,
+    TOK_BANG,
 
     TOK_SEMICOLON,
     TOK_COMMA,
@@ -56,6 +57,8 @@ extern const char *tokenkind_to_string(TokenKind tok);
 typedef struct {
     TokenKind kind;
     char value[BUFSIZ]; // only holds value for literals, otherwise: ""
+    int pos_line, pos_column;
+    size_t pos_absolute, length;
 } Token;
 
 typedef struct {
