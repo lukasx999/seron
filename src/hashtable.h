@@ -18,12 +18,12 @@ typedef struct {
 } Hashtable;
 
 extern Hashtable hashtable_new    (void);
-extern void      hashtable_destroy(Hashtable *ht);
-// returns -1 if key already exists
-extern int       hashtable_insert (Hashtable *ht, const char *key, HashtableValue value);
+extern void hashtable_destroy(Hashtable *ht);
+// returns -1 if key already exists, else 0
+extern int hashtable_insert (Hashtable *ht, const char *key, HashtableValue value);
 // returns NULL if the key does not exist
-extern HashtableValue    *hashtable_get    (const Hashtable *ht, const char *key);
-extern void      hashtable_print  (const Hashtable *ht);
+extern HashtableValue *hashtable_get(const Hashtable *ht, const char *key);
+extern void hashtable_print(const Hashtable *ht);
 
 
 #endif // _HASHTABLE_H

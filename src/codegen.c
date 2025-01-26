@@ -143,7 +143,7 @@ static size_t traverse_ast(
             const char *variable = vardecl->identifier.value;
 
             size_t addr = traverse_ast(vardecl->value, codegen, symboltable);
-            int ret     = symboltable_insert(symboltable, variable, addr);
+            int ret = symboltable_insert(symboltable, variable, addr);
 
             if (ret == -1) {
                 // TODO: add shadowing feature
