@@ -109,12 +109,13 @@ void gen_comment(CodeGenerator *c, const char *fmt, ...) {
     va_end(va);
 }
 
-CodeGenerator gen_new(const char *filename, bool print_comments) {
-    FILE *file = fopen(filename, "w");
+CodeGenerator gen_new(const char *filename_asm, bool print_comments, const char *filename_src) {
+    FILE *file = fopen(filename_asm, "w");
     return (CodeGenerator) {
         .file           = file,
         .rbp_offset     = 0,
         .print_comments = print_comments,
+        .filename_src   = filename_src,
     };
 }
 

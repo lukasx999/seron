@@ -36,7 +36,7 @@ static void check_global_scope(const AstNode *root) {
         }
 
         if (!found)
-            throw_error("Cant do that in global scope");
+            throw_error_simple("Cant do that in global scope");
 
     }
 

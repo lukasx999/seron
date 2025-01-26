@@ -9,8 +9,7 @@
 
 
 
-
-static void throw_cool_thing(
+static void throw_thing(
     const char  *filename,
     const Token *tok,
     bool         is_error, // else warning
@@ -18,7 +17,7 @@ static void throw_cool_thing(
     va_list      va
 ) {
 
-    const char *color = is_error ? COLOR_RED : COLOR_GREEN;
+    const char *color = is_error ? COLOR_RED : COLOR_YELLOW;
     const char *str   = is_error ? "ERROR" : "WARNING";
 
     fprintf(
@@ -35,36 +34,50 @@ static void throw_cool_thing(
         exit(EXIT_FAILURE);
 }
 
-void throw_cool_error(
+void throw_error(
     const char *filename,
     const Token *tok,
     const char *fmt, ...
 ) {
     va_list va;
     va_start(va, fmt);
-    throw_cool_thing(filename, tok, true, fmt, va);
+    throw_thing(filename, tok, true, fmt, va);
     va_end(va);
 }
 
-// TODO: throw_cool_warning()
-
-
-
-void throw_error(const char *fmt, ...) {
+void throw_warning(
+    const char *filename,
+    const Token *tok,
+    const char *fmt, ...
+) {
     va_list va;
     va_start(va, fmt);
-    fprintf(stderr, "%s%sERROR: %s", COLOR_BOLD, COLOR_RED, COLOR_END);
-    vfprintf(stderr, fmt, va);
-    fprintf(stderr, "\n");
+    throw_thing(filename, tok, false, fmt, va);
     va_end(va);
-    exit(EXIT_FAILURE);
 }
 
-void throw_warning(const char *fmt, ...) {
-    va_list va;
-    va_start(va, fmt);
-    fprintf(stderr, "%s%sWARNING: %s", COLOR_BOLD, COLOR_YELLOW, COLOR_END);
+static void throw_thing_simle(bool is_error, const char *fmt, va_list va) {
+    const char *str = is_error ? "ERROR" : "WARNING";
+    const char *color = is_error ? COLOR_RED : COLOR_YELLOW;
+
+    fprintf(stderr, "%s%s%s: %s", COLOR_BOLD, color, str, COLOR_END);
     vfprintf(stderr, fmt, va);
     fprintf(stderr, "\n");
+
+    if (is_error)
+        exit(EXIT_FAILURE);
+}
+
+void throw_error_simple(const char *fmt, ...) {
+    va_list va;
+    va_start(va, fmt);
+    throw_thing_simle(true, fmt, va);
+    va_end(va);
+}
+
+void throw_warning_simple(const char *fmt, ...) {
+    va_list va;
+    va_start(va, fmt);
+    throw_thing_simle(false, fmt, va);
     va_end(va);
 }

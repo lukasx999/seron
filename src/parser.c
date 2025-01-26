@@ -88,8 +88,13 @@ static inline void parser_expect_token(
 ) {
     if (!parser_match_tokenkinds(p, tokenkind, SENTINEL)) {
         Token tok = parser_get_current_token(p);
-        throw_cool_error(p->filename, &tok, "Expected `%s`", expected);
+        throw_error(p->filename, &tok, "Expected `%s`", expected);
     }
+}
+
+static inline void parser_throw_error(const Parser *p, const char *msg) {
+    Token tok = parser_get_current_token(p);
+    throw_error(p->filename, &tok, "%s", msg);
 }
 
 static inline bool parser_is_at_end(const Parser *p) {
@@ -322,7 +327,7 @@ static AstNode *rule_primary(Parser *p) {
         parser_advance(p);
 
         if (parser_match_tokenkinds(p, TOK_RPAREN, SENTINEL))
-            throw_error("Don't write functional code!");
+            parser_throw_error(p, "Don't write functional code!");
 
         astnode->kind          = ASTNODE_GROUPING;
         astnode->expr_grouping = (ExprGrouping) {
@@ -360,7 +365,7 @@ static AstNode *rule_call(Parser *p) {
                 parser_advance(p);
 
                 if (parser_match_tokenkinds(p, TOK_RPAREN, SENTINEL))
-                    throw_error("Extraneous `,`");
+                    parser_throw_error(p,"Extraneous `,`");
             }
         }
 
@@ -441,7 +446,8 @@ static AstNode *rule_vardecl(Parser *p) {
 
     Token type = parser_get_current_token(p);
     if (!tokenkind_is_type(type.kind))
-        throw_error("Unknown type `%s`", type.value);
+        throw_error(p->filename, &type, "Unknown type `%s`", type.value);
+
     parser_advance(p);
 
     parser_expect_token(p, TOK_ASSIGN, "=");
@@ -533,7 +539,7 @@ static AstNode *rule_block(Parser *p) {
 
     while (!parser_match_tokenkinds(p, TOK_RBRACE, SENTINEL)) {
         if (parser_is_at_end(p))
-            throw_error("Unmatching brace");
+            throw_error_simple("Unmatching brace");
 
         astnodelist_append(&node->block.stmts, rule_stmt(p));
     }

@@ -21,16 +21,16 @@ static void check_fileextension(const char *filename, const char *extension) {
 
     size_t dot_offset = strcspn(filename, ".");
     if (dot_offset == strlen(filename))
-        throw_error("File extension missing");
+        throw_error_simple("File extension missing");
 
     if (strncmp(filename + dot_offset + 1, extension, strlen(extension)))
-        throw_error("File extension must be `.%s`", extension);
+        throw_error_simple("File extension must be `.%s`", extension);
 }
 
 static char *read_file(const char *filename) {
     FILE *file = fopen(filename, "rb");
     if (file == NULL)
-        throw_error("Source file `%s` does not exist", filename);
+        throw_error_simple("Source file `%s` does not exist", filename);
 
     struct stat statbuf = { 0 };
     stat(filename, &statbuf);
@@ -96,9 +96,15 @@ static void build_binary(
 // TODO: metaprogramming
 // TODO: cmdline args
 // TODO: type checking + semantic analysis
-// TODO: symbol table
-// TODO: lexer track token position
+// TODO: finishing symbol table (+type)
+// TODO: synchronizing parser
+// TODO: refactoring lexer
 
+// TODO:
+/*
+cmdline args:
+-W, -S, -c, --dump-ast, --dump-tokenstream, -lc, --run
+*/
 
 int main(void) {
 
@@ -108,7 +114,7 @@ int main(void) {
     char *file = read_file(filename);
 
     TokenList tokens = tokenize(file);
-    tokenlist_print(&tokens);
+    // tokenlist_print(&tokens);
 
     AstNode *root = parser_parse(&tokens, filename);
     parser_print_ast(root);
@@ -133,7 +139,7 @@ int main(void) {
     memset(filename_obj, 0, bufsize);
     snprintf(filename_obj, bufsize, "%s.o", filename_bin);
 
-    generate_code(root,filename_asm, true);
+    generate_code(root,filename_asm, true, filename);
     build_binary(filename_asm, filename_obj, filename_bin, false);
 
 

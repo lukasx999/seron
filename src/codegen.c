@@ -196,7 +196,12 @@ static size_t traverse_ast(
             if (ret == -1) {
                 // TODO: add shadowing feature
                 symboltable_override(symboltable, variable, addr);
-                throw_warning("Variable `%s` already exists", variable);
+                throw_warning(
+                    codegen->filename_src,
+                    &vardecl->identifier,
+                    "Variable `%s` already exists",
+                    variable
+                );
             }
         } break;
 
@@ -252,7 +257,12 @@ static size_t traverse_ast(
                     HashtableValue *addr = symboltable_get(symboltable, variable);
 
                     if (addr == NULL)
-                        throw_error("Variable `%s` does not exist", variable);
+                        throw_error(
+                            codegen->filename_src,
+                            &literal->op,
+                            "Variable `%s` does not exist",
+                            variable
+                        );
 
                     // TODO: handle type
                     gen_copy_value(codegen, *addr, INTTYPE_INT);
@@ -273,9 +283,14 @@ static size_t traverse_ast(
 
 }
 
-void generate_code(AstNode *root, const char *filename, bool print_comments) {
-    CodeGenerator codegen = gen_new(filename, print_comments);
+void generate_code(
+    AstNode    *root,
+    const char *filename_asm,
+    bool        print_comments,
+    const char *filename_src
+) {
 
+    CodeGenerator codegen = gen_new(filename_asm, print_comments, filename_src);
     Symboltable symboltable = symboltable_new();
 
     gen_prelude(&codegen);

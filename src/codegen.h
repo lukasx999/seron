@@ -7,7 +7,14 @@
 #include "parser.h"
 
 
-extern void generate_code(AstNode *root, const char *filename, bool print_comments);
+typedef struct {
+    FILE *file;
+    size_t rbp_offset;
+    bool print_comments;
+    const char *filename_src;
+} CodeGenerator;
+
+extern void generate_code(AstNode *root, const char *filename_asm, bool print_comments, const char *filename_src);
 
 
 

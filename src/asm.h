@@ -6,6 +6,7 @@
 #include <stdbool.h>
 
 #include "lexer.h"
+#include "codegen.h"
 
 
 
@@ -24,13 +25,8 @@ extern const char *inttype_asm_operand  (IntegerType type);
 
 
 
-typedef struct {
-    FILE *file;
-    size_t rbp_offset;
-    bool print_comments;
-} CodeGenerator;
-
-extern CodeGenerator gen_new           (const char *filename, bool print_comments);
+// TODO: possibly move this to codegen.h
+extern CodeGenerator gen_new           (const char *filename_asm, bool print_comments, const char *filename_src);
 extern void          gen_destroy       (CodeGenerator *c);
 extern void          gen_comment       (CodeGenerator *c, const char *fmt, ...);
 extern void          gen_prelude       (CodeGenerator *c);
