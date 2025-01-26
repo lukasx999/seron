@@ -37,7 +37,7 @@ extern void          gen_prelude       (CodeGenerator *c);
 extern void          gen_postlude      (CodeGenerator *c);
 extern void          gen_addition      (CodeGenerator *c, size_t rbp_offset1, size_t rbp_offset2);
 extern void          gen_copy_value    (CodeGenerator *c, size_t addr, IntegerType type);
-extern void          gen_store_value   (CodeGenerator *c, size_t value, IntegerType type);
+extern void          gen_store_value   (CodeGenerator *c, int64_t value, IntegerType type);
 extern void          gen_inlineasm     (CodeGenerator *c, const char *src);
 extern void          gen_func_start    (CodeGenerator *c, const char *identifier);
 extern void          gen_func_end      (CodeGenerator *c);

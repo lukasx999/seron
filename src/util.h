@@ -37,6 +37,15 @@ static inline void throw_error(const char *fmt, ...) {
     exit(EXIT_FAILURE);
 }
 
+static inline void throw_warning(const char *fmt, ...) {
+    va_list va;
+    va_start(va, fmt);
+    fprintf(stderr, "%s%sWARNING: %s", COLOR_BOLD, COLOR_YELLOW, COLOR_END);
+    vfprintf(stderr, fmt, va);
+    fprintf(stderr, "\n");
+    va_end(va);
+}
+
 
 
 #endif // _UTIL_H

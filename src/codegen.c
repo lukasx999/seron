@@ -16,11 +16,11 @@
 typedef struct {
     size_t size, capacity;
     Hashtable *items;
-} Symboltables;
+} Symboltable; // Symboltable is a stack of hashtables
 
 
-static Symboltables symboltables_new(void) {
-    Symboltables st = {
+static Symboltable symboltable_new(void) {
+    Symboltable st = {
         .size     = 0,
         .capacity = 5,
         .items    = NULL,
@@ -31,13 +31,12 @@ static Symboltables symboltables_new(void) {
     return st;
 }
 
-static void symboltables_destroy(Symboltables *st) {
-    // TODO: memory leak - deallocate hashtables
+static void symboltable_destroy(Symboltable *st) {
     free(st->items);
     st->items = NULL;
 }
 
-static void symboltables_push(Symboltables *st) {
+static void symboltable_push(Symboltable *st) {
     if (st->size == st->capacity) {
         st->capacity *= 2;
         st->items = realloc(st->items, st->capacity * sizeof(Hashtable));
@@ -46,18 +45,18 @@ static void symboltables_push(Symboltables *st) {
     st->items[st->size++] = hashtable_new();
 }
 
-static void symboltables_pop(Symboltables *st) {
+static void symboltable_pop(Symboltable *st) {
     Hashtable *ht = &st->items[st->size-1];
     hashtable_destroy(ht);
     st->size--;
 }
 
-static int symboltables_insert(Symboltables *st, const char *key, HashtableValue value) {
+static int symboltable_insert(Symboltable *st, const char *key, HashtableValue value) {
     Hashtable *ht = &st->items[st->size-1];
     return hashtable_insert(ht, key, value);
 }
 
-static HashtableValue *symboltables_get(const Symboltables *st, const char *key) {
+static HashtableValue *symboltable_get(const Symboltable *st, const char *key) {
 
     for (size_t i=0; i < st->size; ++i) {
         size_t rev = st->size - 1 - i;
@@ -71,12 +70,20 @@ static HashtableValue *symboltables_get(const Symboltables *st, const char *key)
     return NULL;
 }
 
-static void symboltables_print(const Symboltables *st) {
+static void symboltable_override(Symboltable *st, const char *key, HashtableValue value) {
+    Hashtable *ht = &st->items[st->size-1];
+    assert(hashtable_insert(ht, key, value) == -1);
+    *hashtable_get(ht, key) = value;
+}
+
+static void symboltable_print(const Symboltable *st) {
+    printf("== symboltable(start) ==\n");
     for (size_t i=0; i < st->size; ++i) {
         printf("\n");
         hashtable_print(&st->items[i]);
         printf("\n");
     }
+    printf("== symboltable(end) ==\n\n");
 }
 
 
@@ -87,39 +94,42 @@ static void symboltables_print(const Symboltables *st) {
 
 
 // returns the location of the evaluated expression in memory
-static size_t traverse_ast(AstNode *node, CodeGenerator *codegen, Symboltables *st) {
+static size_t traverse_ast(
+    AstNode       *node,
+    CodeGenerator *codegen,
+    Symboltable   *symboltable
+) {
 
     switch (node->kind) {
 
         case ASTNODE_BLOCK: {
-            symboltables_push(st);
+            symboltable_push(symboltable);
 
             AstNodeList list = node->block.stmts;
             for (size_t i=0; i < list.size; ++i)
-                traverse_ast(list.items[i], codegen, st);
+                traverse_ast(list.items[i], codegen, symboltable);
 
-            symboltables_print(st);
-            symboltables_pop(st);
+            symboltable_pop(symboltable);
         } break;
 
         case ASTNODE_CALL: {
             ExprCall call    = node->expr_call;
             AstNodeList list = call.args;
             for (size_t i=0; i < list.size; ++i)
-                traverse_ast(list.items[i], codegen, st);
+                traverse_ast(list.items[i], codegen, symboltable);
 
             // HACK: call into address instead of identifier
             gen_call(codegen, call.callee->expr_literal.op.value);
         } break;
 
         case ASTNODE_GROUPING:
-            traverse_ast(node->expr_grouping.expr, codegen, st);
+            traverse_ast(node->expr_grouping.expr, codegen, symboltable);
             break;
 
         case ASTNODE_FUNC: {
             StmtFunc func = node->stmt_func;
             gen_func_start(codegen, func.identifier.value);
-            traverse_ast(func.body, codegen, st);
+            traverse_ast(func.body, codegen, symboltable);
             gen_func_end(codegen);
         } break;
 
@@ -132,18 +142,20 @@ static size_t traverse_ast(AstNode *node, CodeGenerator *codegen, Symboltables *
             StmtVarDecl *vardecl = &node->stmt_vardecl;
             const char *variable = vardecl->identifier.value;
 
-            size_t addr = traverse_ast(vardecl->value, codegen, st);
-            int ret = symboltables_insert(st, variable, addr);
+            size_t addr = traverse_ast(vardecl->value, codegen, symboltable);
+            int ret     = symboltable_insert(symboltable, variable, addr);
 
-            // TODO: allow variable shadowing via hashtable_get()
-            if (ret == -1)
-                throw_error("Variable `%s` already exists", variable);
+            if (ret == -1) {
+                // TODO: add shadowing feature
+                symboltable_override(symboltable, variable, addr);
+                throw_warning("Variable `%s` already exists", variable);
+            }
         } break;
 
         case ASTNODE_BINOP: {
             ExprBinOp binop = node->expr_binop;
-            size_t addr_lhs = traverse_ast(binop.lhs, codegen, st);
-            size_t addr_rhs = traverse_ast(binop.rhs, codegen, st);
+            size_t addr_lhs = traverse_ast(binop.lhs, codegen, symboltable);
+            size_t addr_rhs = traverse_ast(binop.rhs, codegen, symboltable);
 
             switch (binop.op.kind) {
                 case TOK_PLUS: {
@@ -162,14 +174,14 @@ static size_t traverse_ast(AstNode *node, CodeGenerator *codegen, Symboltables *
             switch (literal->op.kind) {
 
                 case TOK_NUMBER: {
-                    int num = atoi(literal->op.value);
-                    assert(num != 0);
+                    const char *str = literal->op.value;
+                    int64_t num = atoll(str);
                     gen_store_value(codegen, num, INTTYPE_INT);
                 } break;
 
                 case TOK_IDENTIFIER: {
                     const char *variable = literal->op.value;
-                    HashtableValue *addr = symboltables_get(st, variable);
+                    HashtableValue *addr = symboltable_get(symboltable, variable);
 
                     if (addr == NULL)
                         throw_error("Variable `%s` does not exist", variable);
@@ -196,14 +208,14 @@ static size_t traverse_ast(AstNode *node, CodeGenerator *codegen, Symboltables *
 void generate_code(AstNode *root, const char *filename, bool print_comments) {
     CodeGenerator codegen = gen_new(filename, print_comments);
 
-    Symboltables st = symboltables_new();
+    Symboltable symboltable = symboltable_new();
 
     gen_prelude(&codegen);
-    traverse_ast(root, &codegen, &st);
+    traverse_ast(root, &codegen, &symboltable);
     gen_postlude(&codegen);
 
-    assert(st.size == 0);
+    assert(symboltable.size == 0);
 
-    symboltables_destroy(&st);
+    symboltable_destroy(&symboltable);
     gen_destroy(&codegen);
 }

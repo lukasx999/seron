@@ -151,7 +151,7 @@ void gen_copy_value(CodeGenerator *c, size_t addr, IntegerType type) {
     gen_comment(c, "END: copy\n");
 }
 
-void gen_store_value(CodeGenerator *c, size_t value, IntegerType type) {
+void gen_store_value(CodeGenerator *c, int64_t value, IntegerType type) {
     c->rbp_offset += type;
     gen_comment(c, "START: store(%lu -> [rbp-%lu])", value, c->rbp_offset);
 

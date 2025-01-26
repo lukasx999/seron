@@ -108,7 +108,7 @@ int main(void) {
     char *file = read_file(filename);
 
     TokenList tokens = tokenize(file);
-    tokenlist_print(&tokens);
+    // tokenlist_print(&tokens);
 
     AstNode *root = parser_parse(&tokens);
     parser_print_ast(root);

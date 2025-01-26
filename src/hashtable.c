@@ -17,10 +17,10 @@ static size_t hash(size_t size, const char *key) {
     return sum % size;
 }
 
-static HashtableEntry *new_empty_entry(void) {
+static HashtableEntry *new_hashtable_entry(const char *key, HashtableValue value) {
     HashtableEntry *entry = malloc(sizeof(HashtableEntry));
-    entry->key   = NULL;
-    entry->value = 0;
+    entry->key   = key;
+    entry->value = value;
     entry->next  = NULL;
 
     return entry;
@@ -60,12 +60,8 @@ int hashtable_insert(Hashtable *ht, const char *key, HashtableValue value) {
     size_t index = hash(ht->size, key);
     HashtableEntry *current = ht->buckets[index];
 
-    HashtableEntry *new = new_empty_entry();
-    new->key   = key;
-    new->value = value;
-
     if (current == NULL) {
-        ht->buckets[index] = new;
+        ht->buckets[index] = new_hashtable_entry(key, value);
         return 0;
     }
 
@@ -74,7 +70,7 @@ int hashtable_insert(Hashtable *ht, const char *key, HashtableValue value) {
             return -1;
 
         if (current->next == NULL) {
-            current->next = new;
+            current->next = new_hashtable_entry(key, value);
             return 0;
         }
 
