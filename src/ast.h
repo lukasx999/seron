@@ -37,7 +37,6 @@ typedef enum {
 
 typedef struct {
     Token op;
-    // TODO: add type information
 } ExprLiteral;
 
 typedef struct {
@@ -63,7 +62,6 @@ typedef struct {
 
 typedef struct {
     AstNodeList stmts;
-    bool global; // true if block represents the global scope
 } Block;
 
 typedef struct {

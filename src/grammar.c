@@ -235,7 +235,6 @@ AstNode *rule_block(Parser *p) {
     node->kind    = ASTNODE_BLOCK;
     node->block   = (Block) {
         .stmts  = astnodelist_new(),
-        .global = false
     };
 
     while (!parser_match_tokenkinds(p, TOK_RBRACE, SENTINEL)) {
@@ -287,7 +286,6 @@ AstNode *rule_program(Parser *p) {
     node->kind    = ASTNODE_BLOCK;
     node->block   = (Block) {
         .stmts  = astnodelist_new(),
-        .global = true
     };
 
     while (!parser_is_at_end(p))

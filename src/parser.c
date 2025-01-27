@@ -63,7 +63,7 @@ bool parser_is_at_end(const Parser *p) {
 }
 
 void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down, void *args) {
-    int depth = 0;
+    static int depth = 0;
     if (top_down)
         callback(root, depth, args);
 
@@ -163,7 +163,7 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *_args) {
                 "block",
                 COLOR_BLUE,
                 NULL,
-                block->global ? "global" : NULL
+                NULL
             );
         } break;
 

@@ -73,22 +73,6 @@
    "-std=c11",
    "-pedantic",
    "-c",
-   "hashtable.c",
-   "-o",
-   "hashtable.o"
-  ],
-  "file": "hashtable.c"
- },
- {
-  "directory": "/home/lukas/Code/Projects/sprox/src",
-  "arguments": [
-   "gcc",
-   "-Wall",
-   "-Wextra",
-   "-ggdb",
-   "-std=c11",
-   "-pedantic",
-   "-c",
    "analysis.c",
    "-o",
    "analysis.o"
@@ -158,5 +142,37 @@
    "tests/test.o"
   ],
   "file": "tests/test.c"
+ },
+ {
+  "directory": "/home/lukas/Code/Projects/sprox/src",
+  "arguments": [
+   "gcc",
+   "-Wall",
+   "-Wextra",
+   "-ggdb",
+   "-std=c11",
+   "-pedantic",
+   "-c",
+   "grammar.c",
+   "-o",
+   "grammar.o"
+  ],
+  "file": "grammar.c"
+ },
+ {
+  "directory": "/home/lukas/Code/Projects/sprox/src",
+  "arguments": [
+   "gcc",
+   "-Wall",
+   "-Wextra",
+   "-ggdb",
+   "-std=c11",
+   "-pedantic",
+   "-c",
+   "ast.c",
+   "-o",
+   "ast.o"
+  ],
+  "file": "ast.c"
  }
 ]

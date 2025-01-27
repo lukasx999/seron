@@ -15,7 +15,6 @@
 static void check_global_scope(const AstNode *root) {
 
     assert(root->kind == ASTNODE_BLOCK);
-    assert(root->block.global);
     AstNodeList globals = root->block.stmts;
 
     AstNodeKind allowed_kinds[] = {
