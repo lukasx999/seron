@@ -24,23 +24,22 @@ extern const char *inttype_reg_rax      (IntegerType type);
 extern const char *inttype_asm_operand  (IntegerType type);
 
 
-
-// TODO: possibly move this to codegen.h
 extern CodeGenerator gen_new           (const char *filename_asm, bool print_comments, const char *filename_src);
 extern void          gen_destroy       (CodeGenerator *c);
 extern void          gen_comment       (CodeGenerator *c, const char *fmt, ...);
 extern void          gen_prelude       (CodeGenerator *c);
 extern void          gen_postlude      (CodeGenerator *c);
-extern void          gen_addition      (CodeGenerator *c, size_t rbp_offset1, size_t rbp_offset2);
-extern void          gen_copy_value    (CodeGenerator *c, size_t addr, IntegerType type);
-extern void          gen_store_value   (CodeGenerator *c, int64_t value, IntegerType type);
 
-// addrs is an array containing the addresses (rbp-offsets) of the arguments
+
+extern size_t        gen_addition      (CodeGenerator *c, size_t rbp_offset1, size_t rbp_offset2);
+extern size_t        gen_store_value   (CodeGenerator *c, int64_t value, IntegerType type);
 extern void          gen_inlineasm     (CodeGenerator *c, const char *src, const size_t *addrs, size_t addrs_len);
-
 extern void          gen_func_start    (CodeGenerator *c, const char *identifier);
 extern void          gen_func_end      (CodeGenerator *c);
 extern void          gen_call          (CodeGenerator *c, const char *identifier);
+
+
+
 
 
 

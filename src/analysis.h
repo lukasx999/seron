@@ -3,6 +3,7 @@
 
 #include "parser.h"
 
-extern void check_semantics(AstNode *root);
+
+extern void build_symboltable(const AstNode *root);
 
 #endif // _SEMANTIC_ANALYSIS_H

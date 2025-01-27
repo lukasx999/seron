@@ -131,8 +131,7 @@ void gen_prelude(CodeGenerator *c) {
 void gen_postlude(CodeGenerator *c) {
 }
 
-// TODO: this should return the address of the result
-void gen_addition(CodeGenerator *c, size_t rbp_offset1, size_t rbp_offset2) {
+size_t gen_addition(CodeGenerator *c, size_t rbp_offset1, size_t rbp_offset2) {
     c->rbp_offset += 4;
     gen_comment(
         c,
@@ -142,54 +141,36 @@ void gen_addition(CodeGenerator *c, size_t rbp_offset1, size_t rbp_offset2) {
         c->rbp_offset
     );
 
-    fprintf(
-        c->file,
-        "mov rax, [rbp-%lu]\n"
-        "mov rdi, [rbp-%lu]\n"
-        "add rax, rdi\n"
-        "sub rsp, 4\n"
-        "mov qword [rbp-%lu], rax\n",
-        rbp_offset1,
-        rbp_offset2,
-        c->rbp_offset
-    );
+    FILE *f = c->file;
+    fprintf(f, "mov rax, [rbp-%lu]\n", rbp_offset1        );
+    fprintf(f, "mov rdi, [rbp-%lu]\n", rbp_offset2        );
+    fprintf(f, "add rax, rdi\n"                           );
+    fprintf(f, "sub rsp, 4\n"                             );
+    fprintf(f, "mov qword [rbp-%lu], rax\n", c->rbp_offset);
 
     gen_comment(c, "END: addition\n");
+    return c->rbp_offset;
 }
 
-// TODO: not needed anymore?
-void gen_copy_value(CodeGenerator *c, size_t addr, IntegerType type) {
-    c->rbp_offset += type;
-    gen_comment(c, "START: copy([rbp-%lu] -> [rbp-%lu])", addr, c->rbp_offset);
-
-    fprintf(
-        c->file,
-        "sub rsp, %d\n"
-        "mov %s, [rbp-%lu]\n"
-        "mov %s [rbp-%lu], %s\n",
-        type,
-        inttype_reg_rax(type), addr,
-        inttype_asm_operand(type), c->rbp_offset, inttype_reg_rax(type)
-    );
-
-    gen_comment(c, "END: copy\n");
-}
-
-void gen_store_value(CodeGenerator *c, int64_t value, IntegerType type) {
+size_t gen_store_value(CodeGenerator *c, int64_t value, IntegerType type) {
     c->rbp_offset += type;
     gen_comment(c, "START: store(%lu -> [rbp-%lu])", value, c->rbp_offset);
 
+    FILE *f = c->file;
+    fprintf(f, "sub rsp, %d\n", type);
     fprintf(
-        c->file,
-        "sub rsp, %d\n"
+        f,
         "mov %s [rbp-%lu], %lu\n",
-        type,
-        inttype_asm_operand(type), c->rbp_offset, value
+        inttype_asm_operand(type),
+        c->rbp_offset,
+        value
     );
 
     gen_comment(c, "END: store\n");
+    return c->rbp_offset;
 }
 
+// addrs is an array containing the addresses (rbp-offsets) of the arguments
 void gen_inlineasm(
     CodeGenerator *c,
     const char    *src,
@@ -223,13 +204,11 @@ void gen_func_start(CodeGenerator *c, const char *identifier) {
     gen_comment(c, "START: function");
     gen_comment(c, "START: function_prelude");
 
-    fprintf(
-        c->file,
-        "global %s\n"
-        "%s:\n"
-        "push rbp\n"
-        "mov rbp, rsp\n", identifier, identifier
-    );
+    FILE *f = c->file;
+    fprintf(f, "global %s\n", identifier);
+    fprintf(f, "%s:\n",       identifier);
+    fprintf(f, "push rbp\n"             );
+    fprintf(f, "mov rbp, rsp\n"         );
 
     gen_comment(c, "END: function_prelude\n");
 }
@@ -237,11 +216,9 @@ void gen_func_start(CodeGenerator *c, const char *identifier) {
 void gen_func_end(CodeGenerator *c) {
     gen_comment(c, "START: function_postlude");
 
-    fprintf(
-        c->file,
-        "pop rbp\n"
-        "ret\n"
-    );
+    FILE *f = c->file;
+    fprintf(f, "pop rbp\n");
+    fprintf(f, "ret\n"    );
 
     gen_comment(c, "END: function_postlude");
     gen_comment(c, "END: function\n");

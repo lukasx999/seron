@@ -123,7 +123,7 @@ int main(void) {
     AstNode *root = parser_parse(&tokens, filename);
     parser_print_ast(root);
 
-    // check_semantics(root);
+    build_symboltable(root);
 
 
 

@@ -9,95 +9,139 @@
 #include "lexer.h"
 #include "parser.h"
 #include "analysis.h"
+#include "symboltable.h"
 
 
+typedef struct {
+    size_t size, capacity;
+    Hashtable *items;
+} Hashtables;
 
-static void check_global_scope(const AstNode *root) {
-
-    assert(root->kind == ASTNODE_BLOCK);
-    AstNodeList globals = root->block.stmts;
-
-    AstNodeKind allowed_kinds[] = {
-        ASTNODE_FUNC,
-        ASTNODE_VARDECL,
+static Hashtables hashtables_new(void) {
+    Hashtables hts = {
+        .size     = 0,
+        .capacity = 5,
+        .items    = NULL,
     };
+    hts.items = malloc(sizeof(Hashtable) * hts.capacity);
+    return hts;
+}
 
-    for (size_t i=0; i < globals.size; ++i) {
-        AstNode *node = globals.items[i];
-
-        bool found = false;
-        for (size_t j=0; j < ARRAY_LEN(allowed_kinds); ++j) {
-            if (node->kind == allowed_kinds[j]) {
-                found = true;
-                break;
-            }
-        }
-
-        if (!found)
-            throw_error_simple("Cant do that in global scope");
-
+static void hashtables_append(Hashtables *hts, Hashtable *parent) {
+    if (hts->size == hts->capacity) {
+        hts->capacity *= 2;
+        hts->items = realloc(hts->items, sizeof(Hashtable) * hts->capacity);
     }
 
+    hts->items[hts->size++] = hashtable_new();
+}
+
+typedef struct {
+    Hashtable **items;
+} Stack;
+
+static void stack_view_top(const Stack *stack) {
+}
+
+static void stack_push(const Stack *stack) {
 }
 
 
+/*
+2 datastructures:
+- symboltable (dynarray of hashmaps)
+- stack of pointers to hashmaps
 
-// TODO: type checker returns type of expression
+when entering a scope:
+- append hashtable to dynarray
+  - parent of that hashtable is whatever address is on top of the stack
+- put a pointer to that hashtable in the astnode of the block
+- push the address of said table to the stack
 
-static void typechecking(AstNode *node) {
+when leaving a scope:
+- pop from the stack
 
-    switch (node->kind) {
+
+now we can look up a symbol be traversing the symboltable upwards
+by following pointers around
+
+*/
+
+
+
+
+
+// TODO:
+
+#if 0
+
+void traverse_ast(const AstNode *root, Hashtables *hts, Stack *stack) {
+
+    switch (root->kind) {
 
         case ASTNODE_BLOCK: {
-            AstNodeList list = node->block.stmts;
+            AstNodeList list = root->block.stmts;
+
+            void *ht = hashtables_append(hts, stack_view_top(stack));
+            stack_push(ht);
+
             for (size_t i=0; i < list.size; ++i)
-                typechecking(list.items[i]);
+                traverse_ast(list.items[i], hts);
+
+            stack_pop();
+
         } break;
 
         case ASTNODE_CALL: {
-            ExprCall call    = node->expr_call;
+            ExprCall call = root->expr_call;
+
+            traverse_ast(call.callee, hts);
+
             AstNodeList list = call.args;
             for (size_t i=0; i < list.size; ++i)
-                typechecking(list.items[i]);
+                traverse_ast(list.items[i], hts);
+
         } break;
 
         case ASTNODE_GROUPING:
-            typechecking(node->expr_grouping.expr);
+            traverse_ast(root->expr_grouping.expr, hts);
             break;
 
-        case ASTNODE_FUNC: {
-            StmtFunc func = node->stmt_func;
-            typechecking(func.body);
-        } break;
+        case ASTNODE_FUNC:
+            traverse_ast(root->stmt_func.body, hts);
+            break;
 
         case ASTNODE_VARDECL:
-            typechecking(node->stmt_vardecl.value);
+            traverse_ast(root->stmt_vardecl.value, hts);
             break;
 
         case ASTNODE_BINOP: {
-            ExprBinOp binop = node->expr_binop;
-            typechecking(binop.lhs);
-            typechecking(binop.rhs);
-
+            ExprBinOp binop = root->expr_binop;
+            traverse_ast(binop.lhs, hts);
+            traverse_ast(binop.rhs, hts);
         } break;
 
-        case ASTNODE_LITERAL: {
-            ExprLiteral literal = node->expr_literal;
-
+        case ASTNODE_UNARYOP: {
+            ExprUnaryOp unaryop = root->expr_unaryop;
+            traverse_ast(unaryop.node, hts);
         } break;
+
+        case ASTNODE_LITERAL:
+            break;
 
         default:
             assert(!"Unexpected Node Kind");
             break;
     }
 
+
 }
+#endif
 
 
+void build_symboltable(const AstNode *root) {
+    Hashtables hts = hashtables_new();
 
+    // traverse_ast(root, &hts);
 
-
-void check_semantics(AstNode *root) {
-    check_global_scope(root);
-    typechecking(root);
 }

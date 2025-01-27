@@ -110,9 +110,6 @@ static void builtinasm(
 
 
 
-
-
-
 // returns the location of the evaluated expression in memory
 static size_t traverse_ast(
     AstNode       *node,
@@ -199,7 +196,7 @@ static size_t traverse_ast(
             switch (binop->op.kind) {
                 case TOK_PLUS: {
                     // TODO: get type
-                    gen_addition(codegen, addr_lhs, addr_rhs);
+                    return gen_addition(codegen, addr_lhs, addr_rhs);
                 } break;
                 case TOK_MINUS: {
                     // TODO:
@@ -234,20 +231,21 @@ static size_t traverse_ast(
                 case TOK_NUMBER: {
                     const char *str = literal->op.value;
                     int64_t num = atoll(str);
-                    gen_store_value(codegen, num, INTTYPE_INT);
+                    return gen_store_value(codegen, num, INTTYPE_INT);
                 } break;
 
                 case TOK_IDENTIFIER: {
                     const char *variable = literal->op.value;
                     HashtableValue *addr = symboltable_get(symboltable, variable);
 
-                    if (addr == NULL)
+                    if (addr == NULL) {
                         throw_error(
                             codegen->filename_src,
                             &literal->op,
                             "Variable `%s` does not exist",
                             variable
                         );
+                    }
 
                     // TODO: handle type
                     return *addr;
@@ -264,7 +262,8 @@ static size_t traverse_ast(
             break;
     }
 
-    return codegen->rbp_offset;
+    // TODO:
+    // assert(!"unreachable");
 
 }
 
