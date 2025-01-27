@@ -1,0 +1,162 @@
+[
+ {
+  "directory": "/home/lukas/Code/Projects/sprox/src",
+  "arguments": [
+   "gcc",
+   "-Wall",
+   "-Wextra",
+   "-ggdb",
+   "-std=c11",
+   "-pedantic",
+   "-c",
+   "main.c",
+   "-o",
+   "main.o"
+  ],
+  "file": "main.c"
+ },
+ {
+  "directory": "/home/lukas/Code/Projects/sprox/src",
+  "arguments": [
+   "gcc",
+   "-Wall",
+   "-Wextra",
+   "-ggdb",
+   "-std=c11",
+   "-pedantic",
+   "-c",
+   "lexer.c",
+   "-o",
+   "lexer.o"
+  ],
+  "file": "lexer.c"
+ },
+ {
+  "directory": "/home/lukas/Code/Projects/sprox/src",
+  "arguments": [
+   "gcc",
+   "-Wall",
+   "-Wextra",
+   "-ggdb",
+   "-std=c11",
+   "-pedantic",
+   "-c",
+   "parser.c",
+   "-o",
+   "parser.o"
+  ],
+  "file": "parser.c"
+ },
+ {
+  "directory": "/home/lukas/Code/Projects/sprox/src",
+  "arguments": [
+   "gcc",
+   "-Wall",
+   "-Wextra",
+   "-ggdb",
+   "-std=c11",
+   "-pedantic",
+   "-c",
+   "codegen.c",
+   "-o",
+   "codegen.o"
+  ],
+  "file": "codegen.c"
+ },
+ {
+  "directory": "/home/lukas/Code/Projects/sprox/src",
+  "arguments": [
+   "gcc",
+   "-Wall",
+   "-Wextra",
+   "-ggdb",
+   "-std=c11",
+   "-pedantic",
+   "-c",
+   "hashtable.c",
+   "-o",
+   "hashtable.o"
+  ],
+  "file": "hashtable.c"
+ },
+ {
+  "directory": "/home/lukas/Code/Projects/sprox/src",
+  "arguments": [
+   "gcc",
+   "-Wall",
+   "-Wextra",
+   "-ggdb",
+   "-std=c11",
+   "-pedantic",
+   "-c",
+   "analysis.c",
+   "-o",
+   "analysis.o"
+  ],
+  "file": "analysis.c"
+ },
+ {
+  "directory": "/home/lukas/Code/Projects/sprox/src",
+  "arguments": [
+   "gcc",
+   "-Wall",
+   "-Wextra",
+   "-ggdb",
+   "-std=c11",
+   "-pedantic",
+   "-c",
+   "asm.c",
+   "-o",
+   "asm.o"
+  ],
+  "file": "asm.c"
+ },
+ {
+  "directory": "/home/lukas/Code/Projects/sprox/src",
+  "arguments": [
+   "gcc",
+   "-Wall",
+   "-Wextra",
+   "-ggdb",
+   "-std=c11",
+   "-pedantic",
+   "-c",
+   "util.c",
+   "-o",
+   "util.o"
+  ],
+  "file": "util.c"
+ },
+ {
+  "directory": "/home/lukas/Code/Projects/sprox/src",
+  "arguments": [
+   "gcc",
+   "-Wall",
+   "-Wextra",
+   "-ggdb",
+   "-std=c11",
+   "-pedantic",
+   "-c",
+   "symboltable.c",
+   "-o",
+   "symboltable.o"
+  ],
+  "file": "symboltable.c"
+ },
+ {
+  "directory": "/home/lukas/Code/Projects/sprox/src",
+  "arguments": [
+   "gcc",
+   "-Wall",
+   "-Wextra",
+   "-ggdb",
+   "-std=c11",
+   "-pedantic",
+   "-c",
+   "tests/test.c",
+   "-o",
+   "tests/test.o"
+  ],
+  "file": "tests/test.c"
+ }
+]

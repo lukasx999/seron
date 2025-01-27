@@ -1,12 +1,23 @@
 
-proc f() {
+proc exit() {
+    asm("
+            mov rax, 60
+            mov rdi, 0
+            syscall
+            ");
 }
 
 
 proc _start() {
 
-    val foo 'int = 45;
+    val foo 'char = 65;
 
-    asm("mov dword [rbp-{}], {}", foo, bar);
+    # asm("mov rax, 1");
+    # asm("mov rdi, 1");
+    # asm("lea rsi, {}", foo);
+    # asm("mov rdx, 1");
+    # asm("syscall");
+
+    exit();
 
 }

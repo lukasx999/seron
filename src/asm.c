@@ -131,6 +131,7 @@ void gen_prelude(CodeGenerator *c) {
 void gen_postlude(CodeGenerator *c) {
 }
 
+// TODO: this should return the address of the result
 void gen_addition(CodeGenerator *c, size_t rbp_offset1, size_t rbp_offset2) {
     c->rbp_offset += 4;
     gen_comment(
@@ -156,6 +157,7 @@ void gen_addition(CodeGenerator *c, size_t rbp_offset1, size_t rbp_offset2) {
     gen_comment(c, "END: addition\n");
 }
 
+// TODO: not needed anymore?
 void gen_copy_value(CodeGenerator *c, size_t addr, IntegerType type) {
     c->rbp_offset += type;
     gen_comment(c, "START: copy([rbp-%lu] -> [rbp-%lu])", addr, c->rbp_offset);
@@ -188,9 +190,32 @@ void gen_store_value(CodeGenerator *c, int64_t value, IntegerType type) {
     gen_comment(c, "END: store\n");
 }
 
-void gen_inlineasm(CodeGenerator *c, const char *src) {
+void gen_inlineasm(
+    CodeGenerator *c,
+    const char    *src,
+    const size_t  *addrs,
+    size_t         addrs_len
+) {
     gen_comment(c, "START: inline");
-    fprintf(c->file, "%s\n", src);
+
+    size_t arg_index = 0;
+    for (size_t i=0; i < strlen(src); ++i) {
+
+        if (src[i] == '{' && src[i+1] == '}') {
+            size_t addr = addrs[arg_index];
+            fprintf(c->file, "[rbp-%lu]", addr);
+            i++;
+            arg_index++;
+
+        } else
+            fprintf(c->file, "%c", src[i]);
+
+    }
+
+    fprintf(c->file, "\n");
+
+    assert(arg_index == addrs_len && "argument count insufficent");
+
     gen_comment(c, "END: inline\n");
 }
 
@@ -222,6 +247,7 @@ void gen_func_end(CodeGenerator *c) {
     gen_comment(c, "END: function\n");
 }
 
+// TODO: call into address
 void gen_call(CodeGenerator *c, const char *identifier) {
     gen_comment(c, "call(start)");
 

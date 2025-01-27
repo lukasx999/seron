@@ -8,7 +8,7 @@
 #include "../util.h"
 #include "../lexer.h"
 #include "../parser.h"
-#include "../hashtable.h"
+#include "../symboltable.h"
 
 
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"

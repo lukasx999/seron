@@ -99,10 +99,9 @@ static void build_binary(
 // TODO: finishing symbol table (+type)
 // TODO: synchronizing parser
 // TODO: refactoring lexer
-// TODO: merge symboltable and hashtable
 // TODO: visualizing compilation via server
-
-// TODO: better inlineasm
+// TODO: ast optimisation pass
+// TODO: asm gets generated even if compiler fails -> semantic analysis
 
 // TODO:
 /*

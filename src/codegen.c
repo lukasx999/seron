@@ -4,12 +4,12 @@
 #include <assert.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <alloca.h>
 
 #include "util.h"
 #include "lexer.h"
 #include "parser.h"
 #include "codegen.h"
-#include "hashtable.h"
 #include "asm.h"
 #include "symboltable.h"
 
@@ -57,30 +57,60 @@ static void builtinasm(
     Symboltable   *symboltable
 ) {
 
-    ExprCall *call = &node->expr_call;
+    ExprCall *call   = &node->expr_call;
     AstNodeList list = call->args;
-
-    AstNode *first = list.items[0];
+    AstNode *first   = list.items[0];
 
     bool is_literal = first->kind == ASTNODE_LITERAL;
-    if (!(is_literal && first->expr_literal.op.kind == TOK_STRING))
-        throw_error(codegen->filename_src, &call->op, "First argument to `asm()` must be a string");
-
-    assert(!"TODO");
-
-    const char *assembly = first->expr_literal.op.value;
-    for (size_t i=0; i < strlen(assembly); ++i) {
-        // TODO: enforce count of arguments
+    if (!(is_literal && first->expr_literal.op.kind == TOK_STRING)) {
+        throw_error(
+            codegen->filename_src,
+            &call->op,
+            "First argument to `asm()` must be a string"
+        );
     }
 
+    // union member access only save after check
+    const char *asm_src = first->expr_literal.op.value;
 
-    gen_inlineasm(codegen, "");
+
+    // get the count of placeholders to check count of arguments
+    size_t expected_args = 0;
+    const char *str = asm_src;
+    while ((str = strstr(str, "{}")) != NULL) {
+        str++;
+        expected_args++;
+    }
+
+    // `- 1`: first arg is src
+    if (list.size - 1 != expected_args) {
+        throw_error(
+            codegen->filename_src,
+            &call->op,
+            "Expected `%d` argument(s), got `%d`",
+            expected_args,
+            list.size - 1
+        );
+    }
+
+    size_t addrs_len = list.size - 1;
+    size_t *addrs    = alloca(addrs_len * sizeof(size_t));
+    size_t addrs_i   = 0;
 
     for (size_t i=1; i < list.size; ++i) {
         size_t addr = traverse_ast(list.items[i], codegen, symboltable);
+        addrs[addrs_i++] = addr;
     }
 
+    gen_inlineasm(codegen, asm_src, addrs, addrs_len);
+
 }
+
+
+
+
+
+
 
 
 
@@ -109,9 +139,9 @@ static size_t traverse_ast(
             if (call->builtin != BUILTINFUNC_NONE) {
                 switch (call->builtin) {
 
-                    case BUILTINFUNC_ASM: {
+                    case BUILTINFUNC_ASM:
                         builtinasm(node, codegen, symboltable);
-                    } break;
+                        break;
 
                     default:
                         assert(!"Unimplemented builtin function");
@@ -126,6 +156,7 @@ static size_t traverse_ast(
                 traverse_ast(list.items[i], codegen, symboltable);
 
             // HACK: call into address instead of identifier
+            // size_t callee_addr = traverse_ast(call->callee, codegen, symboltable);
             gen_call(codegen, call->callee->expr_literal.op.value);
         } break;
 
@@ -137,6 +168,8 @@ static size_t traverse_ast(
             StmtFunc *func = &node->stmt_func;
             gen_func_start(codegen, func->identifier.value);
             traverse_ast(func->body, codegen, symboltable);
+
+            // TODO: insert function name into symboltable for lookup
             gen_func_end(codegen);
         } break;
 
@@ -161,8 +194,8 @@ static size_t traverse_ast(
 
         case ASTNODE_BINOP: {
             ExprBinOp *binop = &node->expr_binop;
-            size_t addr_lhs = traverse_ast(binop->lhs, codegen, symboltable);
-            size_t addr_rhs = traverse_ast(binop->rhs, codegen, symboltable);
+            size_t addr_lhs  = traverse_ast(binop->lhs, codegen, symboltable);
+            size_t addr_rhs  = traverse_ast(binop->rhs, codegen, symboltable);
 
             switch (binop->op.kind) {
                 case TOK_PLUS: {
@@ -186,8 +219,7 @@ static size_t traverse_ast(
 
             switch (unaryop->op.kind) {
                 case TOK_MINUS: {
-                    // TODO:
-                    assert(!"TODO");
+                    assert(!"TODO"); // TODO:
                 } break;
                 default:
                     assert(!"Unimplemented");
@@ -219,7 +251,7 @@ static size_t traverse_ast(
                         );
 
                     // TODO: handle type
-                    gen_copy_value(codegen, *addr, INTTYPE_INT);
+                    return *addr;
                 } break;
 
                 default:
