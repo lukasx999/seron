@@ -126,17 +126,6 @@ void hashtable_print(const Hashtable *ht) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 Symboltable symboltable_new(void) {
     Symboltable st = {
         .size     = 0,

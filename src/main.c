@@ -102,7 +102,7 @@ static void build_binary(
 // TODO: visualizing compilation via server
 // TODO: ast optimisation pass
 // TODO: asm gets generated even if compiler fails -> semantic analysis
-// TODO: expect-style error handling
+// TODO: expect-style testing
 
 // TODO:
 /*

@@ -8,7 +8,6 @@
 
 #include "util.h"
 #include "lexer.h"
-#include "parser.h"
 #include "codegen.h"
 #include "asm.h"
 #include "symboltable.h"
