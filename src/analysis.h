@@ -1,9 +1,12 @@
-#ifndef _SEMANTIC_ANALYSIS_H
-#define _SEMANTIC_ANALYSIS_H
+#ifndef _ANALYSIS_H
+#define _ANALYSIS_H
 
-#include "parser.h"
+#include "ast.h"
+#include "symboltable.h"
 
 
-extern void build_symboltable(const AstNode *root);
+/* Construct a Symboltable from a given AST */
+extern Symboltable symboltable_construct(const AstNode *root, size_t table_size);
 
-#endif // _SEMANTIC_ANALYSIS_H
+
+#endif // _ANALYSIS_H

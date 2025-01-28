@@ -2,18 +2,25 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <stdint.h>
+#include <stdbool.h>
 
+#include "util.h"
+#include "lexer.h"
+#include "parser.h"
+#include "ast.h"
 #include "symboltable.h"
 
 
 
 
+/* Hashtable */
 
 static size_t hash(size_t size, const char *key) {
     size_t sum = 0;
 
     for (size_t i=0; i < strlen(key); ++i)
-        sum += key[i];
+        sum += (size_t) key[i];
 
     return sum % size;
 }
@@ -27,18 +34,16 @@ static HashtableEntry *new_hashtable_entry(const char *key, HashtableValue value
     return entry;
 }
 
-Hashtable hashtable_new(void) {
-    Hashtable ht = {
-        .size     = 5,
+void hashtable_init(Hashtable *ht, size_t size) {
+    *ht = (Hashtable) {
+        .size     = size,
         .buckets  = NULL,
     };
 
-    ht.buckets = malloc(ht.size * sizeof(HashtableEntry*));
+    ht->buckets = malloc(ht->size * sizeof(HashtableEntry*));
 
-    for (size_t i=0; i < ht.size; ++i)
-        ht.buckets[i] = NULL;
-
-    return ht;
+    for (size_t i=0; i < ht->size; ++i)
+        ht->buckets[i] = NULL;
 }
 
 void hashtable_destroy(Hashtable *ht) {
@@ -120,75 +125,52 @@ void hashtable_print(const Hashtable *ht) {
 
 
 
+/* Symboltable */
 
-
-
-
-
-
-Symboltable symboltable_new(void) {
-    Symboltable st = {
-        .size     = 0,
-        .capacity = 5,
-        .items    = NULL,
+void symboltable_init(Symboltable *s, size_t table_size) {
+    *s = (Symboltable) {
+        .capacity   = 5,
+        .size       = 0,
+        .items      = NULL,
+        .table_size = table_size,
     };
 
-    st.items = malloc(st.capacity * sizeof(Hashtable));
+    s->items = malloc(s->capacity * sizeof(Hashtable));
 
-    return st;
+    for (size_t i=0; i < s->capacity; ++i)
+        hashtable_init(&s->items[i], s->table_size);
 }
 
-void symboltable_destroy(Symboltable *st) {
-    free(st->items);
-    st->items = NULL;
+void symboltable_destroy(Symboltable *s) {
+    for (size_t i=0; i < s->capacity; ++i)
+        hashtable_destroy(&s->items[i]);
+
+    free(s->items);
+    s->items = NULL;
 }
 
-void symboltable_push(Symboltable *st) {
-    if (st->size == st->capacity) {
-        st->capacity *= 2;
-        st->items = realloc(st->items, st->capacity * sizeof(Hashtable));
+void symboltable_append(Symboltable *s, Hashtable *parent) {
+    if (s->size == s->capacity) {
+        s->capacity *= 2;
+        s->items = realloc(s->items, s->capacity * sizeof(Hashtable));
+
+        for (size_t i=s->capacity/2; i < s->capacity; ++i)
+            hashtable_init(&s->items[i], s->table_size);
     }
 
-    st->items[st->size++] = hashtable_new();
+    s->items[s->size++].parent = parent;
 }
 
-void symboltable_pop(Symboltable *st) {
-    Hashtable *ht = &st->items[st->size-1];
-    hashtable_destroy(ht);
-    st->size--;
+Hashtable *symboltable_get_last(const Symboltable *s) {
+    return &s->items[s->size-1];
 }
 
-int symboltable_insert(Symboltable *st, const char *key, HashtableValue value) {
-    Hashtable *ht = &st->items[st->size-1];
-    return hashtable_insert(ht, key, value);
-}
-
-HashtableValue *symboltable_get(const Symboltable *st, const char *key) {
-
-    for (size_t i=0; i < st->size; ++i) {
-        size_t rev = st->size - 1 - i;
-        Hashtable *ht = &st->items[rev];
-
-        HashtableValue *value = hashtable_get(ht, key);
-        if (value != NULL)
-            return value;
-    }
-
-    return NULL;
-}
-
-void symboltable_override(Symboltable *st, const char *key, HashtableValue value) {
-    Hashtable *ht = &st->items[st->size-1];
-    assert(hashtable_insert(ht, key, value) == -1);
-    *hashtable_get(ht, key) = value;
-}
-
-void symboltable_print(const Symboltable *st) {
-    printf("== symboltable(start) ==\n");
-    for (size_t i=0; i < st->size; ++i) {
+void symboltable_print(const Symboltable *s) {
+    for (size_t i=0; i < s->size; ++i) {
+        Hashtable *ht = &s->items[i];
         printf("\n");
-        hashtable_print(&st->items[i]);
+        printf("addr: %p\n", (void*) ht);
+        printf("parent: %p\n", (void*) ht->parent);
         printf("\n");
     }
-    printf("== symboltable(end) ==\n\n");
 }

@@ -1,5 +1,6 @@
 CC=gcc
-CFLAGS=-Wall -Wextra -ggdb -std=c11 -pedantic -Wconversion -Wdouble-promotion -fsanitize=undefined -fsanitize-trap
+CFLAGS=-Wall -Wextra -ggdb -std=c11 -pedantic -Wdouble-promotion -fsanitize=undefined -fsanitize-trap
+
 BIN=compiler
 
 DEPS=\

@@ -160,7 +160,8 @@ static void hashtable_testcase(Hashtable *ht, const char *key, HashtableValue va
 }
 
 static void test_hashtable(void) {
-    Hashtable ht = hashtable_new();
+    Hashtable ht = { 0 };
+    hashtable_init(&ht, 50);
 
     hashtable_testcase(&ht, "foo", 1);
     hashtable_testcase(&ht, "bar", 2);

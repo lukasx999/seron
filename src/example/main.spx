@@ -12,6 +12,14 @@ proc _start() {
 
     val foo 'char = 65;
 
+    {
+    }
+
+
+    {
+        {}
+    }
+
     # asm("mov rax, 1");
     # asm("mov rdi, 1");
     # asm("lea rsi, {}", foo);

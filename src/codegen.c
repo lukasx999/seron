@@ -12,6 +12,7 @@
 #include "asm.h"
 #include "symboltable.h"
 
+#if 0
 
 
 #if 0
@@ -286,3 +287,4 @@ void generate_code(
     symboltable_destroy(&symboltable);
     gen_destroy(&codegen);
 }
+#endif

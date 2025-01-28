@@ -234,7 +234,8 @@ AstNode *rule_block(Parser *p) {
     AstNode *node = malloc(sizeof(AstNode));
     node->kind    = ASTNODE_BLOCK;
     node->block   = (Block) {
-        .stmts  = astnodelist_new(),
+        .stmts       = astnodelist_new(),
+        .symboltable = NULL,
     };
 
     while (!parser_match_tokenkinds(p, TOK_RBRACE, SENTINEL)) {
@@ -286,7 +287,8 @@ AstNode *rule_program(Parser *p) {
     AstNode *node = malloc(sizeof(AstNode));
     node->kind    = ASTNODE_BLOCK;
     node->block   = (Block) {
-        .stmts  = astnodelist_new(),
+        .stmts       = astnodelist_new(),
+        .symboltable = NULL,
     };
 
     while (!parser_is_at_end(p))

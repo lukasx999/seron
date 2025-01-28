@@ -13,6 +13,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "codegen.h"
+#include "symboltable.h"
 #include "analysis.h"
 
 
@@ -123,8 +124,10 @@ int main(void) {
     AstNode *root = parser_parse(&tokens, filename);
     parser_print_ast(root);
 
-    build_symboltable(root);
+    Symboltable symboltable = symboltable_construct(root, 50);
+    symboltable_destroy(&symboltable);
 
+    #if 0
 
 
     // TODO: refactor
@@ -145,6 +148,7 @@ int main(void) {
 
     generate_code(root,filename_asm, true, filename);
     build_binary(filename_asm, filename_obj, filename_bin, false);
+    #endif
 
 
 

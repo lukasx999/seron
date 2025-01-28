@@ -2,15 +2,11 @@
 #define _AST_H
 
 #include <stdio.h>
-#include <stdio.h>
 #include <stddef.h>
 #include <stdbool.h>
 
 #include "lexer.h"
-#include <stddef.h>
-#include <stdbool.h>
-
-#include "lexer.h"
+#include "symboltable.h"
 
 
 
@@ -62,6 +58,7 @@ typedef struct {
 
 typedef struct {
     AstNodeList stmts;
+    Hashtable *symboltable;
 } Block;
 
 typedef struct {
