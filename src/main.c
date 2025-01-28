@@ -92,23 +92,20 @@ static void build_binary(
 
 
 
-// TODO: unit tests for parser
-// TODO: inlineasm arguments
 // TODO: metaprogramming
 // TODO: cmdline args
 // TODO: type checking + semantic analysis
-// TODO: finishing symbol table (+type)
 // TODO: synchronizing parser
 // TODO: refactoring lexer
-// TODO: visualizing compilation via server
-// TODO: ast optimisation pass
+// TODO: ast optimization pass
 // TODO: asm gets generated even if compiler fails -> semantic analysis
 // TODO: expect-style testing
+// TODO: unit tests for parser + symboltable
 
 // TODO:
 /*
 cmdline args:
--W, -S, -c, --dump-ast, --dump-tokenstream, -lc, --run
+-W, -S, -c, --dump-ast, --dump-tokens, -lc, --run
 */
 
 int main(void) {
@@ -124,11 +121,10 @@ int main(void) {
     AstNode *root = parser_parse(&tokens, filename);
     parser_print_ast(root);
 
-    Symboltable symboltable = symboltable_construct(root, 50);
+    Symboltable symboltable = symboltable_construct(root, 5);
     symboltable_destroy(&symboltable);
 
     #if 0
-
 
     // TODO: refactor
     size_t bufsize = strlen(filename);

@@ -6,7 +6,7 @@
 
 
 /* Construct a Symboltable from a given AST */
-extern Symboltable symboltable_construct(const AstNode *root, size_t table_size);
+extern Symboltable symboltable_construct(AstNode *root, size_t table_size);
 
 
 #endif // _ANALYSIS_H

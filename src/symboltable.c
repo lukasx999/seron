@@ -115,7 +115,7 @@ void hashtable_print(const Hashtable *ht) {
         }
 
         while (entry != NULL) {
-            printf("(%s : %lu)", entry->key, entry->value);
+            printf("(%s: %lu)", entry->key, entry->value);
             printf(entry->next == NULL ? "\n" : " -> ");
             entry = entry->next;
         }
@@ -169,8 +169,9 @@ void symboltable_print(const Symboltable *s) {
     for (size_t i=0; i < s->size; ++i) {
         Hashtable *ht = &s->items[i];
         printf("\n");
-        printf("addr: %p\n", (void*) ht);
-        printf("parent: %p\n", (void*) ht->parent);
+        hashtable_print(ht);
+        // printf("addr: %p\n", (void*) ht);
+        // printf("parent: %p\n", (void*) ht->parent);
         printf("\n");
     }
 }

@@ -29,8 +29,6 @@ typedef enum {
 } BuiltinFunc;
 
 
-
-
 typedef struct {
     Token op;
 } ExprLiteral;

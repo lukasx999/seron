@@ -7,15 +7,20 @@
 #include <stddef.h>
 
 
+#if 0
+typedef enum {
+    SYMBOLKIND_ADDRESS,
+    SYMBOLKIND_LABEL,
+} SymbolKind;
 
 typedef struct {
-    /* TODO:
-       union {
-       size_t stack_addr
-       const char *label
-       }
-    */
+    SymbolKind kind;
+    union {
+        size_t stack_addr;
+        const char *label;
+    };
 } Symbol;
+#endif
 
 typedef size_t HashtableValue;
 
