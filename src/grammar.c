@@ -82,9 +82,7 @@ AstNode *rule_call(Parser *p) {
     BuiltinFunc builtin = BUILTINFUNC_NONE;
     if (is_ident) {
         const char *value = node->expr_literal.op.value;
-
-        if (!strcmp(value, "asm"))
-            builtin = BUILTINFUNC_ASM;
+        builtin = string_to_builtinfunc(value);
     }
 
     Token op = parser_get_current_token(p);

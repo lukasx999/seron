@@ -8,7 +8,6 @@ util.h        \
 lexer.h       \
 parser.h      \
 codegen.h     \
-analysis.h    \
 asm.h         \
 symboltable.h \
 grammar.h     \
@@ -18,7 +17,6 @@ SOURCES=\
 lexer.o       \
 parser.o      \
 codegen.o     \
-analysis.o    \
 asm.o         \
 util.o        \
 symboltable.o \

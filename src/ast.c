@@ -31,3 +31,12 @@ void astnodelist_destroy(AstNodeList *list) {
     free(list->items);
     list->items = NULL;
 }
+
+
+
+BuiltinFunc string_to_builtinfunc(const char *str) {
+    if (!strcmp(str, "asm"))
+        return BUILTINFUNC_ASM;
+    else
+        return BUILTINFUNC_NONE;
+}

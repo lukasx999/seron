@@ -7,7 +7,6 @@
 
 #include "util.h"
 #include "lexer.h"
-#include "parser.h"
 #include "ast.h"
 #include "symboltable.h"
 
@@ -104,7 +103,16 @@ HashtableValue *hashtable_get(const Hashtable *ht, const char *key) {
 
 }
 
-HashtableValue *hashtable_lookup(const Hashtable *ht, const char *key) {
+int hashtable_set(Hashtable *ht, const char *key, HashtableValue value) {
+    HashtableValue *v = hashtable_get(ht, key);
+    if (v == NULL)
+        return -1;
+
+    *v = value;
+    return 0;
+}
+
+HashtableValue *symboltable_lookup(const Hashtable *ht, const char *key) {
     const Hashtable *current = ht;
     while (current != NULL) {
         HashtableValue *value = hashtable_get(current, key);
@@ -188,4 +196,105 @@ void symboltable_print(const Symboltable *s) {
         hashtable_print(ht);
         printf("\n");
     }
+}
+
+
+
+
+
+static void traverse_ast(AstNode *root, Hashtable *parent, Symboltable *st) {
+
+    switch (root->kind) {
+
+        case ASTNODE_BLOCK: {
+            Block *block     = &root->block;
+            AstNodeList list = block->stmts;
+
+            symboltable_append(st, parent);
+            Hashtable *last = symboltable_get_last(st);
+            assert(last != NULL);
+            block->symboltable = last;
+
+            for (size_t i=0; i < list.size; ++i)
+                traverse_ast(list.items[i], last, st);
+
+        } break;
+
+        case ASTNODE_FUNC: {
+            const StmtFunc *func = &root->stmt_func;
+            const char *ident = func->identifier.value;
+
+            // TODO: value is label
+            hashtable_insert(parent, ident, 0);
+
+            traverse_ast(func->body, parent, st);
+        } break;
+
+        case ASTNODE_VARDECL: {
+            const StmtVarDecl *vardecl = &root->stmt_vardecl;
+            const char *ident = vardecl->identifier.value;
+
+            int ret = hashtable_insert(parent, ident, 0);
+            if (ret == -1)
+                throw_warning_simple("Variable `%s` already exists", ident);
+
+            traverse_ast(vardecl->value, parent, st);
+        } break;
+
+        case ASTNODE_CALL: {
+            ExprCall call = root->expr_call;
+            traverse_ast(call.callee, parent, st);
+
+            AstNodeList list = call.args;
+            for (size_t i=0; i < list.size; ++i)
+                traverse_ast(list.items[i], parent, st);
+        } break;
+
+        case ASTNODE_GROUPING:
+            traverse_ast(root->expr_grouping.expr, parent, st);
+            break;
+
+        case ASTNODE_BINOP: {
+            const ExprBinOp *binop = &root->expr_binop;
+            traverse_ast(binop->lhs, parent, st);
+            traverse_ast(binop->rhs, parent, st);
+        } break;
+
+        case ASTNODE_UNARYOP: {
+            const ExprUnaryOp *unaryop = &root->expr_unaryop;
+            traverse_ast(unaryop->node, parent, st);
+        } break;
+
+        case ASTNODE_LITERAL: {
+            const ExprLiteral* literal = &root->expr_literal;
+
+            if (literal->op.kind == TOK_IDENTIFIER) {
+                const char *variable = literal->op.value;
+
+                /* Ignore builtin functions */
+                if (string_to_builtinfunc(variable) != BUILTINFUNC_NONE)
+                    break;
+
+                HashtableValue *addr = symboltable_lookup(parent, variable);
+
+                if (addr == NULL)
+                    throw_error_simple("Symbol `%s` does not exist", variable);
+            }
+
+        } break;
+
+        default:
+            assert(!"Unexpected Node Kind");
+            break;
+    }
+
+}
+
+Symboltable symboltable_construct(AstNode *root, size_t table_size) {
+    Symboltable symboltable = { 0 };
+    symboltable_init(&symboltable, table_size);
+
+    traverse_ast(root, NULL, &symboltable);
+
+    return symboltable;
 }

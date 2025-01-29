@@ -8,7 +8,6 @@
 
 
 
-
 static void throw_thing(
     const char  *filename,
     const Token *tok,

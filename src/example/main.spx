@@ -19,11 +19,9 @@ proc f() {
 
 proc _start() {
     val foo 'int = 1;
-    val bar 'int = 2;
+    val foo 'int = 2;
 
-    val x 'int = foo + 45;
     f();
-
 
     exit();
 }

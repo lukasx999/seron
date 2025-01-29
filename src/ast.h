@@ -6,7 +6,9 @@
 #include <stdbool.h>
 
 #include "lexer.h"
-#include "symboltable.h"
+
+typedef struct Hashtable Hashtable;
+
 
 
 
@@ -17,9 +19,9 @@ typedef struct {
     AstNode **items;
 } AstNodeList;
 
-extern AstNodeList astnodelist_new    (void);
-extern void        astnodelist_append (AstNodeList *list, AstNode *node);
-extern void        astnodelist_destroy(AstNodeList *list);
+extern AstNodeList astnodelist_new(void);
+extern void astnodelist_append (AstNodeList *list, AstNode *node);
+extern void astnodelist_destroy(AstNodeList *list);
 
 
 typedef enum {
@@ -27,6 +29,8 @@ typedef enum {
     BUILTINFUNC_ASM,
     // TODO: sizeof
 } BuiltinFunc;
+
+extern BuiltinFunc string_to_builtinfunc(const char *str);
 
 
 typedef struct {

@@ -14,7 +14,6 @@
 #include "parser.h"
 #include "codegen.h"
 #include "symboltable.h"
-#include "analysis.h"
 
 
 
@@ -101,6 +100,8 @@ static void build_binary(
 // TODO: asm gets generated even if compiler fails -> semantic analysis
 // TODO: expect-style testing
 // TODO: unit tests for parser + symboltable
+// TODO: ast traversal context struct
+// TODO: compiler state (global) struct
 
 // TODO:
 /*

@@ -176,9 +176,8 @@ static size_t traverse_ast(
             const char *variable = vardecl->identifier.value;
 
             size_t addr = traverse_ast(vardecl->value, codegen, symboltable);
-            HashtableValue *value = hashtable_get(symboltable, variable);
-            assert(value != NULL);
-            *value = addr;
+            int ret = hashtable_set(symboltable, variable, addr);
+            assert(ret != -1);
         } break;
 
         case ASTNODE_BINOP: {
@@ -212,7 +211,7 @@ static size_t traverse_ast(
 
                 case TOK_IDENTIFIER: {
                     const char *variable = literal->op.value;
-                    HashtableValue *addr = hashtable_lookup(symboltable, variable);
+                    HashtableValue *addr = symboltable_lookup(symboltable, variable);
                     assert(addr != NULL);
                     // TODO: handle type
                     return *addr;
