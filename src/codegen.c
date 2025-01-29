@@ -53,10 +53,10 @@ static size_t traverse_ast(
 );
 
 
-static void builtinasm(
+static void builtin_inlineasm(
     AstNode       *node,
     CodeGenerator *codegen,
-    Hashtable   *symboltable
+    Hashtable     *symboltable
 ) {
 
     ExprCall *call   = &node->expr_call;
@@ -112,7 +112,6 @@ static void builtinasm(
 
 
 
-
 // returns the location of the evaluated expression in memory
 static size_t traverse_ast(
     AstNode       *node,
@@ -132,7 +131,6 @@ static size_t traverse_ast(
 
         } break;
 
-        #if 1
         case ASTNODE_CALL: {
             ExprCall *call = &node->expr_call;
 
@@ -140,7 +138,7 @@ static size_t traverse_ast(
                 switch (call->builtin) {
 
                     case BUILTINFUNC_ASM:
-                        builtinasm(node, codegen, symboltable);
+                        builtin_inlineasm(node, codegen, symboltable);
                         break;
 
                     default:
@@ -159,7 +157,6 @@ static size_t traverse_ast(
             // size_t callee_addr = traverse_ast(call->callee, codegen, symboltable);
             gen_call(codegen, call->callee->expr_literal.op.value);
         } break;
-        #endif
 
         case ASTNODE_GROUPING:
             traverse_ast(node->expr_grouping.expr, codegen, symboltable);
