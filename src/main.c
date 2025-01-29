@@ -150,6 +150,7 @@ int main(void) {
 
 
 
+
     parser_free_ast(root);
     tokenlist_destroy(&tokens);
     free(file);
