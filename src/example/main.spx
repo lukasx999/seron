@@ -4,7 +4,6 @@ proc exit() {
     asm("syscall");
 }
 
-val foo 'int = 45;
 
 proc f() {
     val newline 'int = 10;
@@ -14,7 +13,7 @@ proc f() {
     asm("mov rax, 1");
     asm("mov rdi, 1");
     asm("lea rsi, {}", C);
-    asm("mov edx, {}", 3+3+3+3);
+    asm("mov edx, {}", 16);
     asm("syscall");
 }
 
@@ -24,6 +23,6 @@ proc _start() {
     val b 'int = 2;
     a + b;
 
-    # f();
+    f();
     exit();
 }
