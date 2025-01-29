@@ -235,7 +235,6 @@ void symboltable_print(const Symboltable *st) {
 static void traverse_ast(AstNode *root, Hashtable *parent, Symboltable *st) {
 
     switch (root->kind) {
-
         case ASTNODE_BLOCK: {
             Block *block     = &root->block;
             AstNodeList list = block->stmts;
@@ -316,6 +315,7 @@ static void traverse_ast(AstNode *root, Hashtable *parent, Symboltable *st) {
                     break;
 
                 // BUG:
+                assert(parent != NULL);
                 Symbol *sym = symboltable_lookup(parent, variable);
 
                 if (sym == NULL)
