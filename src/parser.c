@@ -220,6 +220,7 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *_args) {
 
 void parser_print_ast(AstNode *root) {
     parser_traverse_ast(root, parser_print_ast_callback, true, NULL);
+    printf("\n");
 }
 
 static void parser_free_ast_callback(AstNode *node, int _depth, void *_args) {

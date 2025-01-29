@@ -24,7 +24,7 @@ static size_t hash(size_t size, const char *key) {
     return sum % size;
 }
 
-static HashtableEntry *new_hashtable_entry(const char *key, HashtableValue value) {
+static HashtableEntry *new_hashtable_entry(const char *key, Symbol value) {
     HashtableEntry *entry = malloc(sizeof(HashtableEntry));
     entry->key   = key;
     entry->value = value;
@@ -61,7 +61,7 @@ void hashtable_destroy(Hashtable *ht) {
     ht->buckets = NULL;
 }
 
-int hashtable_insert(Hashtable *ht, const char *key, HashtableValue value) {
+int hashtable_insert(Hashtable *ht, const char *key, Symbol value) {
     size_t index = hash(ht->size, key);
     HashtableEntry *current = ht->buckets[index];
 
@@ -85,7 +85,7 @@ int hashtable_insert(Hashtable *ht, const char *key, HashtableValue value) {
     assert(!"unreachable");
 }
 
-HashtableValue *hashtable_get(const Hashtable *ht, const char *key) {
+Symbol *hashtable_get(const Hashtable *ht, const char *key) {
     size_t index = hash(ht->size, key);
     HashtableEntry *current = ht->buckets[index];
 
@@ -103,8 +103,8 @@ HashtableValue *hashtable_get(const Hashtable *ht, const char *key) {
 
 }
 
-int hashtable_set(Hashtable *ht, const char *key, HashtableValue value) {
-    HashtableValue *v = hashtable_get(ht, key);
+int hashtable_set(Hashtable *ht, const char *key, Symbol value) {
+    Symbol *v = hashtable_get(ht, key);
     if (v == NULL)
         return -1;
 
@@ -112,31 +112,52 @@ int hashtable_set(Hashtable *ht, const char *key, HashtableValue value) {
     return 0;
 }
 
-HashtableValue *symboltable_lookup(const Hashtable *ht, const char *key) {
+Symbol *symboltable_lookup(const Hashtable *ht, const char *key) {
     const Hashtable *current = ht;
+
     while (current != NULL) {
-        HashtableValue *value = hashtable_get(current, key);
+        Symbol *value = hashtable_get(current, key);
+
         if (value != NULL)
             return value;
 
         current = current->parent;
     }
+
     return NULL;
 }
 
 void hashtable_print(const Hashtable *ht) {
     for (size_t i=0; i < ht->size; ++i) {
         HashtableEntry *entry = ht->buckets[i];
-        printf("|%lu| ", i);
 
-        if (entry == NULL) {
-            puts("(empty)");
+        if (entry == NULL)
             continue;
-        }
 
         while (entry != NULL) {
-            printf("(%s%s%s%s: %lu)", COLOR_BOLD, COLOR_RED, entry->key, COLOR_END, entry->value);
-            printf(entry->next == NULL ? "\n" : " -> ");
+            printf(
+                "%s%s%s%s %s|%s ",
+                COLOR_BOLD,
+                COLOR_RED,
+                entry->key,
+                COLOR_END,
+                COLOR_GRAY,
+                COLOR_END
+            );
+
+            switch (entry->value.kind) {
+                case SYMBOLKIND_ADDRESS:
+                    printf("%lu", entry->value.stack_addr);
+                    break;
+                case SYMBOLKIND_LABEL:
+                    printf("%s", entry->value.label);
+                    break;
+                default:
+                    assert(false);
+                    break;
+            }
+
+            printf("\n");
             entry = entry->next;
         }
 
@@ -145,8 +166,8 @@ void hashtable_print(const Hashtable *ht) {
 
 
 
-/* Symboltable */
 
+/* Symboltable */
 void symboltable_init(Symboltable *s, size_t table_size) {
     *s = (Symboltable) {
         .capacity   = 5,
@@ -174,7 +195,7 @@ void symboltable_append(Symboltable *s, Hashtable *parent) {
         s->capacity *= 2;
         s->items = realloc(s->items, s->capacity * sizeof(Hashtable));
 
-        for (size_t i=s->capacity/2; i < s->capacity; ++i)
+        for (size_t i = s->capacity / 2; i < s->capacity; ++i)
             hashtable_init(&s->items[i], s->table_size);
     }
 
@@ -187,15 +208,24 @@ Hashtable *symboltable_get_last(const Symboltable *s) {
     : &s->items[s->size-1];
 }
 
-void symboltable_print(const Symboltable *s) {
-    for (size_t i=0; i < s->size; ++i) {
-        Hashtable *ht = &s->items[i];
-        printf("\n");
-        printf("addr: %p\n", (void*) ht);
-        printf("parent: %p\n", (void*) ht->parent);
+void symboltable_print(const Symboltable *st) {
+    const char *divider = "-----------------------";
+
+    for (size_t i=0; i < st->size; ++i) {
+        Hashtable *ht = &st->items[i];
+        ptrdiff_t parent = ht->parent - st->items;
+
+        printf("%s%s%s ", COLOR_GRAY, divider, COLOR_END);
+        printf("%lu", i);
+        if (ht->parent == NULL)
+            printf("\n");
+        else
+            printf(" -> %ld\n", parent);
+
         hashtable_print(ht);
-        printf("\n");
     }
+    printf("%s%s%s\n\n ", COLOR_GRAY, divider, COLOR_END);
+
 }
 
 
@@ -224,8 +254,13 @@ static void traverse_ast(AstNode *root, Hashtable *parent, Symboltable *st) {
             const StmtFunc *func = &root->stmt_func;
             const char *ident = func->identifier.value;
 
-            // TODO: value is label
-            hashtable_insert(parent, ident, 0);
+            Symbol sym = {
+                .kind  = SYMBOLKIND_LABEL,
+                .label = ident,
+            };
+
+            int ret = hashtable_insert(parent, ident, sym);
+            assert(ret == 0);
 
             traverse_ast(func->body, parent, st);
         } break;
@@ -234,7 +269,12 @@ static void traverse_ast(AstNode *root, Hashtable *parent, Symboltable *st) {
             const StmtVarDecl *vardecl = &root->stmt_vardecl;
             const char *ident = vardecl->identifier.value;
 
-            int ret = hashtable_insert(parent, ident, 0);
+            Symbol sym = {
+                .kind       = SYMBOLKIND_ADDRESS,
+                .stack_addr = 0,
+            };
+
+            int ret = hashtable_insert(parent, ident, sym);
             if (ret == -1)
                 throw_warning_simple("Variable `%s` already exists", ident);
 
@@ -275,9 +315,10 @@ static void traverse_ast(AstNode *root, Hashtable *parent, Symboltable *st) {
                 if (string_to_builtinfunc(variable) != BUILTINFUNC_NONE)
                     break;
 
-                HashtableValue *addr = symboltable_lookup(parent, variable);
+                // BUG:
+                Symbol *sym = symboltable_lookup(parent, variable);
 
-                if (addr == NULL)
+                if (sym == NULL)
                     throw_error_simple("Symbol `%s` does not exist", variable);
             }
 

@@ -71,6 +71,7 @@ typedef struct {
 typedef struct {
     Token op, identifier, type;
     AstNode *value;
+    // TODO: type
 } StmtVarDecl;
 
 typedef enum {

@@ -7,8 +7,8 @@ DEPS=\
 util.h        \
 lexer.h       \
 parser.h      \
-codegen.h     \
-asm.h         \
+gen.h 	      \
+backend.h     \
 symboltable.h \
 grammar.h     \
 ast.h         \
@@ -16,8 +16,8 @@ ast.h         \
 SOURCES=\
 lexer.o       \
 parser.o      \
-codegen.o     \
-asm.o         \
+gen.o         \
+backend.o     \
 util.o        \
 symboltable.o \
 grammar.o     \
@@ -25,7 +25,7 @@ ast.o         \
 
 
 
-all: compiler test memtest
+all: compiler memtest
 
 compiler: main.o $(SOURCES)
 	@$(CC) $(CFLAGS) $^ -o $(BIN)

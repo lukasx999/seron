@@ -9,12 +9,18 @@
 #include "ast.h"
 
 
+// typedef enum {
+//     TYPE_FUNCTION,
+//     TYPE_BYTE,
+//     TYPE_INT,
+//     TYPE_SIZE,
+// } Type;
 
 
-#if 0
 typedef enum {
-    SYMBOLKIND_ADDRESS,
+    SYMBOLKIND_ADDRESS, /* base pointer offset */
     SYMBOLKIND_LABEL,
+    SYMBOLKIND_NONE, /* side effect */
 } SymbolKind;
 
 typedef struct {
@@ -22,19 +28,15 @@ typedef struct {
     union {
         size_t stack_addr;
         const char *label;
+        // enum Register register;
     };
     // Type type;
 } Symbol;
-#endif
-
-typedef size_t HashtableValue;
-
-
 
 typedef struct HashtableEntry {
     const char *key;
     struct HashtableEntry *next;
-    HashtableValue value;
+    Symbol value;
 } HashtableEntry;
 
 typedef struct Hashtable {
@@ -46,14 +48,13 @@ typedef struct Hashtable {
 extern void hashtable_init(Hashtable *ht, size_t size);
 extern void hashtable_destroy(Hashtable *ht);
 /* returns -1 if key already exists, else 0 */
-extern int  hashtable_insert(Hashtable *ht, const char *key, HashtableValue value);
+extern int  hashtable_insert(Hashtable *ht, const char *key, Symbol value);
 /* does a lookup in the current hashtable */
 /* returns NULL if the key does not exist */
-extern HashtableValue *hashtable_get(const Hashtable *ht, const char *key);
-
-/* returns -1 if key does not exist */
-extern int hashtable_set(Hashtable *ht, const char *key, HashtableValue value);
+extern Symbol *hashtable_get(const Hashtable *ht, const char *key);
 extern void hashtable_print(const Hashtable *ht);
+/* returns -1 if key does not exist */
+extern int hashtable_set(Hashtable *ht, const char *key, Symbol value);
 
 
 
@@ -67,12 +68,11 @@ extern void symboltable_init(Symboltable *s, size_t table_size);
 extern void symboltable_destroy(Symboltable *s);
 extern void symboltable_append(Symboltable *s, Hashtable *parent);
 extern Hashtable *symboltable_get_last(const Symboltable *s);
-extern void symboltable_print(const Symboltable *s);
 /* does a lookup in the current and parent hashtables */
-extern HashtableValue *symboltable_lookup(const Hashtable *ht, const char *key);
-
+extern Symbol *symboltable_lookup(const Hashtable *ht, const char *key);
 /* addresses are filled in at code generation */
 extern Symboltable symboltable_construct(AstNode *root, size_t table_size);
+extern void symboltable_print(const Symboltable *st);
 
 
 

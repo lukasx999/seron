@@ -12,7 +12,7 @@
 #include "util.h"
 #include "lexer.h"
 #include "parser.h"
-#include "codegen.h"
+#include "backend.h"
 #include "symboltable.h"
 
 
@@ -91,23 +91,29 @@ static void build_binary(
 
 
 
-// TODO: metaprogramming
 // TODO: cmdline args
 // TODO: type checking + semantic analysis
 // TODO: synchronizing parser
-// TODO: refactoring lexer
 // TODO: ast optimization pass
 // TODO: asm gets generated even if compiler fails -> semantic analysis
 // TODO: expect-style testing
 // TODO: unit tests for parser + symboltable
-// TODO: ast traversal context struct
 // TODO: compiler state (global) struct
+// TODO: assignment
+// TODO: pointers
+// TODO: call args
 
 // TODO:
 /*
 cmdline args:
 -W, -S, -c, --dump-ast, --dump-tokens, -lc, --run
 */
+
+
+
+// typedef struct {
+// } CompilerContext;
+
 
 int main(void) {
 
@@ -141,8 +147,8 @@ int main(void) {
     memset(filename_obj, 0, bufsize);
     snprintf(filename_obj, bufsize, "%s.o", filename_bin);
 
+#if 0
     generate_code(root, filename, filename_asm, false);
-#if 1
     build_binary(filename_asm, filename_obj, filename_bin, false);
 #endif
 

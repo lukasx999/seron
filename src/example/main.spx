@@ -1,27 +1,47 @@
 
-proc exit() {
-    asm("mov rax, 60");
-    asm("mov rdi, 0");
-    asm("syscall");
-}
+# proc exit() {
+#     asm("mov rax, 60");
+#     asm("mov rdi, 0");
+#     asm("syscall");
+# }
+#
+# proc f() {
+# }
 
+##
 proc f() {
-
     val buf 'int = 65;
-    asm("mov rax, 1");
-    asm("mov rdi, 1");
-    asm("lea rsi, {}", buf);
-    asm("mov rdx, 1");
-    asm("syscall");
-
+    # asm("mov rax, 1");
+    # asm("mov rdi, 1");
+    # asm("lea rsi, {}", buf);
+    # asm("mov rdx, 1");
+    # asm("syscall");
 }
-
 
 proc _start() {
+
     val foo 'int = 1;
-    val foo 'int = 2;
 
-    f();
+    val a 'int = 1;
+    {
+        val b 'int = 2;
+    }
+    {
+        val c 'int = 3;
+    }
+    val d 'int = 4;
 
+    # f();
     exit();
+}
+##
+
+proc _start() {
+
+    {}
+    {}
+    {}
+    {}
+    foo;
+
 }
