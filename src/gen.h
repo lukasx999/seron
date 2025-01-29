@@ -12,7 +12,6 @@
 // Enum value is size of type in bytes
 typedef enum {
     INTTYPE_CHAR  = 1,
-    INTTYPE_SHORT = 2,
     INTTYPE_INT   = 4,
     INTTYPE_SIZE  = 8,
 } IntegerType;

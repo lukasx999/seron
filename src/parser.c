@@ -202,7 +202,7 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *_args) {
                 tokenkind_to_string(vardecl->op.kind),
                 COLOR_RED,
                 vardecl->identifier.value,
-                tokenkind_to_string(vardecl->type.kind)
+                type_to_string(vardecl->type)
             );
         } break;
 

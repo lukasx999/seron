@@ -12,8 +12,10 @@
 #include "util.h"
 #include "lexer.h"
 #include "parser.h"
+#include "types.h"
 #include "backend.h"
 #include "symboltable.h"
+#include "analysis.h"
 
 
 
@@ -98,10 +100,13 @@ static void build_binary(
 // TODO: asm gets generated even if compiler fails -> semantic analysis
 // TODO: expect-style testing
 // TODO: unit tests for parser + symboltable
-// TODO: compiler state (global) struct
 // TODO: assignment
 // TODO: pointers
 // TODO: call args
+
+// TODO: global compiler context
+// TODO: type checking
+// TODO: getopt
 
 // TODO:
 /*
@@ -129,6 +134,8 @@ int main(void) {
     parser_print_ast(root);
 
     Symboltable symboltable = symboltable_construct(root, 5);
+    symboltable_print(&symboltable);
+    // check_types(root);
 
 
     // TODO: refactor
@@ -152,7 +159,6 @@ int main(void) {
     build_binary(filename_asm, filename_obj, filename_bin, false);
 #endif
 
-    symboltable_print(&symboltable);
     symboltable_destroy(&symboltable);
 
 

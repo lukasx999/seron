@@ -24,8 +24,7 @@ proc main() 'void {
     add(1, 2);
 
     # Variables
-    val foo 'char  = 1;
-    val bar 'short = 2;
+    val foo 'byte  = 1;
     val baz 'int   = 4;
     val qux 'size  = 8;
 

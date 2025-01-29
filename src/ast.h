@@ -6,8 +6,10 @@
 #include <stdbool.h>
 
 #include "lexer.h"
+#include "types.h"
 
 typedef struct Hashtable Hashtable;
+
 
 
 
@@ -32,6 +34,7 @@ typedef enum {
 
 extern BuiltinFunc string_to_builtinfunc(const char *str);
 
+// TODO: convert identifier to const char*
 
 typedef struct {
     Token op;
@@ -66,12 +69,14 @@ typedef struct {
 typedef struct {
     Token op, identifier;
     AstNode *body; // NULL if declaration
+    // TODO:
+    // Type returntype;
 } StmtFunc;
 
 typedef struct {
-    Token op, identifier, type;
+    Token op, identifier;
     AstNode *value;
-    // TODO: type
+    Type type;
 } StmtVarDecl;
 
 typedef enum {

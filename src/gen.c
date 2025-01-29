@@ -15,11 +15,8 @@
 
 IntegerType inttype_from_astnode(TokenKind type) {
     switch (type) {
-        case TOK_TYPE_CHAR:
+        case TOK_TYPE_BYTE:
             return INTTYPE_CHAR;
-            break;
-        case TOK_TYPE_SHORT:
-            return INTTYPE_SHORT;
             break;
         case TOK_TYPE_INT:
             return INTTYPE_INT;
@@ -38,9 +35,6 @@ const char *inttype_reg_rax(IntegerType type) {
         case INTTYPE_CHAR:
             return "al";
             break;
-        case INTTYPE_SHORT:
-            return "ax";
-            break;
         case INTTYPE_INT:
             return "eax";
             break;
@@ -58,9 +52,6 @@ const char *inttype_reg_rdi(IntegerType type) {
         case INTTYPE_CHAR:
             return "dil";
             break;
-        case INTTYPE_SHORT:
-            return "di";
-            break;
         case INTTYPE_INT:
             return "edi";
             break;
@@ -77,9 +68,6 @@ const char *inttype_asm_operand(IntegerType type) {
     switch (type) {
         case INTTYPE_CHAR:
             return "byte";
-            break;
-        case INTTYPE_SHORT:
-            return "word";
             break;
         case INTTYPE_INT:
             return "dword";

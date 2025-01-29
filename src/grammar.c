@@ -8,6 +8,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "grammar.h"
+#include "types.h"
 
 
 
@@ -167,9 +168,10 @@ AstNode *rule_vardecl(Parser *p) {
     parser_expect_token(p, TOK_TICK, "type annotation");
     parser_advance(p);
 
-    Token type = parser_get_current_token(p);
-    if (!tokenkind_is_type(type.kind))
-        throw_error(p->filename, &type, "Unknown type `%s`", type.value);
+    Token type_tok = parser_get_current_token(p);
+    Type type = type_from_tokenkind(type_tok.kind);
+    if (type == TYPE_INVALID)
+        throw_error(p->filename, &type_tok, "Unknown type `%s`", type_tok.value);
 
     parser_advance(p);
 

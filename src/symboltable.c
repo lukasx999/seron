@@ -158,6 +158,14 @@ void hashtable_print(const Hashtable *ht) {
                     break;
             }
 
+            printf(
+                " %s|%s ",
+                COLOR_GRAY,
+                COLOR_END
+            );
+            printf("%s%s%s", COLOR_BLUE, type_to_string(entry->value.type), COLOR_END);
+
+
             printf("\n");
             entry = entry->next;
         }
@@ -247,6 +255,7 @@ static void traverse_ast(AstNode *root, Hashtable *parent, Symboltable *st) {
             const char *ident = func->identifier.value;
 
             Symbol sym = {
+                .type  = TYPE_FUNCTION,
                 .kind  = SYMBOLKIND_LABEL,
                 .label = ident,
             };
@@ -265,6 +274,7 @@ static void traverse_ast(AstNode *root, Hashtable *parent, Symboltable *st) {
             Symbol sym = {
                 .kind       = SYMBOLKIND_ADDRESS,
                 .stack_addr = 0,
+                .type       = vardecl->type,
             };
 
             int ret = hashtable_insert(parent, ident, sym);

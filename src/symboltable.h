@@ -7,14 +7,9 @@
 #include <stddef.h>
 
 #include "ast.h"
+#include "types.h"
 
 
-// typedef enum {
-//     TYPE_FUNCTION,
-//     TYPE_BYTE,
-//     TYPE_INT,
-//     TYPE_SIZE,
-// } Type;
 
 
 typedef enum {
@@ -24,13 +19,13 @@ typedef enum {
 } SymbolKind;
 
 typedef struct {
+    Type type;
     SymbolKind kind;
     union {
         size_t stack_addr;
         const char *label;
         // enum Register register;
     };
-    // Type type;
 } Symbol;
 
 typedef struct HashtableEntry {

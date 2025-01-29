@@ -40,8 +40,7 @@ typedef enum {
     TOK_KW_WHILE,
     TOK_KW_RETURN,
 
-    TOK_TYPE_CHAR,
-    TOK_TYPE_SHORT,
+    TOK_TYPE_BYTE,
     TOK_TYPE_INT,
     TOK_TYPE_SIZE,
 

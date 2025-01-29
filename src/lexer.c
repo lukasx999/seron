@@ -38,7 +38,8 @@ const char *tokenkind_to_string(TokenKind tok) {
         [TOK_KW_ELSE]     = "else",
         [TOK_KW_WHILE]    = "while",
         [TOK_KW_RETURN]   = "return",
-        [TOK_TYPE_CHAR]   = "char",
+        [TOK_TYPE_BYTE]   = "byte",
+        [TOK_TYPE_SIZE]   = "size",
         [TOK_TYPE_INT]    = "int",
         [TOK_EOF]         = "eof",
     };
@@ -110,8 +111,7 @@ static TokenKind match_keywords(const char *str, size_t len) {
         TOK_KW_WHILE,
         TOK_KW_RETURN,
 
-        TOK_TYPE_CHAR,
-        TOK_TYPE_SHORT,
+        TOK_TYPE_BYTE,
         TOK_TYPE_INT,
         TOK_TYPE_SIZE,
     };
@@ -124,8 +124,7 @@ static TokenKind match_keywords(const char *str, size_t len) {
         "while",
         "return",
 
-        "char",
-        "short",
+        "byte",
         "int",
         "size",
     };
@@ -144,8 +143,7 @@ static TokenKind match_keywords(const char *str, size_t len) {
 bool tokenkind_is_type(TokenKind kind) {
 
     TokenKind types[] = {
-        TOK_TYPE_CHAR,
-        TOK_TYPE_SHORT,
+        TOK_TYPE_BYTE,
         TOK_TYPE_INT,
         TOK_TYPE_SIZE,
     };
