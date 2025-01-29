@@ -12,8 +12,6 @@
 #include "asm.h"
 #include "symboltable.h"
 
-#if 0
-
 
 #if 0
 // TODO: do sth with this
@@ -48,13 +46,17 @@ static void parser_print_error_cool(Parser *p) {
 
 
 
-static size_t traverse_ast(AstNode *node, CodeGenerator *codegen, Symboltable *symboltable);
+static size_t traverse_ast(
+    AstNode       *node,
+    CodeGenerator *codegen,
+    Hashtable     *symboltable
+);
 
 
 static void builtinasm(
     AstNode       *node,
     CodeGenerator *codegen,
-    Symboltable   *symboltable
+    Hashtable   *symboltable
 ) {
 
     ExprCall *call   = &node->expr_call;
@@ -115,21 +117,22 @@ static void builtinasm(
 static size_t traverse_ast(
     AstNode       *node,
     CodeGenerator *codegen,
-    Symboltable   *symboltable
+    Hashtable     *symboltable
 ) {
 
     switch (node->kind) {
 
         case ASTNODE_BLOCK: {
-            symboltable_push(symboltable);
+            Block *block = &node->block;
+            assert(block->symboltable != NULL);
 
             AstNodeList list = node->block.stmts;
             for (size_t i=0; i < list.size; ++i)
-                traverse_ast(list.items[i], codegen, symboltable);
+                traverse_ast(list.items[i], codegen, block->symboltable);
 
-            symboltable_pop(symboltable);
         } break;
 
+        #if 1
         case ASTNODE_CALL: {
             ExprCall *call = &node->expr_call;
 
@@ -156,6 +159,7 @@ static size_t traverse_ast(
             // size_t callee_addr = traverse_ast(call->callee, codegen, symboltable);
             gen_call(codegen, call->callee->expr_literal.op.value);
         } break;
+        #endif
 
         case ASTNODE_GROUPING:
             traverse_ast(node->expr_grouping.expr, codegen, symboltable);
@@ -175,18 +179,9 @@ static size_t traverse_ast(
             const char *variable = vardecl->identifier.value;
 
             size_t addr = traverse_ast(vardecl->value, codegen, symboltable);
-            int ret = symboltable_insert(symboltable, variable, addr);
-
-            if (ret == -1) {
-                // TODO: add shadowing feature
-                symboltable_override(symboltable, variable, addr);
-                throw_warning(
-                    codegen->filename_src,
-                    &vardecl->identifier,
-                    "Variable `%s` already exists",
-                    variable
-                );
-            }
+            HashtableValue *value = hashtable_get(symboltable, variable);
+            assert(value != NULL);
+            *value = addr;
         } break;
 
         case ASTNODE_BINOP: {
@@ -194,18 +189,10 @@ static size_t traverse_ast(
             size_t addr_lhs  = traverse_ast(binop->lhs, codegen, symboltable);
             size_t addr_rhs  = traverse_ast(binop->rhs, codegen, symboltable);
 
-            switch (binop->op.kind) {
-                case TOK_PLUS: {
-                    // TODO: get type
-                    return gen_addition(codegen, addr_lhs, addr_rhs);
-                } break;
-                case TOK_MINUS: {
-                    // TODO:
-                    assert(!"TODO");
-                } break;
-                default:
-                    assert(!"Unimplemented");
-                    break;
+            if (binop->op.kind == TOK_PLUS) {
+                return gen_addition(codegen, addr_lhs, addr_rhs);
+            } else {
+                assert(!"Unimplemented");
             }
 
         } break;
@@ -213,15 +200,6 @@ static size_t traverse_ast(
         case ASTNODE_UNARYOP: {
             ExprUnaryOp *unaryop = &node->expr_unaryop;
             size_t addr = traverse_ast(unaryop->node, codegen, symboltable);
-
-            switch (unaryop->op.kind) {
-                case TOK_MINUS: {
-                    assert(!"TODO"); // TODO:
-                } break;
-                default:
-                    assert(!"Unimplemented");
-                    break;
-            }
         } break;
 
         case ASTNODE_LITERAL: {
@@ -237,17 +215,8 @@ static size_t traverse_ast(
 
                 case TOK_IDENTIFIER: {
                     const char *variable = literal->op.value;
-                    HashtableValue *addr = symboltable_get(symboltable, variable);
-
-                    if (addr == NULL) {
-                        throw_error(
-                            codegen->filename_src,
-                            &literal->op,
-                            "Variable `%s` does not exist",
-                            variable
-                        );
-                    }
-
+                    HashtableValue *addr = hashtable_lookup(symboltable, variable);
+                    assert(addr != NULL);
                     // TODO: handle type
                     return *addr;
                 } break;
@@ -270,21 +239,16 @@ static size_t traverse_ast(
 
 void generate_code(
     AstNode    *root,
+    const char *filename_src,
     const char *filename_asm,
-    bool        print_comments,
-    const char *filename_src
+    bool        print_comments
 ) {
 
-    CodeGenerator codegen   = gen_new(filename_asm, print_comments, filename_src);
-    Symboltable symboltable = symboltable_new();
+    CodeGenerator codegen = gen_new(filename_asm, print_comments, filename_src);
 
     gen_prelude(&codegen);
-    traverse_ast(root, &codegen, &symboltable);
+    traverse_ast(root, &codegen, NULL);
     gen_postlude(&codegen);
 
-    assert(symboltable.size == 0);
-
-    symboltable_destroy(&symboltable);
     gen_destroy(&codegen);
 }
-#endif

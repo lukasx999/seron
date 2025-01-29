@@ -104,6 +104,18 @@ HashtableValue *hashtable_get(const Hashtable *ht, const char *key) {
 
 }
 
+HashtableValue *hashtable_lookup(const Hashtable *ht, const char *key) {
+    const Hashtable *current = ht;
+    while (current != NULL) {
+        HashtableValue *value = hashtable_get(current, key);
+        if (value != NULL)
+            return value;
+
+        current = current->parent;
+    }
+    return NULL;
+}
+
 void hashtable_print(const Hashtable *ht) {
     for (size_t i=0; i < ht->size; ++i) {
         HashtableEntry *entry = ht->buckets[i];
@@ -115,7 +127,7 @@ void hashtable_print(const Hashtable *ht) {
         }
 
         while (entry != NULL) {
-            printf("(%s: %lu)", entry->key, entry->value);
+            printf("(%s%s%s%s: %lu)", COLOR_BOLD, COLOR_RED, entry->key, COLOR_END, entry->value);
             printf(entry->next == NULL ? "\n" : " -> ");
             entry = entry->next;
         }
@@ -162,16 +174,18 @@ void symboltable_append(Symboltable *s, Hashtable *parent) {
 }
 
 Hashtable *symboltable_get_last(const Symboltable *s) {
-    return &s->items[s->size-1];
+    return s->size == 0
+    ? NULL
+    : &s->items[s->size-1];
 }
 
 void symboltable_print(const Symboltable *s) {
     for (size_t i=0; i < s->size; ++i) {
         Hashtable *ht = &s->items[i];
         printf("\n");
+        printf("addr: %p\n", (void*) ht);
+        printf("parent: %p\n", (void*) ht->parent);
         hashtable_print(ht);
-        // printf("addr: %p\n", (void*) ht);
-        // printf("parent: %p\n", (void*) ht->parent);
         printf("\n");
     }
 }

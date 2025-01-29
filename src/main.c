@@ -122,9 +122,7 @@ int main(void) {
     parser_print_ast(root);
 
     Symboltable symboltable = symboltable_construct(root, 5);
-    symboltable_destroy(&symboltable);
 
-    #if 0
 
     // TODO: refactor
     size_t bufsize = strlen(filename);
@@ -142,9 +140,13 @@ int main(void) {
     memset(filename_obj, 0, bufsize);
     snprintf(filename_obj, bufsize, "%s.o", filename_bin);
 
-    generate_code(root,filename_asm, true, filename);
+    generate_code(root, filename, filename_asm, false);
+#if 1
     build_binary(filename_asm, filename_obj, filename_bin, false);
-    #endif
+#endif
+
+    symboltable_print(&symboltable);
+    symboltable_destroy(&symboltable);
 
 
 

@@ -42,8 +42,11 @@ extern void hashtable_init    (Hashtable *ht, size_t size);
 extern void hashtable_destroy (Hashtable *ht);
 /* returns -1 if key already exists, else 0 */
 extern int  hashtable_insert  (Hashtable *ht, const char *key, HashtableValue value);
+/* does a lookup in the current hashtable */
 /* returns NULL if the key does not exist */
 extern HashtableValue *hashtable_get   (const Hashtable *ht, const char *key);
+/* does a lookup in the current and parent hashtables */
+extern HashtableValue *hashtable_lookup(const Hashtable *ht, const char *key);
 extern void            hashtable_print (const Hashtable *ht);
 
 

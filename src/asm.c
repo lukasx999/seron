@@ -217,6 +217,7 @@ void gen_func_end(CodeGenerator *c) {
     gen_comment(c, "START: function_postlude");
 
     FILE *f = c->file;
+    fprintf(f, "mov rsp, rbp\n");
     fprintf(f, "pop rbp\n");
     fprintf(f, "ret\n"    );
 

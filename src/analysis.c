@@ -10,6 +10,7 @@
 #include "ast.h"
 #include "symboltable.h"
 
+// TODO: ast traversal context struct
 
 static void traverse_ast(AstNode *root, Hashtable *parent, Symboltable *st) {
 
@@ -20,11 +21,12 @@ static void traverse_ast(AstNode *root, Hashtable *parent, Symboltable *st) {
             AstNodeList list = block->stmts;
 
             symboltable_append(st, parent);
-            parent = symboltable_get_last(st);
-            block->symboltable = parent;
+            Hashtable *last = symboltable_get_last(st);
+            assert(last != NULL);
+            block->symboltable = last;
 
             for (size_t i=0; i < list.size; ++i)
-                traverse_ast(list.items[i], parent, st);
+                traverse_ast(list.items[i], last, st);
 
         } break;
 
@@ -42,7 +44,12 @@ static void traverse_ast(AstNode *root, Hashtable *parent, Symboltable *st) {
             const StmtVarDecl *vardecl = &root->stmt_vardecl;
             const char *ident = vardecl->identifier.value;
             // TODO: generate addresses here or fill them in at codegen?
-            hashtable_insert(parent, ident, 0);
+
+            int ret = hashtable_insert(parent, ident, 0);
+            if (ret == -1) {
+                // TODO: add shadowing feature
+                throw_warning_simple("Variable `%s` already exists", ident);
+            }
 
             traverse_ast(vardecl->value, parent, st);
         } break;
@@ -71,8 +78,24 @@ static void traverse_ast(AstNode *root, Hashtable *parent, Symboltable *st) {
             traverse_ast(unaryop->node, parent, st);
         } break;
 
-        case ASTNODE_LITERAL:
-            break;
+        case ASTNODE_LITERAL: {
+            const ExprLiteral* literal = &root->expr_literal;
+
+            if (literal->op.kind == TOK_IDENTIFIER) {
+                const char *variable = literal->op.value;
+
+                // TODO: refactor
+                // Builtin functions
+                if (!strcmp(variable, "asm"))
+                    break;
+
+                HashtableValue *addr = hashtable_lookup(parent, variable);
+
+                if (addr == NULL)
+                    throw_error_simple("Symbol `%s` does not exist", variable);
+            }
+
+        } break;
 
         default:
             assert(!"Unexpected Node Kind");
@@ -87,6 +110,5 @@ Symboltable symboltable_construct(AstNode *root, size_t table_size) {
 
     traverse_ast(root, NULL, &st);
 
-    symboltable_print(&st);
     return st;
 }
