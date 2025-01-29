@@ -147,7 +147,7 @@ int main(void) {
     memset(filename_obj, 0, bufsize);
     snprintf(filename_obj, bufsize, "%s.o", filename_bin);
 
-#if 0
+#if 1
     generate_code(root, filename, filename_asm, false);
     build_binary(filename_asm, filename_obj, filename_bin, false);
 #endif

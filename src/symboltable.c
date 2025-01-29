@@ -7,6 +7,7 @@
 
 #include "util.h"
 #include "lexer.h"
+#include "parser.h"
 #include "ast.h"
 #include "symboltable.h"
 
@@ -168,18 +169,17 @@ void hashtable_print(const Hashtable *ht) {
 
 
 /* Symboltable */
-void symboltable_init(Symboltable *s, size_t table_size) {
+void symboltable_init(Symboltable *s, size_t capacity, size_t table_size) {
     *s = (Symboltable) {
-        .capacity   = 5,
+        .capacity   = capacity,
         .size       = 0,
         .items      = NULL,
-        .table_size = table_size,
     };
 
     s->items = malloc(s->capacity * sizeof(Hashtable));
 
     for (size_t i=0; i < s->capacity; ++i)
-        hashtable_init(&s->items[i], s->table_size);
+        hashtable_init(&s->items[i], table_size);
 }
 
 void symboltable_destroy(Symboltable *s) {
@@ -191,14 +191,7 @@ void symboltable_destroy(Symboltable *s) {
 }
 
 void symboltable_append(Symboltable *s, Hashtable *parent) {
-    if (s->size == s->capacity) {
-        s->capacity *= 2;
-        s->items = realloc(s->items, s->capacity * sizeof(Hashtable));
-
-        for (size_t i = s->capacity / 2; i < s->capacity; ++i)
-            hashtable_init(&s->items[i], s->table_size);
-    }
-
+    assert(s->size < s->capacity);
     s->items[s->size++].parent = parent;
 }
 
@@ -224,7 +217,7 @@ void symboltable_print(const Symboltable *st) {
 
         hashtable_print(ht);
     }
-    printf("%s%s%s\n\n ", COLOR_GRAY, divider, COLOR_END);
+    printf("%s%s%s\n\n", COLOR_GRAY, divider, COLOR_END);
 
 }
 
@@ -259,7 +252,8 @@ static void traverse_ast(AstNode *root, Hashtable *parent, Symboltable *st) {
             };
 
             int ret = hashtable_insert(parent, ident, sym);
-            assert(ret == 0);
+            if (ret != 0)
+                throw_error_simple("Procedure `%s` already exists", ident);
 
             traverse_ast(func->body, parent, st);
         } break;
@@ -314,7 +308,6 @@ static void traverse_ast(AstNode *root, Hashtable *parent, Symboltable *st) {
                 if (string_to_builtinfunc(variable) != BUILTINFUNC_NONE)
                     break;
 
-                // BUG:
                 assert(parent != NULL);
                 Symbol *sym = symboltable_lookup(parent, variable);
 
@@ -331,9 +324,21 @@ static void traverse_ast(AstNode *root, Hashtable *parent, Symboltable *st) {
 
 }
 
+static void scope_count_callback(AstNode *node, int _depth, void *args) {
+    (void) _depth;
+    int *count = args;
+
+    if (node->kind == ASTNODE_BLOCK)
+        ++*count;
+
+}
+
 Symboltable symboltable_construct(AstNode *root, size_t table_size) {
+    int count = 0;
+    parser_traverse_ast(root, scope_count_callback, true, &count);
+
     Symboltable symboltable = { 0 };
-    symboltable_init(&symboltable, table_size);
+    symboltable_init(&symboltable, count, table_size);
 
     traverse_ast(root, NULL, &symboltable);
 

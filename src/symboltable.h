@@ -61,10 +61,9 @@ extern int hashtable_set(Hashtable *ht, const char *key, Symbol value);
 typedef struct {
     size_t size, capacity;
     Hashtable *items;
-    size_t table_size; // size for each individual table
 } Symboltable;
 
-extern void symboltable_init(Symboltable *s, size_t table_size);
+extern void symboltable_init(Symboltable *s, size_t capacity, size_t table_size);
 extern void symboltable_destroy(Symboltable *s);
 extern void symboltable_append(Symboltable *s, Hashtable *parent);
 extern Hashtable *symboltable_get_last(const Symboltable *s);
