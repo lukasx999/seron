@@ -8,6 +8,7 @@
 #include <alloca.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <getopt.h>
 
 #include "util.h"
 #include "lexer.h"
@@ -51,20 +52,15 @@ static void run_cmd(char *const argv[]) {
     wait(NULL);
 }
 
-static void build_binary(
-    char *filename_asm,
-    char *filename_obj,
-    char *filename_bin,
-    bool link_with_libc
-) {
+static void build_binary(bool link_with_libc) {
     // TODO: ensure nasm and ld are installed
 
     // Assemble
     run_cmd((char*[]) {
         "nasm",
-        filename_asm,
+        "out.s",
         "-felf64",
-        "-o", filename_obj,
+        "-o", "out.o",
         "-gdwarf",
         NULL
     });
@@ -74,16 +70,16 @@ static void build_binary(
         link_with_libc
         ? (char*[]) {
             "ld",
-            filename_obj,
+            "out.o",
             "-lc",
             "-dynamic-linker", "/lib64/ld-linux-x86-64.so.2",
-            "-o", filename_bin,
+            "-o", "out",
             NULL
         }
         : (char*[]) {
             "ld",
-            filename_obj,
-            "-o", filename_bin,
+            "out.o",
+            "-o", "out",
             NULL
         }
     );
@@ -116,54 +112,113 @@ cmdline args:
 
 
 
-// typedef struct {
-// } CompilerContext;
+struct CompilerContext {
+    const char *filename;
+    bool show_warnings;
+    bool debug_asm;
+    bool dump_ast, dump_tokens, dump_symboltable;
+} compiler_context;
+
+void init_context(void) {
+    compiler_context = (struct CompilerContext) {
+        .filename         = NULL,
+        .show_warnings    = false,
+        .debug_asm        = false,
+        .dump_ast         = false,
+        .dump_tokens      = false,
+        .dump_symboltable = false,
+    };
+}
+
+void print_usage(char *argv[]) {
+    fprintf(stderr, "Usage: %s [options] file...\n", argv[0]);
+    fprintf(stderr, "Options:\n");
+    fprintf(stderr,
+            "\t--dump-ast\n"
+            "\t--dump-tokens\n"
+            "\t--dump-symboltable\n"
+            );
+    exit(EXIT_FAILURE);
+}
+
+void parse_args(int argc, char *argv[]) {
+
+    int opt_index = 0;
+    struct option opts[] = {
+        { "dump-ast",         no_argument, (int*) &compiler_context.dump_ast,         true },
+        { "dump-tokens",      no_argument, (int*) &compiler_context.dump_tokens,      true },
+        { "dump-symboltable", no_argument, (int*) &compiler_context.dump_symboltable, true },
+        { "debug-asm",        no_argument, (int*) &compiler_context.debug_asm,        true },
+        // TODO: --pedantic
+    };
+
+    while (1) {
+        int c = getopt_long(argc, argv, "W", opts, &opt_index);
+
+        if (c == -1)
+            break;
+
+        switch (c) {
+
+            case 'W':
+                compiler_context.show_warnings = true;
+                break;
+
+            default:
+                throw_error_simple("Unknown option");
+                break;
+
+        }
+
+    }
+
+    if (optind >= argc)
+        print_usage(argv);
+
+    compiler_context.filename = argv[optind];
+
+}
 
 
-int main(void) {
 
-    const char *filename = "example/main.spx";
+
+int main(int argc, char *argv[]) {
+
+    init_context();
+    parse_args(argc, argv);
+
+
+
+    const char *filename = compiler_context.filename;
+    assert(filename != NULL);
+
     check_fileextension(filename, "spx");
 
-    char *file = read_file(filename);
-
-    TokenList tokens = tokenize(file);
-    // tokenlist_print(&tokens);
-
-    AstNode *root = parser_parse(&tokens, filename);
-    parser_print_ast(root);
-
-    Symboltable symboltable = symboltable_construct(root, 5);
-    symboltable_print(&symboltable);
-    // check_types(root);
-
-
-    // TODO: refactor
-    size_t bufsize = strlen(filename);
-
-    char *filename_bin = alloca(bufsize);
-    memset(filename_bin, 0, bufsize);
-    strncpy(filename_bin, filename, bufsize);
-    filename_bin[strcspn(filename_bin, ".")] = '\0';
-
-    char *filename_asm = alloca(bufsize);
-    memset(filename_asm, 0, bufsize);
-    snprintf(filename_asm, bufsize, "%s.s", filename_bin);
-
-    char *filename_obj = alloca(bufsize);
-    memset(filename_obj, 0, bufsize);
-    snprintf(filename_obj, bufsize, "%s.o", filename_bin);
-
-#if 1
-    generate_code(root, filename, filename_asm, false);
-    build_binary(filename_asm, filename_obj, filename_bin, false);
+    char       *file        = read_file(filename);
+    TokenList   tokens      = tokenize(file);
+    AstNode    *node_root   = parser_parse(&tokens, filename);
+    Symboltable symboltable = symboltable_construct(node_root, 5);
+#if 0
+    check_types(root);
 #endif
+    generate_code(node_root, filename, false);
+    build_binary(false);
+
+
+    if (compiler_context.dump_tokens)
+        tokenlist_print(&tokens);
+
+    if (compiler_context.dump_ast)
+        parser_print_ast(node_root);
+
+    if (compiler_context.dump_symboltable)
+        symboltable_print(&symboltable);
+
+
+
 
     symboltable_destroy(&symboltable);
-
-
-
-    parser_free_ast(root);
+    parser_free_ast(node_root);
     tokenlist_destroy(&tokens);
     free(file);
 

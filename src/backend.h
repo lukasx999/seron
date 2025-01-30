@@ -8,7 +8,6 @@
 extern void generate_code(
     AstNode    *root,
     const char *filename_src,
-    const char *filename_asm,
     bool        print_comments
 );
 

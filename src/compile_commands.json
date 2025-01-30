@@ -69,49 +69,11 @@
    "-fsanitize=undefined",
    "-fsanitize-trap",
    "-c",
-   "codegen.c",
-   "-o",
-   "codegen.o"
-  ],
-  "file": "codegen.c"
- },
- {
-  "directory": "/home/lukas/Code/Projects/sprox/src",
-  "arguments": [
-   "gcc",
-   "-Wall",
-   "-Wextra",
-   "-ggdb",
-   "-std=c11",
-   "-pedantic",
-   "-Wdouble-promotion",
-   "-fsanitize=undefined",
-   "-fsanitize-trap",
-   "-c",
    "analysis.c",
    "-o",
    "analysis.o"
   ],
   "file": "analysis.c"
- },
- {
-  "directory": "/home/lukas/Code/Projects/sprox/src",
-  "arguments": [
-   "gcc",
-   "-Wall",
-   "-Wextra",
-   "-ggdb",
-   "-std=c11",
-   "-pedantic",
-   "-Wdouble-promotion",
-   "-fsanitize=undefined",
-   "-fsanitize-trap",
-   "-c",
-   "asm.c",
-   "-o",
-   "asm.o"
-  ],
-  "file": "asm.c"
  },
  {
   "directory": "/home/lukas/Code/Projects/sprox/src",
@@ -207,5 +169,62 @@
    "ast.o"
   ],
   "file": "ast.c"
+ },
+ {
+  "directory": "/home/lukas/Code/Projects/sprox/src",
+  "arguments": [
+   "gcc",
+   "-Wall",
+   "-Wextra",
+   "-ggdb",
+   "-std=c11",
+   "-pedantic",
+   "-Wdouble-promotion",
+   "-fsanitize=undefined",
+   "-fsanitize-trap",
+   "-c",
+   "gen.c",
+   "-o",
+   "gen.o"
+  ],
+  "file": "gen.c"
+ },
+ {
+  "directory": "/home/lukas/Code/Projects/sprox/src",
+  "arguments": [
+   "gcc",
+   "-Wall",
+   "-Wextra",
+   "-ggdb",
+   "-std=c11",
+   "-pedantic",
+   "-Wdouble-promotion",
+   "-fsanitize=undefined",
+   "-fsanitize-trap",
+   "-c",
+   "backend.c",
+   "-o",
+   "backend.o"
+  ],
+  "file": "backend.c"
+ },
+ {
+  "directory": "/home/lukas/Code/Projects/sprox/src",
+  "arguments": [
+   "gcc",
+   "-Wall",
+   "-Wextra",
+   "-ggdb",
+   "-std=c11",
+   "-pedantic",
+   "-Wdouble-promotion",
+   "-fsanitize=undefined",
+   "-fsanitize-trap",
+   "-c",
+   "types.c",
+   "-o",
+   "types.o"
+  ],
+  "file": "types.c"
  }
 ]

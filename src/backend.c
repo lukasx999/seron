@@ -192,14 +192,9 @@ static Symbol traverse_ast(AstNode *node, Hashtable *symboltable) {
 
 }
 
-void generate_code(
-    AstNode    *root,
-    const char *filename_src,
-    const char *filename_asm,
-    bool        print_comments
-) {
+void generate_code(AstNode *root, const char *filename_src, bool print_comments) {
 
-    gen_init(&codegen, filename_asm, print_comments, filename_src);
+    gen_init(&codegen, "out.s", print_comments, filename_src);
 
     gen_prelude(&codegen);
     traverse_ast(root, NULL);
