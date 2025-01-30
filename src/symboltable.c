@@ -210,6 +210,7 @@ Hashtable *symboltable_get_last(const Symboltable *s) {
 }
 
 void symboltable_print(const Symboltable *st) {
+    printf("\n");
     const char *divider = "-----------------------";
 
     for (size_t i=0; i < st->size; ++i) {
@@ -225,8 +226,8 @@ void symboltable_print(const Symboltable *st) {
 
         hashtable_print(ht);
     }
-    printf("%s%s%s\n\n", COLOR_GRAY, divider, COLOR_END);
 
+    printf("%s%s%s\n\n", COLOR_GRAY, divider, COLOR_END);
 }
 
 

@@ -31,9 +31,6 @@ Type type_from_tokenkind(TokenKind kind) {
 
 const char *type_to_string(Type type) {
     switch (type) {
-        case TYPE_INVALID:
-            return NULL;
-            break;
         case TYPE_BYTE:
             return "byte";
             break;
@@ -48,6 +45,9 @@ const char *type_to_string(Type type) {
             break;
         case TYPE_FUNCTION:
             return "function";
+            break;
+        default:
+            return NULL;
             break;
     }
 }

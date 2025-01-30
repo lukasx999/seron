@@ -73,19 +73,22 @@ const Token *tokenlist_get(const TokenList *tokens, size_t index) {
 }
 
 void tokenlist_print(const TokenList *tokens) {
+    printf("\n");
+
     for (size_t i=0; i < tokens->size; ++i) {
         Token tok = tokens->items[i];
         const char *kind = tokenkind_to_string(tok.kind);
 
-        printf("%d:%d ", tok.pos_line, tok.pos_column);
+        printf("%s%d:%d%s ", COLOR_GRAY, tok.pos_line, tok.pos_column, COLOR_END);
 
         printf("%s", kind);
         if (strcmp(tok.value, ""))
-            printf("(%s)", tok.value);
+            printf("%s(%s)%s", COLOR_GRAY, tok.value, COLOR_END);
 
         printf("\n");
     }
-    puts("");
+
+    printf("\n");
 }
 
 void tokenlist_destroy(TokenList *tokens) {

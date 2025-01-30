@@ -152,6 +152,10 @@ static void parse_args(int argc, char *argv[]) {
 
         switch (c) {
 
+            case 0:
+                /* long option */
+                break;
+
             case 'W':
                 compiler_context.show_warnings = true;
                 break;

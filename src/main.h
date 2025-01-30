@@ -22,7 +22,9 @@ struct CompilerContext {
     bool show_warnings;
     bool debug_asm;
     bool dump_ast, dump_tokens, dump_symboltable;
-} extern compiler_context;
+};
+
+extern struct CompilerContext compiler_context;
 
 
 
