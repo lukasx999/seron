@@ -30,7 +30,7 @@ typedef struct {
 } CodeGenerator;
 
 
-extern int           gen_init          (CodeGenerator *gen, const char *filename_asm, bool print_comments, const char *filename_src);
+extern int           gen_init          (CodeGenerator *gen, const char *filename_asm, bool print_comments);
 extern void          gen_destroy       (CodeGenerator *c);
 extern void          gen_prelude       (CodeGenerator *c);
 extern void          gen_postlude      (CodeGenerator *c);

@@ -31,8 +31,8 @@
 
 extern void throw_error_simple  (const char *fmt, ...);
 extern void throw_warning_simple(const char *fmt, ...);
-extern void throw_error         (const char *filename, const Token *tok, const char *fmt, ...);
-extern void throw_warning       (const char *filename, const Token *tok, const char *fmt, ...);
+extern void throw_error         (const Token *tok, const char *fmt, ...);
+extern void throw_warning       (const Token *tok, const char *fmt, ...);
 
 
 #endif // _UTIL_H

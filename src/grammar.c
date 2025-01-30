@@ -171,7 +171,7 @@ AstNode *rule_vardecl(Parser *p) {
     Token type_tok = parser_get_current_token(p);
     Type type = type_from_tokenkind(type_tok.kind);
     if (type == TYPE_INVALID)
-        throw_error(p->filename, &type_tok, "Unknown type `%s`", type_tok.value);
+        throw_error(&type_tok, "Unknown type `%s`", type_tok.value);
 
     parser_advance(p);
 

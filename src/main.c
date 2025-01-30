@@ -17,6 +17,7 @@
 #include "backend.h"
 #include "symboltable.h"
 #include "analysis.h"
+#include "main.h"
 
 
 
@@ -52,36 +53,30 @@ static void run_cmd(char *const argv[]) {
     wait(NULL);
 }
 
-static void build_binary(bool link_with_libc) {
+static void build_binary(void) {
     // TODO: ensure nasm and ld are installed
+
+    char *asm       = compiler_context.filename.asm;
+    char *obj       = compiler_context.filename.obj;
+    const char *bin = compiler_context.filename.stripped;
 
     // Assemble
     run_cmd((char*[]) {
         "nasm",
-        "out.s",
+        asm,
         "-felf64",
-        "-o", "out.o",
+        "-o", obj,
         "-gdwarf",
         NULL
     });
 
     // Link
-    run_cmd(
-        link_with_libc
-        ? (char*[]) {
-            "ld",
-            "out.o",
-            "-lc",
-            "-dynamic-linker", "/lib64/ld-linux-x86-64.so.2",
-            "-o", "out",
-            NULL
-        }
-        : (char*[]) {
-            "ld",
-            "out.o",
-            "-o", "out",
-            NULL
-        }
+    run_cmd((char*[]) {
+        "ld",
+        obj,
+        "-o", (char*) bin,
+        NULL
+    }
     );
 
 }
@@ -100,9 +95,7 @@ static void build_binary(bool link_with_libc) {
 // TODO: pointers
 // TODO: call args
 
-// TODO: global compiler context
 // TODO: type checking
-// TODO: getopt
 
 // TODO:
 /*
@@ -112,25 +105,9 @@ cmdline args:
 
 
 
-struct CompilerContext {
-    const char *filename;
-    bool show_warnings;
-    bool debug_asm;
-    bool dump_ast, dump_tokens, dump_symboltable;
-} compiler_context;
+struct CompilerContext compiler_context = { 0 };
 
-void init_context(void) {
-    compiler_context = (struct CompilerContext) {
-        .filename         = NULL,
-        .show_warnings    = false,
-        .debug_asm        = false,
-        .dump_ast         = false,
-        .dump_tokens      = false,
-        .dump_symboltable = false,
-    };
-}
-
-void print_usage(char *argv[]) {
+static void print_usage(char *argv[]) {
     fprintf(stderr, "Usage: %s [options] file...\n", argv[0]);
     fprintf(stderr, "Options:\n");
     fprintf(stderr,
@@ -141,7 +118,21 @@ void print_usage(char *argv[]) {
     exit(EXIT_FAILURE);
 }
 
-void parse_args(int argc, char *argv[]) {
+static void set_filenames(const char *raw) {
+    compiler_context.filename.raw = raw;
+    char *stripped = compiler_context.filename.stripped;
+    strncpy(stripped, raw, strcspn(raw, "."));
+
+    char *asm = compiler_context.filename.asm;
+    strncpy(asm, stripped, 256);
+    strcat(asm, ".s");
+
+    char *obj = compiler_context.filename.obj;
+    strncpy(obj, stripped, 256);
+    strcat(obj, ".o");
+}
+
+static void parse_args(int argc, char *argv[]) {
 
     int opt_index = 0;
     struct option opts[] = {
@@ -150,6 +141,7 @@ void parse_args(int argc, char *argv[]) {
         { "dump-symboltable", no_argument, (int*) &compiler_context.dump_symboltable, true },
         { "debug-asm",        no_argument, (int*) &compiler_context.debug_asm,        true },
         // TODO: --pedantic
+        // TODO: link with libc
     };
 
     while (1) {
@@ -175,7 +167,9 @@ void parse_args(int argc, char *argv[]) {
     if (optind >= argc)
         print_usage(argv);
 
-    compiler_context.filename = argv[optind];
+    const char *filename = argv[optind];
+    check_fileextension(filename, "spx");
+    set_filenames(filename);
 
 }
 
@@ -184,25 +178,17 @@ void parse_args(int argc, char *argv[]) {
 
 int main(int argc, char *argv[]) {
 
-    init_context();
     parse_args(argc, argv);
 
-
-
-    const char *filename = compiler_context.filename;
-    assert(filename != NULL);
-
-    check_fileextension(filename, "spx");
-
-    char       *file        = read_file(filename);
+    char       *file        = read_file(compiler_context.filename.raw);
     TokenList   tokens      = tokenize(file);
-    AstNode    *node_root   = parser_parse(&tokens, filename);
+    AstNode    *node_root   = parser_parse(&tokens);
     Symboltable symboltable = symboltable_construct(node_root, 5);
 #if 0
     check_types(root);
 #endif
-    generate_code(node_root, filename, false);
-    build_binary(false);
+    generate_code(node_root);
+    build_binary();
 
 
     if (compiler_context.dump_tokens)
@@ -213,8 +199,6 @@ int main(int argc, char *argv[]) {
 
     if (compiler_context.dump_symboltable)
         symboltable_print(&symboltable);
-
-
 
 
     symboltable_destroy(&symboltable);

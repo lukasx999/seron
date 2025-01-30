@@ -49,13 +49,13 @@ void parser_expect_token(
 ) {
     if (!parser_match_tokenkinds(p, tokenkind, SENTINEL)) {
         Token tok = parser_get_current_token(p);
-        throw_error(p->filename, &tok, "Expected `%s`", expected);
+        throw_error(&tok, "Expected `%s`", expected);
     }
 }
 
 void parser_throw_error(const Parser *p, const char *msg) {
     Token tok = parser_get_current_token(p);
-    throw_error(p->filename, &tok, "%s", msg);
+    throw_error(&tok, "%s", msg);
 }
 
 bool parser_is_at_end(const Parser *p) {
@@ -255,11 +255,10 @@ void parser_free_ast(AstNode *root) {
     parser_traverse_ast(root, parser_free_ast_callback, false, NULL);
 }
 
-AstNode *parser_parse(const TokenList *tokens, const char *filename) {
+AstNode *parser_parse(const TokenList *tokens) {
     Parser parser = {
         .current  = 0,
         .tokens   = tokens,
-        .filename = filename,
     };
     AstNode *root = rule_program(&parser);
     return root;

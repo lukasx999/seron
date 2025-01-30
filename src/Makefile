@@ -13,6 +13,7 @@ symboltable.h \
 types.h       \
 grammar.h     \
 ast.h         \
+main.h        \
 
 SOURCES=\
 lexer.o       \

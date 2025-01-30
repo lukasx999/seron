@@ -15,7 +15,6 @@
 typedef struct {
     size_t current;
     const TokenList *tokens;
-    const char *filename;
 } Parser;
 
 typedef void (*AstCallback)(AstNode *node, int depth, void *args);
@@ -30,8 +29,7 @@ extern void  parser_traverse_ast      (AstNode *root, AstCallback callback, bool
 extern void  parser_print_ast         (AstNode *root);
 extern void  parser_free_ast          (AstNode *root);
 
-// filename is only needed for errors
-extern AstNode *parser_parse(const TokenList *tokens, const char *filename);
+extern AstNode *parser_parse(const TokenList *tokens);
 
 
 

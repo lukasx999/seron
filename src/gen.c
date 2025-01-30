@@ -98,16 +98,18 @@ static void gen_comment(CodeGenerator *c, const char *fmt, ...) {
     va_end(va);
 }
 
-int gen_init(CodeGenerator *gen, const char *filename_asm, bool print_comments, const char *filename_src) {
+int gen_init(CodeGenerator *gen, const char *filename_asm, bool print_comments) {
     FILE *file = fopen(filename_asm, "w");
+
     if (file == NULL)
         return -1;
+
     *gen = (CodeGenerator) {
         .file           = file,
         .rbp_offset     = 0,
         .print_comments = print_comments,
-        .filename_src   = filename_src,
     };
+
     return 0;
 }
 

@@ -10,6 +10,7 @@
 #include "lexer.h"
 #include "gen.h"
 #include "symboltable.h"
+#include "main.h"
 
 
 CodeGenerator codegen;
@@ -25,11 +26,7 @@ static void builtin_inlineasm(ExprCall *call, Hashtable *symboltable) {
 
     bool is_literal = first->kind == ASTNODE_LITERAL;
     if (!(is_literal && first->expr_literal.op.kind == TOK_STRING)) {
-        throw_error(
-            codegen.filename_src,
-            &call->op,
-            "First argument to `asm()` must be a string"
-        );
+        throw_error(&call->op, "First argument to `asm()` must be a string");
     }
 
     // union member access only save after check
@@ -47,7 +44,6 @@ static void builtin_inlineasm(ExprCall *call, Hashtable *symboltable) {
     // `- 1`: first arg is src
     if (list.size - 1 != expected_args) {
         throw_error(
-            codegen.filename_src,
             &call->op,
             "Expected `%d` argument(s), got `%d`",
             expected_args,
@@ -192,9 +188,9 @@ static Symbol traverse_ast(AstNode *node, Hashtable *symboltable) {
 
 }
 
-void generate_code(AstNode *root, const char *filename_src, bool print_comments) {
+void generate_code(AstNode *root) {
 
-    gen_init(&codegen, "out.s", print_comments, filename_src);
+    gen_init(&codegen, compiler_context.filename.asm, compiler_context.debug_asm);
 
     gen_prelude(&codegen);
     traverse_ast(root, NULL);

@@ -5,11 +5,11 @@
 
 #include "lexer.h"
 #include "util.h"
+#include "main.h"
 
 
 
 static void throw_thing(
-    const char  *filename,
     const Token *tok,
     bool         is_error, // else warning
     const char  *fmt,
@@ -22,7 +22,7 @@ static void throw_thing(
     fprintf(
         stderr,
         "%s:%d:%d: %s%s%s%s: ",
-        filename, tok->pos_line, tok->pos_column,
+        compiler_context.filename.raw, tok->pos_line, tok->pos_column,
         COLOR_BOLD, color, str, COLOR_END
     );
 
@@ -34,24 +34,22 @@ static void throw_thing(
 }
 
 void throw_error(
-    const char *filename,
     const Token *tok,
     const char *fmt, ...
 ) {
     va_list va;
     va_start(va, fmt);
-    throw_thing(filename, tok, true, fmt, va);
+    throw_thing(tok, true, fmt, va);
     va_end(va);
 }
 
 void throw_warning(
-    const char *filename,
     const Token *tok,
     const char *fmt, ...
 ) {
     va_list va;
     va_start(va, fmt);
-    throw_thing(filename, tok, false, fmt, va);
+    throw_thing(tok, false, fmt, va);
     va_end(va);
 }
 
