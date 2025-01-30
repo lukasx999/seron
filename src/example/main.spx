@@ -1,7 +1,7 @@
 
 proc exit() {
     asm("mov rax, 60");
-    asm("mov rdi, 0");
+    asm("mov rdi, 45");
     asm("syscall");
 }
 

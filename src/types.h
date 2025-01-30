@@ -17,6 +17,7 @@ typedef enum {
 
 extern Type type_from_tokenkind(TokenKind kind);
 extern const char *type_to_string(Type type);
+// TODO: register from type
 
 extern void check_types(AstNode *root);
 

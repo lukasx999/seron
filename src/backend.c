@@ -101,7 +101,7 @@ static void ast_vardecl(StmtVarDecl *vardecl, Hashtable *symboltable) {
     const char *variable = vardecl->identifier.value;
 
     Symbol sym = traverse_ast(vardecl->value, symboltable);
-    int ret = hashtable_set(symboltable, variable, sym);
+    int    ret = hashtable_set(symboltable, variable, sym);
     assert(ret != -1);
 }
 

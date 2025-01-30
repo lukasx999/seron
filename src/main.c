@@ -21,6 +21,11 @@
 
 
 
+struct CompilerContext compiler_context = { 0 };
+
+
+
+
 static void check_fileextension(const char *filename, const char *extension) {
 
     size_t dot_offset = strcspn(filename, ".");
@@ -80,32 +85,6 @@ static void build_binary(void) {
     );
 
 }
-
-
-
-
-// TODO: cmdline args
-// TODO: type checking + semantic analysis
-// TODO: synchronizing parser
-// TODO: ast optimization pass
-// TODO: asm gets generated even if compiler fails -> semantic analysis
-// TODO: expect-style testing
-// TODO: unit tests for parser + symboltable
-// TODO: assignment
-// TODO: pointers
-// TODO: call args
-
-// TODO: type checking
-
-// TODO:
-/*
-cmdline args:
--W, -S, -c, --dump-ast, --dump-tokens, -lc, --run
-*/
-
-
-
-struct CompilerContext compiler_context = { 0 };
 
 static void print_usage(char *argv[]) {
     fprintf(stderr, "Usage: %s [options] file...\n", argv[0]);
@@ -178,10 +157,28 @@ static void parse_args(int argc, char *argv[]) {
 }
 
 
+// TODO: type checking + semantic analysis
+// TODO: synchronizing parser
+// TODO: ast optimization pass
+// TODO: asm gets generated even if compiler fails -> semantic analysis
+// TODO: expect-style testing
+// TODO: unit tests for parser + symboltable
+// TODO: assignment
+// TODO: pointers
+// TODO: call args
+// TODO: --run argument
+
+// TODO: type checking
+
+// TODO: fix gen types
+
+
+
 
 
 int main(int argc, char *argv[]) {
 
+    // TODO: stacking long arguments
     parse_args(argc, argv);
 
     char       *file        = read_file(compiler_context.filename.raw);

@@ -143,10 +143,10 @@ Symbol gen_addition(CodeGenerator *gen, Symbol a, Symbol b) {
     );
 
     FILE *f = gen->file;
-    fprintf(f, "mov rax, [rbp-%lu]\n", rbp_offset1        );
-    fprintf(f, "mov rdi, [rbp-%lu]\n", rbp_offset2        );
-    fprintf(f, "add rax, rdi\n"                           );
-    fprintf(f, "sub rsp, 4\n"                             );
+    fprintf(f, "mov rax, [rbp-%lu]\n", rbp_offset1);
+    fprintf(f, "mov rdi, [rbp-%lu]\n", rbp_offset2);
+    fprintf(f, "add rax, rdi\n");
+    fprintf(f, "sub rsp, 4\n");
     fprintf(f, "mov qword [rbp-%lu], rax\n", gen->rbp_offset);
 
     gen_comment(gen, "END: addition\n");

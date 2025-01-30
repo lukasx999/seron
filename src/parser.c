@@ -152,7 +152,7 @@ static void print_ast_value(const char *str, const char *color, const char *valu
 static void parser_print_ast_callback(AstNode *root, int depth, void *_args) {
     (void) _args;
 
-    const int spacing = 3; // TODO: pass this in through void* argument
+    const int spacing = 2; // TODO: pass this in through void* argument
     for (int _=0; _ < depth * spacing; ++_)
         printf("%s⋅%s", COLOR_GRAY, COLOR_END);
 
