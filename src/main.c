@@ -25,15 +25,19 @@ struct CompilerContext compiler_context = { 0 };
 
 
 
-
 static void check_fileextension(const char *filename, const char *extension) {
 
-    size_t dot_offset = strcspn(filename, ".");
-    if (dot_offset == strlen(filename))
+    if (strlen(filename) <= strlen(extension) + 1) // eg: `.spx`
+        throw_error_simple("Invalid filename `%s`", filename);
+
+    size_t dot_offset = strlen(filename) - 1 - strlen(extension);
+
+    if (filename[dot_offset] != '.')
         throw_error_simple("File extension missing");
 
     if (strncmp(filename + dot_offset + 1, extension, strlen(extension)))
         throw_error_simple("File extension must be `.%s`", extension);
+
 }
 
 static char *read_file(const char *filename) {
@@ -97,10 +101,13 @@ static void print_usage(char *argv[]) {
     exit(EXIT_FAILURE);
 }
 
-static void set_filenames(const char *raw) {
+static void set_filenames(const char *raw, const char *extension) {
     compiler_context.filename.raw = raw;
+
+    size_t dot_offset = strlen(raw) - 1 - strlen(extension);
+
     char *stripped = compiler_context.filename.stripped;
-    strncpy(stripped, raw, strcspn(raw, "."));
+    strncpy(stripped, raw, dot_offset);
 
     char *asm = compiler_context.filename.asm;
     strncpy(asm, stripped, 256);
@@ -151,8 +158,9 @@ static void parse_args(int argc, char *argv[]) {
         print_usage(argv);
 
     const char *filename = argv[optind];
-    check_fileextension(filename, "spx");
-    set_filenames(filename);
+    const char *extension = "spx";
+    check_fileextension(filename, extension);
+    set_filenames(filename, extension);
 
 }
 

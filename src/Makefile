@@ -32,7 +32,7 @@ all: compiler memtest
 
 compiler: main.o $(SOURCES)
 	@$(CC) $(CFLAGS) $^ -o $(BIN)
-	@echo CC $^
+	@echo LINK $^
 
 test: tests/test.o $(SOURCES)
 	@$(CC) $(CFLAGS) $^ -o test
@@ -42,7 +42,7 @@ test: tests/test.o $(SOURCES)
 	@rm $<
 
 memtest:
-	@./tests/memtest.sh ./$(BIN)
+	@./tests/memtest.sh ./$(BIN) ./example/main.spx
 
 %.o: %.c Makefile $(DEPS)
 	@$(CC) $(CFLAGS) -c $< -o $@

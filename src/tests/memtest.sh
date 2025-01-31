@@ -6,7 +6,7 @@ COLOR_RED=$'\33[31m'
 COLOR_BOLD=$'\33[1m'
 COLOR_END=$'\33[0m'
 
-bin=$1
+bin="$@"
 status=0
 valgrind --leak-check=full --error-exitcode=1 --log-file=/dev/null $bin 1>/dev/null 2>&1 || status=$?
 
