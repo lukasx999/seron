@@ -40,6 +40,7 @@ typedef enum {
     TOK_KW_WHILE,
     TOK_KW_RETURN,
 
+    TOK_TYPE_VOID,
     TOK_TYPE_BYTE,
     TOK_TYPE_INT,
     TOK_TYPE_SIZE,
@@ -49,7 +50,6 @@ typedef enum {
     TOKENKIND_COUNT,
 } TokenKind;
 
-extern bool tokenkind_is_type(TokenKind kind);
 extern const char *tokenkind_to_string(TokenKind tok);
 
 typedef struct {

@@ -23,6 +23,9 @@ Type type_from_tokenkind(TokenKind kind) {
         case TOK_TYPE_BYTE:
             return TYPE_BYTE;
             break;
+        case TOK_TYPE_VOID:
+            return TYPE_VOID;
+            break;
         default:
             assert(!"Unknown Token");
             break;
@@ -42,6 +45,9 @@ const char *type_to_string(Type type) {
             break;
         case TYPE_POINTER:
             return "pointer";
+            break;
+        case TYPE_VOID:
+            return "void";
             break;
         case TYPE_BUILTIN:
             return "builtin";
@@ -71,14 +77,20 @@ static Type traverse_ast(AstNode *root, Hashtable *symboltable) {
 
         case ASTNODE_FUNC: {
             const StmtFunc *func = &root->stmt_func;
-
             traverse_ast(func->body, symboltable);
         } break;
 
         case ASTNODE_VARDECL: {
             const StmtVarDecl *vardecl = &root->stmt_vardecl;
+            Type type = traverse_ast(vardecl->value, symboltable);
 
-            traverse_ast(vardecl->value, symboltable);
+            if (vardecl->type != type)
+                throw_error(
+                    &vardecl->op,
+                    "Type annotation does not match assigned expression (`%s` and `%s`)",
+                    type_to_string(vardecl->type),
+                    type_to_string(type)
+                );
         } break;
 
         case ASTNODE_CALL: {
@@ -95,7 +107,7 @@ static Type traverse_ast(AstNode *root, Hashtable *symboltable) {
         } break;
 
         case ASTNODE_GROUPING:
-            traverse_ast(root->expr_grouping.expr, symboltable);
+            return traverse_ast(root->expr_grouping.expr, symboltable);
             break;
 
         case ASTNODE_BINOP: {

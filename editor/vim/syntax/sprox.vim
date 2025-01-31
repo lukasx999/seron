@@ -12,6 +12,7 @@ syn keyword spxKeyword
       \ byte
       \ int
       \ size
+      \ void
 
 " syn match spxNumber "\d+"
 syn match spxOperator "[,.=+-\*/;(){}'`]"
