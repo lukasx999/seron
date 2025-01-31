@@ -72,7 +72,6 @@ static Type traverse_ast(AstNode *root, Hashtable *symboltable) {
 
             for (size_t i=0; i < list.size; ++i)
                 traverse_ast(list.items[i], block->symboltable);
-
         } break;
 
         case ASTNODE_FUNC: {

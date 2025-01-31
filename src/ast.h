@@ -34,8 +34,6 @@ typedef enum {
 
 extern BuiltinFunc string_to_builtinfunc(const char *str);
 
-// TODO: convert identifier to const char*
-
 typedef struct {
     Token op;
 } ExprLiteral;
