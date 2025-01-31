@@ -175,7 +175,6 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: pointers
 // TODO: call args
 // TODO: --run argument
-// TODO: fix gen types
 // TODO: char literal
 
 

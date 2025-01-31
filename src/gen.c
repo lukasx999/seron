@@ -7,79 +7,12 @@
 #include <unistd.h>
 #include <stdarg.h>
 
-#include "lexer.h"
 #include "gen.h"
 #include "symboltable.h"
+#include "types.h"
 
 
 
-IntegerType inttype_from_astnode(TokenKind type) {
-    switch (type) {
-        case TOK_TYPE_BYTE:
-            return INTTYPE_CHAR;
-            break;
-        case TOK_TYPE_INT:
-            return INTTYPE_INT;
-            break;
-        case TOK_TYPE_SIZE:
-            return INTTYPE_SIZE;
-            break;
-        default:
-            assert(!"Unknown type");
-            break;
-    }
-}
-
-const char *inttype_reg_rax(IntegerType type) {
-    switch (type) {
-        case INTTYPE_CHAR:
-            return "al";
-            break;
-        case INTTYPE_INT:
-            return "eax";
-            break;
-        case INTTYPE_SIZE:
-            return "rax";
-            break;
-        default:
-            assert(!"Unknown type");
-            break;
-    }
-}
-
-const char *inttype_reg_rdi(IntegerType type) {
-    switch (type) {
-        case INTTYPE_CHAR:
-            return "dil";
-            break;
-        case INTTYPE_INT:
-            return "edi";
-            break;
-        case INTTYPE_SIZE:
-            return "rdi";
-            break;
-        default:
-            assert(!"Unknown type");
-            break;
-    }
-}
-
-const char *inttype_asm_operand(IntegerType type) {
-    switch (type) {
-        case INTTYPE_CHAR:
-            return "byte";
-            break;
-        case INTTYPE_INT:
-            return "dword";
-            break;
-        case INTTYPE_SIZE:
-            return "qword";
-            break;
-        default:
-            assert(!"Unknown type");
-            break;
-    }
-}
 
 
 
@@ -125,11 +58,12 @@ void gen_prelude(CodeGenerator *c) {
 void gen_postlude(CodeGenerator *c) {
 }
 
-Symbol gen_addition(CodeGenerator *gen, Symbol a, Symbol b) {
-    // TODO:
+Symbol gen_add_or_sub(CodeGenerator *gen, Symbol a, Symbol b, bool do_add) {
     assert(a.kind != SYMBOLKIND_LABEL && b.kind != SYMBOLKIND_LABEL);
+    assert(a.type == a.type);
+    Type type = a.type;
 
-    gen->rbp_offset += 4;
+    gen->rbp_offset += type_get_size(type);
 
     size_t rbp_offset1 = a.stack_addr;
     size_t rbp_offset2 = b.stack_addr;
@@ -142,32 +76,35 @@ Symbol gen_addition(CodeGenerator *gen, Symbol a, Symbol b) {
         gen->rbp_offset
     );
 
+    const char *rax = type_get_register_rax(type);
+    const char *rdi = type_get_register_rdi(type);
+
     FILE *f = gen->file;
-    fprintf(f, "mov rax, [rbp-%lu]\n", rbp_offset1);
-    fprintf(f, "mov rdi, [rbp-%lu]\n", rbp_offset2);
-    fprintf(f, "add rax, rdi\n");
-    fprintf(f, "sub rsp, 4\n");
-    fprintf(f, "mov qword [rbp-%lu], rax\n", gen->rbp_offset);
+    fprintf(f, "mov %s, [rbp-%lu]\n", rax, rbp_offset1);
+    fprintf(f, "mov %s, [rbp-%lu]\n", rdi, rbp_offset2);
+    fprintf(f, "%s %s, %s\n", do_add ? "add" : "sub", rax, rdi);
+    fprintf(f, "sub rsp, %lu\n", type_get_size(type));
+    fprintf(f, "mov %s [rbp-%lu], %s\n", type_get_size_operand(type), gen->rbp_offset, rax);
 
     gen_comment(gen, "END: addition\n");
 
     return (Symbol) {
         .kind       = SYMBOLKIND_ADDRESS,
         .stack_addr = gen->rbp_offset,
+        .type       = type,
     };
 }
 
-// TODO: fix type
-Symbol gen_store_value(CodeGenerator *gen, int64_t value, IntegerType type) {
-    gen->rbp_offset += type;
+Symbol gen_store_literal(CodeGenerator *gen, int64_t value, Type type) {
+    gen->rbp_offset += type_get_size(type);
     gen_comment(gen, "START: store(%lu -> [rbp-%lu])", value, gen->rbp_offset);
 
     FILE *f = gen->file;
-    fprintf(f, "sub rsp, %d\n", type);
+    fprintf(f, "sub rsp, %lu\n", type_get_size(type));
     fprintf(
         f,
         "mov %s [rbp-%lu], %lu\n",
-        inttype_asm_operand(type),
+        type_get_size_operand(type),
         gen->rbp_offset,
         value
     );
@@ -176,6 +113,7 @@ Symbol gen_store_value(CodeGenerator *gen, int64_t value, IntegerType type) {
     return (Symbol) {
         .kind       = SYMBOLKIND_ADDRESS,
         .stack_addr = gen->rbp_offset,
+        .type       = type,
     };
 }
 

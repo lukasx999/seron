@@ -1,13 +1,21 @@
-
 proc exit() {
     asm("mov rax, 60");
     asm("mov rdi, 45");
     asm("syscall");
 }
 
+proc print() {
+    val buf 'int = 70-(5+1);
+    asm("mov rax, 1");
+    asm("mov rdi, 1");
+    asm("lea rsi, {}", buf);
+    asm("mov rdx, 1");
+    asm("syscall");
+
+}
+
 proc _start() {
 
-    val foo 'int = 45;
-
+    print();
     exit();
 }

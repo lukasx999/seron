@@ -61,6 +61,78 @@ const char *type_to_string(Type type) {
     }
 }
 
+size_t type_get_size(Type type) {
+    switch (type) {
+        case TYPE_BYTE:
+            return 1;
+            break;
+        case TYPE_INT:
+            return 4;
+            break;
+        case TYPE_SIZE:
+            return 8;
+            break;
+        case TYPE_POINTER:
+            return 8;
+            break;
+        default:
+            assert(!"Unknown Type");
+            break;
+    }
+}
+
+const char *type_get_size_operand(Type type) {
+    switch (type) {
+        case TYPE_BYTE:
+            return "byte";
+            break;
+        case TYPE_INT:
+            return "dword";
+            break;
+        case TYPE_SIZE:
+            return "qword";
+            break;
+        default:
+            assert(!"Unknown type");
+            break;
+    }
+}
+
+const char *type_get_register_rax(Type type) {
+    switch (type) {
+        case TYPE_BYTE:
+            return "al";
+            break;
+        case TYPE_INT:
+            return "eax";
+            break;
+        case TYPE_SIZE:
+            return "rax";
+            break;
+        default:
+            assert(!"Unknown type");
+            break;
+    }
+}
+
+const char *type_get_register_rdi(Type type) {
+    switch (type) {
+        case TYPE_BYTE:
+            return "dil";
+            break;
+        case TYPE_INT:
+            return "edi";
+            break;
+        case TYPE_SIZE:
+            return "rdi";
+            break;
+        default:
+            assert(!"Unknown type");
+            break;
+    }
+}
+
+
 
 
 static Type traverse_ast(AstNode *root, Hashtable *symboltable) {
@@ -147,7 +219,7 @@ static Type traverse_ast(AstNode *root, Hashtable *symboltable) {
                 } break;
 
                 case TOK_NUMBER:
-                    return TYPE_INT;
+                    return INTLITERAL;
                     break;
 
                 case TOK_STRING:

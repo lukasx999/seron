@@ -51,7 +51,7 @@ typedef struct {
     Token op;
     AstNode *callee;
     AstNodeList args;
-    BuiltinFunc builtin; // None, if no builtin
+    BuiltinFunc builtin; // `BUILTINFUNC_NONE`, if no builtin
 } ExprCall;
 
 typedef struct {

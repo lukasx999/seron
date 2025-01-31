@@ -65,13 +65,21 @@ static void builtin_inlineasm(ExprCall *call, Hashtable *symboltable) {
 }
 
 static Symbol ast_binop(ExprBinOp *binop, Hashtable *symboltable) {
-    Symbol addr_lhs  = traverse_ast(binop->lhs, symboltable);
-    Symbol addr_rhs  = traverse_ast(binop->rhs, symboltable);
+    Symbol sym_lhs  = traverse_ast(binop->lhs, symboltable);
+    Symbol sym_rhs  = traverse_ast(binop->rhs, symboltable);
 
-    if (binop->op.kind == TOK_PLUS)
-        return gen_addition(&codegen, addr_lhs, addr_rhs);
-    else
-        assert(!"Unimplemented");
+    switch (binop->op.kind) {
+        case TOK_PLUS:
+            return gen_add_or_sub(&codegen, sym_lhs, sym_rhs, true);
+            break;
+        case TOK_MINUS:
+            return gen_add_or_sub(&codegen, sym_lhs, sym_rhs, false);
+            break;
+        default:
+            assert(!"Unimplemented");
+            break;
+    }
+
 }
 
 static Symbol ast_literal(ExprLiteral *literal, Hashtable *symboltable) {
@@ -80,14 +88,13 @@ static Symbol ast_literal(ExprLiteral *literal, Hashtable *symboltable) {
         case TOK_NUMBER: {
             const char *str = literal->op.value;
             int64_t num = atoll(str);
-            return gen_store_value(&codegen, num, INTTYPE_INT);
+            return gen_store_literal(&codegen, num, INTLITERAL);
         } break;
 
         case TOK_IDENTIFIER: {
             const char *variable = literal->op.value;
             Symbol *sym = symboltable_lookup(symboltable, variable);
             assert(sym != NULL);
-            // TODO: handle type
             return *sym;
         } break;
 
@@ -153,7 +160,7 @@ static Symbol traverse_ast(AstNode *node, Hashtable *symboltable) {
             break;
 
         case ASTNODE_GROUPING:
-            traverse_ast(node->expr_grouping.expr, symboltable);
+            return traverse_ast(node->expr_grouping.expr, symboltable);
             break;
 
         case ASTNODE_FUNC:
