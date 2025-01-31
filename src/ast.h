@@ -84,6 +84,11 @@ typedef struct {
 } StmtFunc;
 
 typedef struct {
+    Token op;
+    AstNode *condition, *then_body, *else_body;
+} StmtIf;
+
+typedef struct {
     Token op, identifier;
     AstNode *value;
     Type type;
@@ -98,6 +103,7 @@ typedef enum {
     ASTNODE_BLOCK,
     ASTNODE_FUNC,
     ASTNODE_VARDECL,
+    ASTNODE_IF,
 } AstNodeKind;
 
 struct AstNode {
@@ -111,6 +117,7 @@ struct AstNode {
         Block         block;
         StmtFunc      stmt_func;
         StmtVarDecl   stmt_vardecl;
+        StmtIf        stmt_if;
     };
 };
 

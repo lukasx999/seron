@@ -215,6 +215,34 @@ AstNode *rule_vardecl(Parser *p) {
     return vardecl;
 }
 
+AstNode *rule_if(Parser *p) {
+    // <if> ::= "if" <expression> <block> ("else" <block>)?
+
+    assert(parser_match_tokenkinds(p, TOK_KW_IF, SENTINEL));
+    Token op = parser_get_current_token(p);
+    parser_advance(p);
+
+    AstNode *cond  = rule_expression(p);
+    AstNode *then  = rule_block(p);
+    AstNode *else_ = NULL;
+
+    if (parser_match_tokenkinds(p, TOK_KW_ELSE, SENTINEL)) {
+        parser_advance(p);
+        else_ = rule_block(p);
+    }
+
+    AstNode *node = malloc(sizeof(AstNode));
+    node->kind    = ASTNODE_IF;
+    node->stmt_if = (StmtIf) {
+        .op        = op,
+        .condition = cond,
+        .then_body = then,
+        .else_body = else_,
+    };
+
+    return node;
+}
+
 AstNode *rule_function(Parser *p) {
     // <function> ::= "proc" <identifier> "(" ")" <block>
 
@@ -297,6 +325,9 @@ AstNode *rule_stmt(Parser *p) {
 
     else if (parser_match_tokenkinds(p, TOK_KW_VARDECL, SENTINEL))
         return rule_vardecl(p);
+
+    else if (parser_match_tokenkinds(p, TOK_KW_IF, SENTINEL))
+        return rule_if(p);
 
     else
         return rule_exprstmt(p);

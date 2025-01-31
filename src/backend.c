@@ -94,8 +94,8 @@ static Symbol ast_literal(ExprLiteral *literal, Hashtable *symboltable) {
 
 static void ast_vardecl(StmtVarDecl *vardecl, Hashtable *symboltable) {
     const char *variable = vardecl->identifier.value;
-
     Symbol sym = traverse_ast(vardecl->value, symboltable);
+    // populate address in symboltable
     int    ret = hashtable_set(symboltable, variable, sym);
     assert(ret != -1);
 }

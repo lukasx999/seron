@@ -165,12 +165,8 @@ static void parse_args(int argc, char *argv[]) {
 }
 
 
-// TODO: type checking + semantic analysis
 // TODO: synchronizing parser
 // TODO: ast optimization pass
-// TODO: asm gets generated even if compiler fails -> semantic analysis
-// TODO: expect-style testing
-// TODO: unit tests for parser + symboltable
 // TODO: assignment
 // TODO: pointers
 // TODO: call args

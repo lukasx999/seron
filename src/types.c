@@ -194,6 +194,7 @@ static Type traverse_ast(AstNode *root, Hashtable *symboltable) {
                     type_to_string(rhs)
                 );
 
+            return lhs;
         } break;
 
         case ASTNODE_UNARYOP: {
@@ -237,6 +238,8 @@ static Type traverse_ast(AstNode *root, Hashtable *symboltable) {
             assert(!"Unexpected Node Kind");
             break;
     }
+
+    return TYPE_VOID;
 
 }
 

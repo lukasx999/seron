@@ -17,6 +17,8 @@ proc print() {
 
 proc _start() {
 
-    print();
+    if 1 {
+        print();
+    }
     exit();
 }
