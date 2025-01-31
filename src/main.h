@@ -13,15 +13,21 @@ the compiler context to every single recursive function call when traversing the
 hence using a global variable makes code cleaner (imo)
 */
 struct CompilerContext {
+
     struct {
         const char *raw; // filename with extension
         char stripped[256]; // stripped of suffix
         char asm[256];
         char obj[256];
     } filename;
-    bool show_warnings;
-    bool debug_asm;
-    bool dump_ast, dump_tokens, dump_symboltable;
+
+    // options are ints, because `struct option` only accept int pointers
+    struct {
+        int show_warnings;
+        int debug_asm;
+        int dump_ast, dump_tokens, dump_symboltable;
+    } opts;
+
 };
 
 extern struct CompilerContext compiler_context;

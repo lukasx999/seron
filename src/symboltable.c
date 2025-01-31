@@ -114,6 +114,7 @@ int hashtable_set(Hashtable *ht, const char *key, Symbol value) {
 }
 
 Symbol *symboltable_lookup(const Hashtable *ht, const char *key) {
+    assert(ht != NULL);
     const Hashtable *current = ht;
 
     while (current != NULL) {
@@ -319,7 +320,6 @@ static void traverse_ast(AstNode *root, Hashtable *parent, Symboltable *st) {
                 if (string_to_builtinfunc(variable) != BUILTINFUNC_NONE)
                     break;
 
-                assert(parent != NULL);
                 Symbol *sym = symboltable_lookup(parent, variable);
 
                 if (sym == NULL)

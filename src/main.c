@@ -122,10 +122,11 @@ static void parse_args(int argc, char *argv[]) {
 
     int opt_index = 0;
     struct option opts[] = {
-        { "dump-ast",         no_argument, (int*) &compiler_context.dump_ast,         true },
-        { "dump-tokens",      no_argument, (int*) &compiler_context.dump_tokens,      true },
-        { "dump-symboltable", no_argument, (int*) &compiler_context.dump_symboltable, true },
-        { "debug-asm",        no_argument, (int*) &compiler_context.debug_asm,        true },
+        { "dump-ast",         no_argument, &compiler_context.opts.dump_ast,         1 },
+        { "dump-tokens",      no_argument, &compiler_context.opts.dump_tokens,      1 },
+        { "dump-symboltable", no_argument, &compiler_context.opts.dump_symboltable, 1 },
+        { "debug-asm",        no_argument, &compiler_context.opts.debug_asm,        1 },
+        { NULL, 0, NULL, 0 },
         // TODO: --pedantic
         // TODO: link with libc
     };
@@ -143,7 +144,7 @@ static void parse_args(int argc, char *argv[]) {
                 break;
 
             case 'W':
-                compiler_context.show_warnings = true;
+                compiler_context.opts.show_warnings = true;
                 break;
 
             default:
@@ -158,9 +159,8 @@ static void parse_args(int argc, char *argv[]) {
         print_usage(argv);
 
     const char *filename = argv[optind];
-    const char *extension = "spx";
-    check_fileextension(filename, extension);
-    set_filenames(filename, extension);
+    check_fileextension(filename, "spx");
+    set_filenames(filename, "spx");
 
 }
 
@@ -175,10 +175,9 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: pointers
 // TODO: call args
 // TODO: --run argument
-
 // TODO: type checking
-
 // TODO: fix gen types
+// TODO: char literal
 
 
 
@@ -186,28 +185,40 @@ static void parse_args(int argc, char *argv[]) {
 
 int main(int argc, char *argv[]) {
 
-    // TODO: stacking long arguments
     parse_args(argc, argv);
 
-    char       *file        = read_file(compiler_context.filename.raw);
-    TokenList   tokens      = tokenize(file);
-    AstNode    *node_root   = parser_parse(&tokens);
-    Symboltable symboltable = symboltable_construct(node_root, 5);
-#if 0
-    check_types(root);
-#endif
-    generate_code(node_root);
-    build_binary();
+    char *file = read_file(compiler_context.filename.raw);
 
-
-    if (compiler_context.dump_tokens)
+    printf("Tokenizing...\n");
+    TokenList tokens = tokenize(file);
+    if (compiler_context.opts.dump_tokens)
         tokenlist_print(&tokens);
 
-    if (compiler_context.dump_ast)
+    printf("Parsing...\n");
+    AstNode *node_root = parser_parse(&tokens);
+    if (compiler_context.opts.dump_ast)
         parser_print_ast(node_root);
 
-    if (compiler_context.dump_symboltable)
+    printf("Building Symboltable...\n");
+    Symboltable symboltable = symboltable_construct(node_root, 5);
+    if (compiler_context.opts.dump_symboltable)
         symboltable_print(&symboltable);
+
+#if 1
+    printf("Checking Types...\n");
+    check_types(node_root);
+#endif
+    printf("Generating Code...\n");
+    generate_code(node_root);
+
+    printf("Building Binary...\n");
+    build_binary();
+
+    printf("%s%sBinary `%s` has been built!%s\n", COLOR_BOLD, COLOR_BLUE, compiler_context.filename.stripped, COLOR_END);
+
+
+
+
 
 
     symboltable_destroy(&symboltable);

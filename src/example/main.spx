@@ -5,8 +5,11 @@ proc exit() {
     asm("syscall");
 }
 
-
 proc _start() {
 
+    val foo 'int = 45;
+    1 + foo;
+
+    exit();
     exit();
 }

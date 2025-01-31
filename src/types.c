@@ -24,7 +24,7 @@ Type type_from_tokenkind(TokenKind kind) {
             return TYPE_BYTE;
             break;
         default:
-            return TYPE_INVALID;
+            assert(!"Unknown Token");
             break;
     }
 }
@@ -43,11 +43,14 @@ const char *type_to_string(Type type) {
         case TYPE_POINTER:
             return "pointer";
             break;
+        case TYPE_BUILTIN:
+            return "builtin";
+            break;
         case TYPE_FUNCTION:
             return "function";
             break;
         default:
-            return NULL;
+            assert(!"Unknown Type");
             break;
     }
 }
@@ -62,7 +65,7 @@ static Type traverse_ast(AstNode *root, Hashtable *symboltable) {
             AstNodeList list = block->stmts;
 
             for (size_t i=0; i < list.size; ++i)
-                traverse_ast(list.items[i], symboltable);
+                traverse_ast(list.items[i], block->symboltable);
 
         } break;
 
@@ -79,10 +82,14 @@ static Type traverse_ast(AstNode *root, Hashtable *symboltable) {
         } break;
 
         case ASTNODE_CALL: {
-            ExprCall call = root->expr_call;
-            traverse_ast(call.callee, symboltable);
+            ExprCall *call = &root->expr_call;
+            Type callee = traverse_ast(call->callee, symboltable);
 
-            AstNodeList list = call.args;
+            // TODO: function pointers
+            if (callee != TYPE_FUNCTION && callee != TYPE_BUILTIN)
+                throw_error(&call->op, "Callee must be a procedure or builtin");
+
+            AstNodeList list = call->args;
             for (size_t i=0; i < list.size; ++i)
                 traverse_ast(list.items[i], symboltable);
         } break;
@@ -97,7 +104,8 @@ static Type traverse_ast(AstNode *root, Hashtable *symboltable) {
             Type rhs = traverse_ast(binop->rhs, symboltable);
 
             if (lhs != rhs)
-                throw_error_simple(
+                throw_error(
+                    &binop->op,
                     "Types do not match (`%s` and `%s`)",
                     type_to_string(lhs),
                     type_to_string(rhs)
@@ -108,13 +116,38 @@ static Type traverse_ast(AstNode *root, Hashtable *symboltable) {
         case ASTNODE_UNARYOP: {
             const ExprUnaryOp *unaryop = &root->expr_unaryop;
             traverse_ast(unaryop->node, symboltable);
+            // TODO: check operand type. eg: logical operators cannot be used on integers
         } break;
 
         case ASTNODE_LITERAL: {
             const ExprLiteral* literal = &root->expr_literal;
-            Symbol *sym = symboltable_lookup(symboltable, literal->op.value);
-            assert(sym != NULL);
-            return sym->type;
+
+            switch (literal->op.kind) {
+
+                case TOK_IDENTIFIER: {
+                    const char *value = literal->op.value;
+
+                    if (string_to_builtinfunc(value) != BUILTINFUNC_NONE)
+                        return TYPE_BUILTIN;
+
+                    Symbol *sym = symboltable_lookup(symboltable, value);
+                    assert(sym != NULL);
+                    return sym->type;
+                } break;
+
+                case TOK_NUMBER:
+                    return TYPE_INT;
+                    break;
+
+                case TOK_STRING:
+                    return TYPE_POINTER;
+                    break;
+
+                default:
+                    assert(!"Unknown Type");
+                    break;
+            }
+
         } break;
 
         default:
