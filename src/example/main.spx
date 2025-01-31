@@ -5,7 +5,8 @@ proc exit() {
 }
 
 proc print() {
-    val buf 'int = 70-(5+1);
+    # val buf 'int = 70-(5+1);
+    val buf 'int = (65*100)/100+1;
     asm("mov rax, 1");
     asm("mov rdi, 1");
     asm("lea rsi, {}", buf);

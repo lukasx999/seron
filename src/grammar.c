@@ -125,8 +125,29 @@ AstNode *rule_unary(Parser *p) {
 
 AstNode *rule_factor(Parser *p) {
     // <factor> ::= <unary> (("/" | "*") <unary>)*
-    return rule_unary(p);
-    // TODO:
+
+    AstNode *lhs = rule_unary(p);
+
+    while (parser_match_tokenkinds(p, TOK_SLASH, TOK_ASTERISK, SENTINEL)) {
+        Token op = parser_get_current_token(p);
+        parser_advance(p);
+
+        AstNode *rhs = rule_unary(p);
+
+        AstNode *astnode    = malloc(sizeof(AstNode));
+        astnode->kind       = ASTNODE_BINOP;
+        astnode->expr_binop = (ExprBinOp) {
+            .lhs  = lhs,
+            .op   = op,
+            .rhs  = rhs,
+            .kind = binopkind_from_tokenkind(op.kind),
+        };
+
+        lhs = astnode;
+    }
+
+    return lhs;
+
 }
 
 AstNode *rule_term(Parser *p) {
@@ -140,12 +161,13 @@ AstNode *rule_term(Parser *p) {
 
         AstNode *rhs = rule_factor(p);
 
-        AstNode *astnode = malloc(sizeof(AstNode));
-        astnode->kind    = ASTNODE_BINOP;
-        astnode->expr_binop   = (ExprBinOp) {
-            .lhs = lhs,
-            .op  = op,
-            .rhs = rhs,
+        AstNode *astnode    = malloc(sizeof(AstNode));
+        astnode->kind       = ASTNODE_BINOP;
+        astnode->expr_binop = (ExprBinOp) {
+            .lhs  = lhs,
+            .op   = op,
+            .rhs  = rhs,
+            .kind = binopkind_from_tokenkind(op.kind),
         };
 
         lhs = astnode;

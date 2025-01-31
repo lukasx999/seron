@@ -58,36 +58,44 @@ void gen_prelude(CodeGenerator *c) {
 void gen_postlude(CodeGenerator *c) {
 }
 
-Symbol gen_add_or_sub(CodeGenerator *gen, Symbol a, Symbol b, bool do_add) {
+Symbol gen_binop(CodeGenerator *gen, Symbol a, Symbol b, BinOpKind kind) {
     assert(a.kind != SYMBOLKIND_LABEL && b.kind != SYMBOLKIND_LABEL);
     assert(a.type == a.type);
     Type type = a.type;
+    gen_comment(gen, "START: binop");
 
     gen->rbp_offset += type_get_size(type);
-
-    size_t rbp_offset1 = a.stack_addr;
-    size_t rbp_offset2 = b.stack_addr;
-
-    gen_comment(
-        gen,
-        "START: addition([rbp-%lu] + [rbp-%lu] -> [rbp-%lu])",
-        rbp_offset1,
-        rbp_offset2,
-        gen->rbp_offset
-    );
-
+    size_t rbp_offset_a = a.stack_addr;
+    size_t rbp_offset_b = b.stack_addr;
     const char *rax = type_get_register_rax(type);
     const char *rdi = type_get_register_rdi(type);
 
     FILE *f = gen->file;
-    fprintf(f, "mov %s, [rbp-%lu]\n", rax, rbp_offset1);
-    fprintf(f, "mov %s, [rbp-%lu]\n", rdi, rbp_offset2);
-    fprintf(f, "%s %s, %s\n", do_add ? "add" : "sub", rax, rdi);
+    fprintf(f, "mov %s, [rbp-%lu]\n", rax, rbp_offset_a);
+    fprintf(f, "mov %s, [rbp-%lu]\n", rdi, rbp_offset_b);
+
+    switch (kind) {
+        case BINOP_ADD:
+            fprintf(f, "add %s, %s\n", rax, rdi);
+            break;
+        case BINOP_SUB:
+            fprintf(f, "sub %s, %s\n", rax, rdi);
+            break;
+        case BINOP_MUL:
+            fprintf(f, "imul %s\n", rdi);
+            break;
+        case BINOP_DIV:
+            fprintf(f, "idiv %s\n", rdi);
+            break;
+        default:
+            assert(!"Unimplemented");
+            break;
+    }
+
     fprintf(f, "sub rsp, %lu\n", type_get_size(type));
     fprintf(f, "mov %s [rbp-%lu], %s\n", type_get_size_operand(type), gen->rbp_offset, rax);
 
-    gen_comment(gen, "END: addition\n");
-
+    gen_comment(gen, "END: binop\n");
     return (Symbol) {
         .kind       = SYMBOLKIND_ADDRESS,
         .stack_addr = gen->rbp_offset,
@@ -97,7 +105,7 @@ Symbol gen_add_or_sub(CodeGenerator *gen, Symbol a, Symbol b, bool do_add) {
 
 Symbol gen_store_literal(CodeGenerator *gen, int64_t value, Type type) {
     gen->rbp_offset += type_get_size(type);
-    gen_comment(gen, "START: store(%lu -> [rbp-%lu])", value, gen->rbp_offset);
+    gen_comment(gen, "START: store");
 
     FILE *f = gen->file;
     fprintf(f, "sub rsp, %lu\n", type_get_size(type));
@@ -175,12 +183,12 @@ void gen_func_end(CodeGenerator *c) {
 
 // TODO: call into address
 void gen_call(CodeGenerator *c, const char *identifier) {
-    gen_comment(c, "call(start)");
+    gen_comment(c, "START: call");
 
     fprintf(
         c->file,
         "call %s\n", identifier
     );
 
-    gen_comment(c, "call(end)\n");
+    gen_comment(c, "END: call\n");
 }

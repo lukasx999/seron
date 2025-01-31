@@ -40,3 +40,23 @@ BuiltinFunc string_to_builtinfunc(const char *str) {
     else
         return BUILTINFUNC_NONE;
 }
+
+BinOpKind binopkind_from_tokenkind(TokenKind kind) {
+    switch (kind) {
+        case TOK_PLUS:
+            return BINOP_ADD;
+            break;
+        case TOK_MINUS:
+            return BINOP_SUB;
+            break;
+        case TOK_SLASH:
+            return BINOP_DIV;
+            break;
+        case TOK_ASTERISK:
+            return BINOP_MUL;
+            break;
+        default:
+            assert(!"Unknown Tokenkind");
+            break;
+    }
+}

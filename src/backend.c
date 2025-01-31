@@ -67,19 +67,7 @@ static void builtin_inlineasm(ExprCall *call, Hashtable *symboltable) {
 static Symbol ast_binop(ExprBinOp *binop, Hashtable *symboltable) {
     Symbol sym_lhs  = traverse_ast(binop->lhs, symboltable);
     Symbol sym_rhs  = traverse_ast(binop->rhs, symboltable);
-
-    switch (binop->op.kind) {
-        case TOK_PLUS:
-            return gen_add_or_sub(&codegen, sym_lhs, sym_rhs, true);
-            break;
-        case TOK_MINUS:
-            return gen_add_or_sub(&codegen, sym_lhs, sym_rhs, false);
-            break;
-        default:
-            assert(!"Unimplemented");
-            break;
-    }
-
+    return gen_binop(&codegen, sym_lhs, sym_rhs, binop->kind);
 }
 
 static Symbol ast_literal(ExprLiteral *literal, Hashtable *symboltable) {
@@ -168,7 +156,6 @@ static Symbol traverse_ast(AstNode *node, Hashtable *symboltable) {
             break;
 
         case ASTNODE_VARDECL:
-            // TODO: SYMBOLKIND_NONE
             ast_vardecl(&node->stmt_vardecl, symboltable);
             break;
 

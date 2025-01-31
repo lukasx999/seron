@@ -17,12 +17,12 @@ typedef struct {
 } CodeGenerator;
 
 
-extern int           gen_init          (CodeGenerator *gen, const char *filename_asm, bool print_comments);
-extern void          gen_destroy       (CodeGenerator *c);
-extern void          gen_prelude       (CodeGenerator *c);
-extern void          gen_postlude      (CodeGenerator *c);
+extern int  gen_init(CodeGenerator *gen, const char *filename_asm, bool print_comments);
+extern void gen_destroy(CodeGenerator *c);
+extern void gen_prelude(CodeGenerator *c);
+extern void gen_postlude(CodeGenerator *c);
 
-extern Symbol gen_add_or_sub(CodeGenerator *gen, Symbol a, Symbol b, bool do_add);
+extern Symbol gen_binop(CodeGenerator *gen, Symbol a, Symbol b, BinOpKind kind);
 extern Symbol gen_store_literal(CodeGenerator *gen, int64_t value, Type type);
 extern void gen_func_start(CodeGenerator *c, const char *identifier);
 extern void gen_func_end(CodeGenerator *c);

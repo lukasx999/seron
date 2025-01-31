@@ -5,11 +5,13 @@ _start:
 push rbp
 mov rbp, rsp
 
+    mov rax, 15
+    mov rdi, 3
+    div rdi
 
-    mov dword [rbp-4], 45
-    mov rax, [rbp-4]
 
 
+    ; exit(0)
     mov rax, 60
     mov rdi, 0
     syscall

@@ -34,6 +34,8 @@ typedef enum {
 
 extern BuiltinFunc string_to_builtinfunc(const char *str);
 
+// Token is included in AstNode for printing source location on error/warning
+
 typedef struct {
     Token op;
 } ExprLiteral;
@@ -42,9 +44,19 @@ typedef struct {
     AstNode *expr;
 } ExprGrouping;
 
+typedef enum {
+    BINOP_ADD,
+    BINOP_SUB,
+    BINOP_MUL,
+    BINOP_DIV,
+} BinOpKind;
+
+extern BinOpKind binopkind_from_tokenkind(TokenKind kind);
+
 typedef struct {
     AstNode *lhs, *rhs;
     Token op;
+    BinOpKind kind;
 } ExprBinOp;
 
 typedef struct {
