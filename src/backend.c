@@ -150,6 +150,7 @@ static void ast_if(StmtIf *if_, Hashtable *symboltable) {
 
 // returns the location of the evaluated expression in memory
 static Symbol traverse_ast(AstNode *node, Hashtable *symboltable) {
+    assert(node != NULL);
 
     switch (node->kind) {
         case ASTNODE_BLOCK:

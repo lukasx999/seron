@@ -63,6 +63,8 @@ bool parser_is_at_end(const Parser *p) {
 }
 
 void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down, void *args) {
+    assert(root != NULL);
+
     static int depth = 0;
     if (top_down)
         callback(root, depth, args);
@@ -97,7 +99,8 @@ void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down, voi
             StmtIf if_ = root->stmt_if;
             parser_traverse_ast(if_.condition, callback, top_down, args);
             parser_traverse_ast(if_.then_body, callback, top_down, args);
-            parser_traverse_ast(if_.else_body, callback, top_down, args);
+            if (if_.else_body != NULL)
+                parser_traverse_ast(if_.else_body, callback, top_down, args);
             depth--;
         } break;
 
@@ -159,6 +162,7 @@ static void print_ast_value(const char *str, const char *color, const char *valu
 }
 
 static void parser_print_ast_callback(AstNode *root, int depth, void *_args) {
+    assert(root != NULL);
     (void) _args;
 
     const int spacing = 2; // TODO: pass this in through void* argument
@@ -237,6 +241,7 @@ void parser_print_ast(AstNode *root) {
 }
 
 static void parser_free_ast_callback(AstNode *node, int _depth, void *_args) {
+    assert(node != NULL);
     (void) _depth;
     (void) _args;
 

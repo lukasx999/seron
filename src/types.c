@@ -136,6 +136,7 @@ const char *type_get_register_rdi(Type type) {
 
 
 static Type traverse_ast(AstNode *root, Hashtable *symboltable) {
+    assert(root != NULL);
 
     switch (root->kind) {
         case ASTNODE_BLOCK: {
@@ -184,7 +185,8 @@ static Type traverse_ast(AstNode *root, Hashtable *symboltable) {
         case ASTNODE_IF:
             traverse_ast(root->stmt_if.condition, symboltable);
             traverse_ast(root->stmt_if.then_body, symboltable);
-            traverse_ast(root->stmt_if.else_body, symboltable);
+            if (root->stmt_if.else_body != NULL)
+                traverse_ast(root->stmt_if.else_body, symboltable);
             break;
 
         case ASTNODE_BINOP: {

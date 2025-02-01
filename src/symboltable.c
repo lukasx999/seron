@@ -237,6 +237,7 @@ void symboltable_print(const Symboltable *st) {
 
 
 static void traverse_ast(AstNode *root, Hashtable *parent, Symboltable *st) {
+    assert(root != NULL);
 
     switch (root->kind) {
         case ASTNODE_BLOCK: {

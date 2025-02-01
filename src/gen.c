@@ -66,7 +66,12 @@ void gen_if_then(CodeGenerator *gen, Symbol cond) {
     assert(cond.kind != SYMBOLKIND_LABEL);
 
     FILE *f = gen->file;
-    gen_addinstr(gen, "cmp %s [rbp-%lu], 0", type_get_size_operand(cond.type), cond.stack_addr);
+    gen_addinstr(
+        gen,
+        "cmp %s [rbp-%lu], 0",
+        type_get_size_operand(cond.type),
+        cond.stack_addr
+    );
     gen_addinstr(gen, "je .else");
 }
 

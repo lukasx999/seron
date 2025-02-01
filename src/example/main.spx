@@ -17,10 +17,9 @@ proc print() {
 
 proc _start() {
 
-    if 0 {
+    if 1 {
         print();
-    } else {
-        2;
     }
+
     exit();
 }
