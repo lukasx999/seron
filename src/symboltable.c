@@ -297,10 +297,16 @@ static void traverse_ast(AstNode *root, Hashtable *parent, Symboltable *st) {
                 traverse_ast(list.items[i], parent, st);
         } break;
 
-        case ASTNODE_ASSIGN:
-            // TODO: check assignee
-            traverse_ast(root->expr_assign.value, parent, st);
-            break;
+        case ASTNODE_ASSIGN: {
+            ExprAssignment assign = root->expr_assign;
+            const char *ident = assign.identifier.value;
+
+            Symbol *sym = symboltable_lookup(parent, ident);
+            if (sym == NULL)
+                throw_error(&assign.identifier, "Symbol `%s` does not exist", ident);
+
+            traverse_ast(assign.value, parent, st);
+        } break;
 
         case ASTNODE_GROUPING:
             traverse_ast(root->expr_grouping.expr, parent, st);
@@ -340,7 +346,6 @@ static void traverse_ast(AstNode *root, Hashtable *parent, Symboltable *st) {
                     break;
 
                 Symbol *sym = symboltable_lookup(parent, variable);
-
                 if (sym == NULL)
                     throw_error_simple("Symbol `%s` does not exist", variable);
             }

@@ -150,7 +150,14 @@ static Type traverse_ast(AstNode *root, Hashtable *symboltable) {
         case ASTNODE_ASSIGN: {
             ExprAssignment *assign = &root->expr_assign;
             Type type = traverse_ast(assign->value, symboltable);
-            // TODO: check type
+
+            const char *ident = assign->identifier.value;
+            Symbol *sym = symboltable_lookup(symboltable, ident);
+            assert(sym != NULL);
+
+            if (sym->type != type)
+                throw_error(&assign->op, "Cannot assign %s to %s", type_to_string(type), type_to_string(sym->type));
+
         } break;
 
         case ASTNODE_FUNC: {
@@ -165,7 +172,7 @@ static Type traverse_ast(AstNode *root, Hashtable *symboltable) {
             if (vardecl->type != type)
                 throw_error(
                     &vardecl->op,
-                    "Type annotation does not match assigned expression (`%s` and `%s`)",
+                    "Type annotation (%s) does not match assigned expression (%s)",
                     type_to_string(vardecl->type),
                     type_to_string(type)
                 );

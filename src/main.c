@@ -177,6 +177,9 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: make blocks expressions
 // TODO: add gen comments
 // TODO: maybe destroy tokenlist to reduce memory usage
+// TODO: throw_error remove pointer as program exits
+
+// FIX: asm("{}", asm);
 
 
 

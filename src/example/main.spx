@@ -4,7 +4,6 @@ proc exit() {
     asm("mov rax, 60");
     asm("mov rdi, 45");
     asm("syscall");
-    asm();
 }
 
 proc print() {
@@ -23,7 +22,6 @@ proc _start() {
 
     val foo 'int = 1;
     foo = 2;
-    foo = 1;
 
     print();
     exit();

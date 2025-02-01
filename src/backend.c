@@ -22,12 +22,17 @@ static Symbol traverse_ast(AstNode *node, Hashtable *symboltable);
 static void builtin_inlineasm(ExprCall *call, Hashtable *symboltable) {
 
     AstNodeList list = call->args;
+    if (list.size == 0)
+        throw_error(&call->op, "asm(), expects more than 0 arguments");
+
     AstNode *first   = list.items[0];
 
     bool is_literal = first->kind == ASTNODE_LITERAL;
-    if (!(is_literal && first->expr_literal.op.kind == TOK_STRING)) {
-        throw_error(&call->op, "First argument to `asm()` must be a string");
+    bool is_string  = first->expr_literal.op.kind == TOK_STRING;
+    if (!(is_literal && is_string)) {
+        throw_error(&call->op, "First argument to asm() must be a string");
     }
+
 
     // union member access only safe after check
     const char *asm_src = first->expr_literal.op.value;
@@ -45,7 +50,7 @@ static void builtin_inlineasm(ExprCall *call, Hashtable *symboltable) {
     if (list.size - 1 != expected_args) {
         throw_error(
             &call->op,
-            "Expected `%d` argument(s), got `%d`",
+            "Expected %d arguments, got %d",
             expected_args,
             list.size - 1
         );

@@ -329,7 +329,9 @@ AstNode *rule_assignment(Parser *p) {
         Token op = parser_get_current_token(p);
         parser_advance(p);
 
-        if (expr->kind != ASTNODE_LITERAL || expr->expr_literal.op.kind != TOK_IDENTIFIER)
+        bool is_literal = expr->kind == ASTNODE_LITERAL;
+        bool is_ident   = expr->expr_literal.op.kind == TOK_IDENTIFIER;
+        if (!(is_literal && is_ident))
             parser_throw_error(p, "Invalid assignment target");
 
         /* AstNode is not needed anymore, since we know its an identifier */
