@@ -4,11 +4,12 @@ proc exit() {
     asm("mov rax, 60");
     asm("mov rdi, 45");
     asm("syscall");
+    asm();
 }
 
 proc print() {
 
-    val buf 'int = (65*100)/100+1;
+    val buf 'int = 66;
     asm("mov rax, 1");
     asm("mov rdi, 1");
     asm("lea rsi, {}", buf);
@@ -20,8 +21,10 @@ proc print() {
 
 proc _start() {
 
+    val foo 'int = 1;
+    foo = 2;
+    foo = 1;
+
     print();
-
-
     exit();
 }

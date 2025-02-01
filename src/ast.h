@@ -71,6 +71,12 @@ typedef struct {
     Token op;
 } ExprUnaryOp;
 
+// TODO: make assignee an expression, to allow for struct member assignments
+typedef struct {
+    Token op, identifier;
+    AstNode *value;
+} ExprAssignment;
+
 typedef struct {
     AstNodeList stmts;
     Hashtable *symboltable;
@@ -110,21 +116,23 @@ typedef enum {
     ASTNODE_VARDECL,
     ASTNODE_IF,
     ASTNODE_WHILE,
+    ASTNODE_ASSIGN,
 } AstNodeKind;
 
 struct AstNode {
     AstNodeKind kind;
     union {
-        ExprLiteral   expr_literal;
-        ExprGrouping  expr_grouping;
-        ExprBinOp     expr_binop;
-        ExprUnaryOp   expr_unaryop;
-        ExprCall      expr_call;
-        Block         block;
-        StmtFunc      stmt_func;
-        StmtVarDecl   stmt_vardecl;
-        StmtIf        stmt_if;
-        StmtWhile     stmt_while;
+        ExprLiteral    expr_literal;
+        ExprGrouping   expr_grouping;
+        ExprBinOp      expr_binop;
+        ExprUnaryOp    expr_unaryop;
+        ExprCall       expr_call;
+        ExprAssignment expr_assign;
+        Block          block;
+        StmtFunc       stmt_func;
+        StmtVarDecl    stmt_vardecl;
+        StmtIf         stmt_if;
+        StmtWhile      stmt_while;
     };
 };
 

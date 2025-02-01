@@ -265,7 +265,7 @@ AstNode *rule_if(Parser *p) {
 }
 
 AstNode *rule_function(Parser *p) {
-    // <function> ::= "proc" <identifier> "(" ")" <block>
+    // <function> ::= "proc" IDENTIFIER "(" ")" <block>
 
     // TODO: paramlist
     // TODO: returntype
@@ -320,9 +320,42 @@ AstNode *rule_block(Parser *p) {
     return node;
 }
 
+AstNode *rule_assignment(Parser *p) {
+    // <assignment> ::= IDENTIFIER "=" <assignment> | <term>
+
+    AstNode *expr = rule_term(p);
+
+    if (parser_match_tokenkinds(p, TOK_ASSIGN, SENTINEL)) {
+        Token op = parser_get_current_token(p);
+        parser_advance(p);
+
+        if (expr->kind != ASTNODE_LITERAL || expr->expr_literal.op.kind != TOK_IDENTIFIER)
+            parser_throw_error(p, "Invalid assignment target");
+
+        /* AstNode is not needed anymore, since we know its an identifier */
+        Token ident = expr->expr_literal.op;
+        free(expr);
+
+        AstNode *value = rule_assignment(p);
+
+        AstNode *node     = malloc(sizeof(AstNode));
+        node->kind        = ASTNODE_ASSIGN;
+        node->expr_assign = (ExprAssignment) {
+            .op         = op,
+            .value      = value,
+            .identifier = ident,
+        };
+
+        return node;
+
+    } else
+        return expr;
+
+}
+
 AstNode *rule_expression(Parser *p) {
-    // <expr> ::= <term>
-    return rule_term(p);
+    // <expression> ::= <assignment>
+    return rule_assignment(p);
 }
 
 AstNode *rule_exprstmt(Parser *p) {
@@ -336,7 +369,7 @@ AstNode *rule_exprstmt(Parser *p) {
 }
 
 AstNode *rule_stmt(Parser *p) {
-    // <statement> ::= <block> | <function> | <if> | <while> | <expr> ";"
+    // <statement> ::= <block> | <function> | <vardeclaration> | <if> | <while> | <expr> ";"
 
     if (parser_match_tokenkinds(p, TOK_LBRACE, SENTINEL))
         return rule_block(p);

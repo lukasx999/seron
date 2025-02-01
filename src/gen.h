@@ -26,8 +26,9 @@ extern Symbol gen_binop(CodeGenerator *gen, Symbol a, Symbol b, BinOpKind kind);
 extern Symbol gen_store_literal(CodeGenerator *gen, int64_t value, Type type);
 extern void gen_func_start(CodeGenerator *c, const char *identifier);
 extern void gen_func_end(CodeGenerator *c);
-extern void gen_call(CodeGenerator *c, const char *identifier);
 extern void gen_inlineasm(CodeGenerator *c, const char *src, const Symbol *symbols, size_t symbols_len);
+
+extern void gen_call(CodeGenerator *gen, Symbol callee);
 
 extern void gen_if_then(CodeGenerator *gen, Symbol cond);
 extern void gen_if_else(CodeGenerator *gen);
@@ -35,6 +36,8 @@ extern void gen_if_end(CodeGenerator *gen);
 
 extern void gen_while_start(CodeGenerator *gen);
 extern void gen_while_end(CodeGenerator *gen, Symbol cond);
+
+extern void gen_assign(CodeGenerator *gen, Symbol assignee, Symbol value);
 
 
 

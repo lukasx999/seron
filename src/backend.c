@@ -29,7 +29,7 @@ static void builtin_inlineasm(ExprCall *call, Hashtable *symboltable) {
         throw_error(&call->op, "First argument to `asm()` must be a string");
     }
 
-    // union member access only save after check
+    // union member access only safe after check
     const char *asm_src = first->expr_literal.op.value;
 
 
@@ -95,8 +95,9 @@ static Symbol ast_literal(ExprLiteral *literal, Hashtable *symboltable) {
 static void ast_vardecl(StmtVarDecl *vardecl, Hashtable *symboltable) {
     const char *variable = vardecl->identifier.value;
     Symbol sym = traverse_ast(vardecl->value, symboltable);
-    // populate address in symboltable
-    int    ret = hashtable_set(symboltable, variable, sym);
+
+    /* populate address in symboltable */
+    int ret = hashtable_set(symboltable, variable, sym);
     assert(ret != -1);
 }
 
@@ -115,28 +116,25 @@ static void ast_block(Block *block) {
 }
 
 static void ast_call(ExprCall *call, Hashtable *symboltable) {
-
     if (call->builtin == BUILTINFUNC_ASM) {
         builtin_inlineasm(call, symboltable);
         return;
     }
+    assert(call->builtin == BUILTINFUNC_NONE);
 
     AstNodeList list = call->args;
     for (size_t i=0; i < list.size; ++i)
         traverse_ast(list.items[i], symboltable);
 
-    // HACK: call into address instead of identifier
-    // size_t callee_addr = traverse_ast(call->callee, codegen, symboltable);
-    gen_call(&codegen, call->callee->expr_literal.op.value);
+    Symbol callee = traverse_ast(call->callee, symboltable);
+    gen_call(&codegen, callee);
 }
 
 static void ast_if(StmtIf *if_, Hashtable *symboltable) {
     Symbol cond = traverse_ast(if_->condition, symboltable);
 
     gen_if_then(&codegen, cond);
-
     traverse_ast(if_->then_body, symboltable);
-
     gen_if_else(&codegen);
 
     if (if_->else_body != NULL)
@@ -150,6 +148,17 @@ static void ast_while(StmtWhile *while_, Hashtable *symboltable) {
     gen_while_start(&codegen);
     traverse_ast(while_->body, symboltable);
     gen_while_end(&codegen, cond);
+}
+
+static Symbol ast_assign(ExprAssignment *assign, Hashtable *symboltable) {
+    const char *ident = assign->identifier.value;
+    Symbol value = traverse_ast(assign->value, symboltable);
+
+    Symbol *assignee = symboltable_lookup(symboltable, ident);
+    assert(assignee != NULL);
+    gen_assign(&codegen, *assignee, value);
+
+    return value;
 }
 
 // returns the location of the evaluated expression in memory
@@ -196,6 +205,10 @@ static Symbol traverse_ast(AstNode *node, Hashtable *symboltable) {
 
         case ASTNODE_LITERAL:
             return ast_literal(&node->expr_literal, symboltable);
+            break;
+
+        case ASTNODE_ASSIGN:
+            return ast_assign(&node->expr_assign, symboltable);
             break;
 
         default:

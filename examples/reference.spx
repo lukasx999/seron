@@ -5,6 +5,15 @@ proc exit() {
     asm("syscall");
 }
 
+proc print() {
+    val buf 'int = (65*100)/100+1;
+    asm("mov rax, 1");
+    asm("mov rdi, 1");
+    asm("lea rsi, {}", buf);
+    asm("mov rdx, 1");
+    asm("syscall");
+}
+
 proc foo() {
 
     if 1 {

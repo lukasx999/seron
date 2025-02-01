@@ -64,7 +64,7 @@ void gen_prelude(CodeGenerator *gen) {
 }
 
 void gen_if_then(CodeGenerator *gen, Symbol cond) {
-    assert(cond.kind != SYMBOLKIND_LABEL);
+    assert(cond.kind == SYMBOLKIND_ADDRESS);
 
     gen_addinstr(
         gen,
@@ -91,7 +91,7 @@ void gen_while_start(CodeGenerator *gen) {
 }
 
 void gen_while_end(CodeGenerator *gen, Symbol cond) {
-    assert(cond.kind != SYMBOLKIND_LABEL);
+    assert(cond.kind == SYMBOLKIND_ADDRESS);
 
     gen_addinstr(gen, ".cond%lu:", gen->label_count);
     gen_addinstr(
@@ -105,7 +105,7 @@ void gen_while_end(CodeGenerator *gen, Symbol cond) {
 }
 
 Symbol gen_binop(CodeGenerator *gen, Symbol a, Symbol b, BinOpKind kind) {
-    assert(a.kind != SYMBOLKIND_LABEL && b.kind != SYMBOLKIND_LABEL);
+    assert(a.kind == SYMBOLKIND_ADDRESS && b.kind == SYMBOLKIND_ADDRESS);
     assert(a.type == a.type);
     Type type = a.type;
     gen_comment(gen, "START: binop");
@@ -183,7 +183,7 @@ void gen_inlineasm(
 
         if (src[i] == '{' && src[i+1] == '}') {
             Symbol sym = symbols[arg_index];
-            assert(sym.kind != SYMBOLKIND_LABEL);
+            assert(sym.kind == SYMBOLKIND_ADDRESS);
             fprintf(gen->file, "[rbp-%lu]", sym.stack_addr);
             i++;
             arg_index++;
@@ -224,9 +224,27 @@ void gen_func_end(CodeGenerator *gen) {
     gen_comment(gen, "END: function\n");
 }
 
-// TODO: call into address
-void gen_call(CodeGenerator *gen, const char *identifier) {
+void gen_call(CodeGenerator *gen, Symbol callee) {
+    // TODO: add function pointers
+    assert(callee.kind == SYMBOLKIND_LABEL);
+
     gen_comment(gen, "START: call");
-    gen_addinstr(gen, "call %s", identifier);
+    gen_addinstr(gen, "call %s", callee.label);
     gen_comment(gen, "END: call\n");
+}
+
+void gen_assign(CodeGenerator *gen, Symbol assignee, Symbol value) {
+    assert(assignee.kind == SYMBOLKIND_ADDRESS && value.kind == SYMBOLKIND_ADDRESS);
+    assert(assignee.type == value.type);
+
+    Type type = assignee.type;
+    const char *rax = type_get_register_rax(type);
+
+    gen_addinstr(gen, "mov %s, [rbp-%lu]", rax, value.stack_addr);
+    gen_addinstr(
+        gen,
+        "mov %s [rbp-%lu], %s", type_get_size_operand(type),
+        assignee.stack_addr,
+        rax
+    );
 }

@@ -147,6 +147,12 @@ static Type traverse_ast(AstNode *root, Hashtable *symboltable) {
                 traverse_ast(list.items[i], block->symboltable);
         } break;
 
+        case ASTNODE_ASSIGN: {
+            ExprAssignment *assign = &root->expr_assign;
+            Type type = traverse_ast(assign->value, symboltable);
+            // TODO: check type
+        } break;
+
         case ASTNODE_FUNC: {
             const StmtFunc *func = &root->stmt_func;
             traverse_ast(func->body, symboltable);

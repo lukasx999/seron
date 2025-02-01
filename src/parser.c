@@ -81,6 +81,12 @@ void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down, voi
             depth--;
         } break;
 
+        case ASTNODE_ASSIGN: {
+            depth++;
+            parser_traverse_ast(root->expr_assign.value, callback, top_down, args);
+            depth--;
+        } break;
+
         case ASTNODE_CALL: {
             depth++;
             ExprCall call = root->expr_call;
@@ -190,6 +196,10 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
             print_ast_value("grouping", COLOR_BLUE, NULL, NULL);
         } break;
 
+        case ASTNODE_ASSIGN: {
+            print_ast_value("assign", COLOR_RED, root->expr_assign.identifier.value, NULL);
+        } break;
+
         case ASTNODE_IF: {
             print_ast_value("if", COLOR_RED, NULL, NULL);
         } break;
@@ -266,6 +276,7 @@ static void parser_free_ast_callback(AstNode *node, int _depth, void *_args) {
             break;
 
         case ASTNODE_GROUPING:
+        case ASTNODE_ASSIGN:
         case ASTNODE_LITERAL:
         case ASTNODE_FUNC:
         case ASTNODE_VARDECL:

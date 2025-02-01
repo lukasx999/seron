@@ -97,6 +97,7 @@ static void print_usage(char *argv[]) {
             "\t--dump-ast\n"
             "\t--dump-tokens\n"
             "\t--dump-symboltable\n"
+            "\t--debug-asm\n"
             );
     exit(EXIT_FAILURE);
 }
@@ -172,8 +173,10 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: call args
 // TODO: --run argument
 // TODO: char literal
-// TODO: print ast spacing
 // TODO: analysis: dont allow statements in global scope
+// TODO: make blocks expressions
+// TODO: add gen comments
+// TODO: maybe destroy tokenlist to reduce memory usage
 
 
 
@@ -200,10 +203,9 @@ int main(int argc, char *argv[]) {
     if (compiler_context.opts.dump_symboltable)
         symboltable_print(&symboltable);
 
-#if 1
     printf("Checking Types...\n");
     check_types(node_root);
-#endif
+
     printf("Generating Code...\n");
     generate_code(node_root);
 

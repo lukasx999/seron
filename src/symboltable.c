@@ -297,6 +297,11 @@ static void traverse_ast(AstNode *root, Hashtable *parent, Symboltable *st) {
                 traverse_ast(list.items[i], parent, st);
         } break;
 
+        case ASTNODE_ASSIGN:
+            // TODO: check assignee
+            traverse_ast(root->expr_assign.value, parent, st);
+            break;
+
         case ASTNODE_GROUPING:
             traverse_ast(root->expr_grouping.expr, parent, st);
             break;
