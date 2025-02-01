@@ -85,7 +85,7 @@ typedef struct {
 
 typedef struct {
     Token op;
-    AstNode *condition, *then_body, *else_body;
+    AstNode *condition, *then_body, *else_body; // else_body is NULL if there is none
 } StmtIf;
 
 typedef struct {

@@ -181,6 +181,12 @@ static Type traverse_ast(AstNode *root, Hashtable *symboltable) {
             return traverse_ast(root->expr_grouping.expr, symboltable);
             break;
 
+        case ASTNODE_IF:
+            traverse_ast(root->stmt_if.condition, symboltable);
+            traverse_ast(root->stmt_if.then_body, symboltable);
+            traverse_ast(root->stmt_if.else_body, symboltable);
+            break;
+
         case ASTNODE_BINOP: {
             const ExprBinOp *binop = &root->expr_binop;
             Type lhs = traverse_ast(binop->lhs, symboltable);

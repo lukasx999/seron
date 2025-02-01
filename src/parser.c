@@ -92,6 +92,15 @@ void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down, voi
             depth--;
         } break;
 
+        case ASTNODE_IF: {
+            depth++;
+            StmtIf if_ = root->stmt_if;
+            parser_traverse_ast(if_.condition, callback, top_down, args);
+            parser_traverse_ast(if_.then_body, callback, top_down, args);
+            parser_traverse_ast(if_.else_body, callback, top_down, args);
+            depth--;
+        } break;
+
         case ASTNODE_GROUPING:
             depth++;
             parser_traverse_ast(root->expr_grouping.expr, callback, top_down, args);
@@ -158,7 +167,6 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *_args) {
 
     switch (root->kind) {
         case ASTNODE_BLOCK: {
-            Block *block = &root->block;
             print_ast_value(
                 "block",
                 COLOR_BLUE,
@@ -169,6 +177,10 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *_args) {
 
         case ASTNODE_GROUPING: {
             print_ast_value("grouping", COLOR_BLUE, NULL, NULL);
+        } break;
+
+        case ASTNODE_IF: {
+            print_ast_value("if", COLOR_RED, NULL, NULL);
         } break;
 
         case ASTNODE_BINOP: {
@@ -243,6 +255,7 @@ static void parser_free_ast_callback(AstNode *node, int _depth, void *_args) {
         case ASTNODE_VARDECL:
         case ASTNODE_BINOP:
         case ASTNODE_UNARYOP:
+        case ASTNODE_IF:
             break;
 
         default:

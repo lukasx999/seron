@@ -235,6 +235,7 @@ void symboltable_print(const Symboltable *st) {
 
 
 
+
 static void traverse_ast(AstNode *root, Hashtable *parent, Symboltable *st) {
 
     switch (root->kind) {
@@ -297,6 +298,13 @@ static void traverse_ast(AstNode *root, Hashtable *parent, Symboltable *st) {
 
         case ASTNODE_GROUPING:
             traverse_ast(root->expr_grouping.expr, parent, st);
+            break;
+
+        case ASTNODE_IF:
+            traverse_ast(root->stmt_if.condition, parent, st);
+            traverse_ast(root->stmt_if.then_body, parent, st);
+            if (root->stmt_if.else_body != NULL)
+                traverse_ast(root->stmt_if.else_body, parent, st);
             break;
 
         case ASTNODE_BINOP: {

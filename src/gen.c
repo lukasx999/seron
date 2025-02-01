@@ -17,15 +17,22 @@
 
 
 
+static void gen_addinstr(CodeGenerator *gen, const char *fmt, ...) {
+    va_list va;
+    va_start(va, fmt);
+    vfprintf(gen->file, fmt, va);
+    fprintf(gen->file, "\n");
+    va_end(va);
+}
 
-static void gen_comment(CodeGenerator *c, const char *fmt, ...) {
+static void gen_comment(CodeGenerator *gen, const char *fmt, ...) {
     va_list va;
     va_start(va, fmt);
 
-    if (c->print_comments) {
-        fprintf(c->file, "; ");
-        vfprintf(c->file, fmt, va);
-        fprintf(c->file, "\n");
+    if (gen->print_comments) {
+        fprintf(gen->file, "; ");
+        vfprintf(gen->file, fmt, va);
+        fprintf(gen->file, "\n");
     }
 
     va_end(va);
@@ -46,16 +53,32 @@ int gen_init(CodeGenerator *gen, const char *filename_asm, bool print_comments) 
     return 0;
 }
 
-void gen_destroy(CodeGenerator *c) {
-    fclose(c->file);
+void gen_destroy(CodeGenerator *gen) {
+    fclose(gen->file);
 }
 
-void gen_prelude(CodeGenerator *c) {
+void gen_prelude(CodeGenerator *gen) {
     // TODO: different sections
-    fprintf(c->file, "section .text\n\n");
+    gen_addinstr(gen, "section .text\n");
 }
 
-void gen_postlude(CodeGenerator *c) {
+void gen_if_then(CodeGenerator *gen, Symbol cond) {
+    assert(cond.kind != SYMBOLKIND_LABEL);
+
+    FILE *f = gen->file;
+    gen_addinstr(gen, "cmp %s [rbp-%lu], 0", type_get_size_operand(cond.type), cond.stack_addr);
+    gen_addinstr(gen, "je .else");
+}
+
+void gen_if_else(CodeGenerator *gen) {
+    FILE *f = gen->file;
+    gen_addinstr(gen, "jmp .end");
+    gen_addinstr(gen, ".else:");
+}
+
+void gen_if_end(CodeGenerator *gen) {
+    FILE *f = gen->file;
+    gen_addinstr(gen, ".end:");
 }
 
 Symbol gen_binop(CodeGenerator *gen, Symbol a, Symbol b, BinOpKind kind) {
@@ -71,29 +94,29 @@ Symbol gen_binop(CodeGenerator *gen, Symbol a, Symbol b, BinOpKind kind) {
     const char *rdi = type_get_register_rdi(type);
 
     FILE *f = gen->file;
-    fprintf(f, "mov %s, [rbp-%lu]\n", rax, rbp_offset_a);
-    fprintf(f, "mov %s, [rbp-%lu]\n", rdi, rbp_offset_b);
+    gen_addinstr(gen, "mov %s, [rbp-%lu]", rax, rbp_offset_a);
+    gen_addinstr(gen, "mov %s, [rbp-%lu]", rdi, rbp_offset_b);
 
     switch (kind) {
         case BINOP_ADD:
-            fprintf(f, "add %s, %s\n", rax, rdi);
+            gen_addinstr(gen, "add %s, %s", rax, rdi);
             break;
         case BINOP_SUB:
-            fprintf(f, "sub %s, %s\n", rax, rdi);
+            gen_addinstr(gen, "sub %s, %s", rax, rdi);
             break;
         case BINOP_MUL:
-            fprintf(f, "imul %s\n", rdi);
+            gen_addinstr(gen, "imul %s", rdi);
             break;
         case BINOP_DIV:
-            fprintf(f, "idiv %s\n", rdi);
+            gen_addinstr(gen, "idiv %s", rdi);
             break;
         default:
             assert(!"Unimplemented");
             break;
     }
 
-    fprintf(f, "sub rsp, %lu\n", type_get_size(type));
-    fprintf(f, "mov %s [rbp-%lu], %s\n", type_get_size_operand(type), gen->rbp_offset, rax);
+    gen_addinstr(gen, "sub rsp, %lu", type_get_size(type));
+    gen_addinstr(gen, "mov %s [rbp-%lu], %s", type_get_size_operand(type), gen->rbp_offset, rax);
 
     gen_comment(gen, "END: binop\n");
     return (Symbol) {
@@ -108,10 +131,10 @@ Symbol gen_store_literal(CodeGenerator *gen, int64_t value, Type type) {
     gen_comment(gen, "START: store");
 
     FILE *f = gen->file;
-    fprintf(f, "sub rsp, %lu\n", type_get_size(type));
-    fprintf(
-        f,
-        "mov %s [rbp-%lu], %lu\n",
+    gen_addinstr(gen, "sub rsp, %lu", type_get_size(type));
+    gen_addinstr(
+        gen,
+        "mov %s [rbp-%lu], %lu",
         type_get_size_operand(type),
         gen->rbp_offset,
         value
@@ -156,39 +179,34 @@ void gen_inlineasm(
     gen_comment(gen, "END: inline\n");
 }
 
-void gen_func_start(CodeGenerator *c, const char *identifier) {
-    gen_comment(c, "START: function");
-    gen_comment(c, "START: function_prelude");
+void gen_func_start(CodeGenerator *gen, const char *identifier) {
+    gen_comment(gen, "START: function");
+    gen_comment(gen, "START: function_prelude");
 
-    FILE *f = c->file;
-    fprintf(f, "global %s\n", identifier);
-    fprintf(f, "%s:\n",       identifier);
-    fprintf(f, "push rbp\n"             );
-    fprintf(f, "mov rbp, rsp\n"         );
+    FILE *f = gen->file;
+    gen_addinstr(gen, "global %s", identifier);
+    gen_addinstr(gen, "%s:",       identifier);
+    gen_addinstr(gen, "push rbp"             );
+    gen_addinstr(gen, "mov rbp, rsp"         );
 
-    gen_comment(c, "END: function_prelude\n");
+    gen_comment(gen, "END: function_prelude\n");
 }
 
-void gen_func_end(CodeGenerator *c) {
-    gen_comment(c, "START: function_postlude");
+void gen_func_end(CodeGenerator *gen) {
+    gen_comment(gen, "START: function_postlude");
 
-    FILE *f = c->file;
-    fprintf(f, "mov rsp, rbp\n");
-    fprintf(f, "pop rbp\n");
-    fprintf(f, "ret\n"    );
+    FILE *f = gen->file;
+    gen_addinstr(gen, "mov rsp, rbp");
+    gen_addinstr(gen, "pop rbp");
+    gen_addinstr(gen, "ret");
 
-    gen_comment(c, "END: function_postlude");
-    gen_comment(c, "END: function\n");
+    gen_comment(gen, "END: function_postlude");
+    gen_comment(gen, "END: function\n");
 }
 
 // TODO: call into address
-void gen_call(CodeGenerator *c, const char *identifier) {
-    gen_comment(c, "START: call");
-
-    fprintf(
-        c->file,
-        "call %s\n", identifier
-    );
-
-    gen_comment(c, "END: call\n");
+void gen_call(CodeGenerator *gen, const char *identifier) {
+    gen_comment(gen, "START: call");
+    gen_addinstr(gen, "call %s", identifier);
+    gen_comment(gen, "END: call\n");
 }

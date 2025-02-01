@@ -130,6 +130,20 @@ static void ast_call(ExprCall *call, Hashtable *symboltable) {
     gen_call(&codegen, call->callee->expr_literal.op.value);
 }
 
+static void ast_if(StmtIf *if_, Hashtable *symboltable) {
+    Symbol cond = traverse_ast(if_->condition, symboltable);
+
+    gen_if_then(&codegen, cond);
+
+    traverse_ast(if_->then_body, symboltable);
+
+    gen_if_else(&codegen);
+
+    if (if_->else_body != NULL)
+        traverse_ast(if_->else_body, symboltable);
+
+    gen_if_end(&codegen);
+}
 
 
 
@@ -153,6 +167,10 @@ static Symbol traverse_ast(AstNode *node, Hashtable *symboltable) {
 
         case ASTNODE_FUNC:
             ast_func(&node->stmt_func, symboltable);
+            break;
+
+        case ASTNODE_IF:
+            ast_if(&node->stmt_if, symboltable);
             break;
 
         case ASTNODE_VARDECL:
@@ -188,7 +206,6 @@ void generate_code(AstNode *root) {
 
     gen_prelude(&codegen);
     traverse_ast(root, NULL);
-    gen_postlude(&codegen);
 
     gen_destroy(&codegen);
 }
