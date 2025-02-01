@@ -5,7 +5,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "lexer.h"
 #include "symboltable.h"
 
 

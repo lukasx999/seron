@@ -166,11 +166,6 @@ static void parse_args(int argc, char *argv[]) {
 }
 
 
-// TODO: synchronizing parser
-// TODO: synchronizing typechecker
-// TODO: assignment
-// TODO: pointers
-// TODO: call args
 // TODO: --run argument
 // TODO: char literal
 // TODO: analysis: dont allow statements in global scope
@@ -178,6 +173,10 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: add gen comments
 // TODO: maybe destroy tokenlist to reduce memory usage
 // TODO: throw_error remove pointer as program exits
+// TODO: synchronizing parser
+// TODO: synchronizing typechecker
+// TODO: pointers
+// TODO: call args
 
 // FIX: asm("{}", asm);
 
