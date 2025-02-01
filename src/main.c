@@ -172,6 +172,7 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: call args
 // TODO: --run argument
 // TODO: char literal
+// TODO: print ast spacing
 
 
 

@@ -7,10 +7,10 @@ mov rbp, rsp
 
 
 
-    mov rax, 1
+    mov rax, 0
 
-    cmp rax, 1
-    jne .else
+    jmp .cond
+    .while:
 
     ; write()
     mov byte [rbp-4], 65
@@ -20,18 +20,13 @@ mov rbp, rsp
     mov rdx, 1
     syscall
 
-    jmp .end
-    .else:
+    .cond:
+    cmp rax, 0
+    jne .while
 
-    ; write()
-    mov byte [rbp-4], 66
-    mov rax, 1
-    mov rdi, 1
-    lea rsi, [rbp-4]
-    mov rdx, 1
-    syscall
 
-    .end:
+
+
 
 
     ; exit(0)

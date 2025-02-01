@@ -94,6 +94,14 @@ void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down, voi
             depth--;
         } break;
 
+        case ASTNODE_WHILE: {
+            depth++;
+            StmtWhile while_ = root->stmt_while;
+            parser_traverse_ast(while_.condition, callback, top_down, args);
+            parser_traverse_ast(while_.body, callback, top_down, args);
+            depth--;
+        } break;
+
         case ASTNODE_IF: {
             depth++;
             StmtIf if_ = root->stmt_if;
@@ -187,6 +195,10 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *_args) {
             print_ast_value("if", COLOR_RED, NULL, NULL);
         } break;
 
+        case ASTNODE_WHILE: {
+            print_ast_value("while", COLOR_RED, NULL, NULL);
+        } break;
+
         case ASTNODE_BINOP: {
             ExprBinOp *binop = &root->expr_binop;
             print_ast_value(tokenkind_to_string(binop->op.kind), COLOR_PURPLE, NULL, NULL);
@@ -261,6 +273,7 @@ static void parser_free_ast_callback(AstNode *node, int _depth, void *_args) {
         case ASTNODE_BINOP:
         case ASTNODE_UNARYOP:
         case ASTNODE_IF:
+        case ASTNODE_WHILE:
             break;
 
         default:

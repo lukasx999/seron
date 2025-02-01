@@ -145,8 +145,12 @@ static void ast_if(StmtIf *if_, Hashtable *symboltable) {
     gen_if_end(&codegen);
 }
 
-
-
+static void ast_while(StmtWhile *while_, Hashtable *symboltable) {
+    Symbol cond = traverse_ast(while_->condition, symboltable);
+    gen_while_start(&codegen);
+    traverse_ast(while_->body, symboltable);
+    gen_while_end(&codegen, cond);
+}
 
 // returns the location of the evaluated expression in memory
 static Symbol traverse_ast(AstNode *node, Hashtable *symboltable) {
@@ -172,6 +176,10 @@ static Symbol traverse_ast(AstNode *node, Hashtable *symboltable) {
 
         case ASTNODE_IF:
             ast_if(&node->stmt_if, symboltable);
+            break;
+
+        case ASTNODE_WHILE:
+            ast_while(&node->stmt_while, symboltable);
             break;
 
         case ASTNODE_VARDECL:

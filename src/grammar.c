@@ -215,6 +215,27 @@ AstNode *rule_vardecl(Parser *p) {
     return vardecl;
 }
 
+AstNode *rule_while(Parser *p) {
+    // <while> ::= "while" <expression> <block>
+
+    assert(parser_match_tokenkinds(p, TOK_KW_WHILE, SENTINEL));
+    Token op = parser_get_current_token(p);
+    parser_advance(p);
+
+    AstNode *cond  = rule_expression(p);
+    AstNode *body  = rule_block(p);
+
+    AstNode *node    = malloc(sizeof(AstNode));
+    node->kind       = ASTNODE_WHILE;
+    node->stmt_while = (StmtWhile) {
+        .op        = op,
+        .condition = cond,
+        .body      = body,
+    };
+
+    return node;
+}
+
 AstNode *rule_if(Parser *p) {
     // <if> ::= "if" <expression> <block> ("else" <block>)?
 
@@ -328,6 +349,9 @@ AstNode *rule_stmt(Parser *p) {
 
     else if (parser_match_tokenkinds(p, TOK_KW_IF, SENTINEL))
         return rule_if(p);
+
+    else if (parser_match_tokenkinds(p, TOK_KW_WHILE, SENTINEL))
+        return rule_while(p);
 
     else
         return rule_exprstmt(p);

@@ -301,6 +301,11 @@ static void traverse_ast(AstNode *root, Hashtable *parent, Symboltable *st) {
             traverse_ast(root->expr_grouping.expr, parent, st);
             break;
 
+        case ASTNODE_WHILE:
+            traverse_ast(root->stmt_while.condition, parent, st);
+            traverse_ast(root->stmt_while.body, parent, st);
+            break;
+
         case ASTNODE_IF:
             traverse_ast(root->stmt_if.condition, parent, st);
             traverse_ast(root->stmt_if.then_body, parent, st);

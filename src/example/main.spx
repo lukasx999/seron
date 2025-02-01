@@ -21,5 +21,18 @@ proc _start() {
         print();
     }
 
+    if 1 {
+        print();
+    }
+
+    while 0 {
+        print();
+    }
+
+    while 1 {
+        print();
+    }
+
+
     exit();
 }

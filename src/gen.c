@@ -47,6 +47,7 @@ int gen_init(CodeGenerator *gen, const char *filename_asm, bool print_comments) 
     *gen = (CodeGenerator) {
         .file           = file,
         .rbp_offset     = 0,
+        .label_count    = 0,
         .print_comments = print_comments,
     };
 
@@ -65,25 +66,42 @@ void gen_prelude(CodeGenerator *gen) {
 void gen_if_then(CodeGenerator *gen, Symbol cond) {
     assert(cond.kind != SYMBOLKIND_LABEL);
 
-    FILE *f = gen->file;
     gen_addinstr(
         gen,
         "cmp %s [rbp-%lu], 0",
         type_get_size_operand(cond.type),
         cond.stack_addr
     );
-    gen_addinstr(gen, "je .else");
+    gen_addinstr(gen, "je .else%lu", gen->label_count);
 }
 
 void gen_if_else(CodeGenerator *gen) {
-    FILE *f = gen->file;
-    gen_addinstr(gen, "jmp .end");
-    gen_addinstr(gen, ".else:");
+    gen_addinstr(gen, "jmp .end%lu", gen->label_count);
+    gen_addinstr(gen, ".else%lu:", gen->label_count);
 }
 
 void gen_if_end(CodeGenerator *gen) {
-    FILE *f = gen->file;
-    gen_addinstr(gen, ".end:");
+    gen_addinstr(gen, ".end%lu:", gen->label_count);
+    gen->label_count++;
+}
+
+void gen_while_start(CodeGenerator *gen) {
+    gen_addinstr(gen, "jmp .cond%lu", gen->label_count);
+    gen_addinstr(gen, ".while%lu:", gen->label_count);
+}
+
+void gen_while_end(CodeGenerator *gen, Symbol cond) {
+    assert(cond.kind != SYMBOLKIND_LABEL);
+
+    gen_addinstr(gen, ".cond%lu:", gen->label_count);
+    gen_addinstr(
+        gen,
+        "cmp %s [rbp-%lu], 0",
+        type_get_size_operand(cond.type),
+        cond.stack_addr
+    );
+    gen_addinstr(gen, "jne .while%lu", gen->label_count);
+    gen->label_count++;
 }
 
 Symbol gen_binop(CodeGenerator *gen, Symbol a, Symbol b, BinOpKind kind) {
@@ -98,7 +116,6 @@ Symbol gen_binop(CodeGenerator *gen, Symbol a, Symbol b, BinOpKind kind) {
     const char *rax = type_get_register_rax(type);
     const char *rdi = type_get_register_rdi(type);
 
-    FILE *f = gen->file;
     gen_addinstr(gen, "mov %s, [rbp-%lu]", rax, rbp_offset_a);
     gen_addinstr(gen, "mov %s, [rbp-%lu]", rdi, rbp_offset_b);
 
@@ -135,7 +152,6 @@ Symbol gen_store_literal(CodeGenerator *gen, int64_t value, Type type) {
     gen->rbp_offset += type_get_size(type);
     gen_comment(gen, "START: store");
 
-    FILE *f = gen->file;
     gen_addinstr(gen, "sub rsp, %lu", type_get_size(type));
     gen_addinstr(
         gen,
@@ -200,7 +216,6 @@ void gen_func_start(CodeGenerator *gen, const char *identifier) {
 void gen_func_end(CodeGenerator *gen) {
     gen_comment(gen, "START: function_postlude");
 
-    FILE *f = gen->file;
     gen_addinstr(gen, "mov rsp, rbp");
     gen_addinstr(gen, "pop rbp");
     gen_addinstr(gen, "ret");

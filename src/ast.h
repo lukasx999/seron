@@ -89,6 +89,11 @@ typedef struct {
 } StmtIf;
 
 typedef struct {
+    Token op;
+    AstNode *condition, *body;
+} StmtWhile;
+
+typedef struct {
     Token op, identifier;
     AstNode *value;
     Type type;
@@ -104,6 +109,7 @@ typedef enum {
     ASTNODE_FUNC,
     ASTNODE_VARDECL,
     ASTNODE_IF,
+    ASTNODE_WHILE,
 } AstNodeKind;
 
 struct AstNode {
@@ -118,6 +124,7 @@ struct AstNode {
         StmtFunc      stmt_func;
         StmtVarDecl   stmt_vardecl;
         StmtIf        stmt_if;
+        StmtWhile     stmt_while;
     };
 };
 
