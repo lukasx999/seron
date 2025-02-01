@@ -169,11 +169,10 @@ static void print_ast_value(const char *str, const char *color, const char *valu
     puts("");
 }
 
-static void parser_print_ast_callback(AstNode *root, int depth, void *_args) {
+static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
     assert(root != NULL);
-    (void) _args;
+    int spacing = *(int*) args;
 
-    const int spacing = 2; // TODO: pass this in through void* argument
     for (int _=0; _ < depth * spacing; ++_)
         printf("%s⋅%s", COLOR_GRAY, COLOR_END);
 
@@ -246,9 +245,9 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *_args) {
     }
 }
 
-void parser_print_ast(AstNode *root) {
+void parser_print_ast(AstNode *root, int spacing) {
     printf("\n");
-    parser_traverse_ast(root, parser_print_ast_callback, true, NULL);
+    parser_traverse_ast(root, parser_print_ast_callback, true, &spacing);
     printf("\n");
 }
 

@@ -173,6 +173,7 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: --run argument
 // TODO: char literal
 // TODO: print ast spacing
+// TODO: analysis: dont allow statements in global scope
 
 
 
@@ -192,7 +193,7 @@ int main(int argc, char *argv[]) {
     printf("Parsing...\n");
     AstNode *node_root = parser_parse(&tokens);
     if (compiler_context.opts.dump_ast)
-        parser_print_ast(node_root);
+        parser_print_ast(node_root, 2);
 
     printf("Building Symboltable...\n");
     Symboltable symboltable = symboltable_construct(node_root, 5);

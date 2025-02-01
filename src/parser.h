@@ -26,7 +26,7 @@ extern void  parser_expect_token      (const Parser *p, TokenKind tokenkind, con
 extern void  parser_throw_error       (const Parser *p, const char *msg);
 extern bool  parser_is_at_end         (const Parser *p);
 extern void  parser_traverse_ast      (AstNode *root, AstCallback callback, bool top_down, void *args);
-extern void  parser_print_ast         (AstNode *root);
+extern void  parser_print_ast(AstNode *root, int spacing);
 extern void  parser_free_ast          (AstNode *root);
 
 extern AstNode *parser_parse(const TokenList *tokens);
