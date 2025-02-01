@@ -60,12 +60,13 @@ void gen_destroy(CodeGenerator *gen) {
 
 void gen_prelude(CodeGenerator *gen) {
     // TODO: different sections
-    gen_addinstr(gen, "section .text\n");
+    gen_addinstr(gen, "section .text");
 }
 
 void gen_if_then(CodeGenerator *gen, Symbol cond) {
     assert(cond.kind == SYMBOLKIND_ADDRESS);
 
+    gen_comment(gen, "START: if");
     gen_addinstr(
         gen,
         "cmp %s [rbp-%lu], 0",
@@ -82,10 +83,12 @@ void gen_if_else(CodeGenerator *gen) {
 
 void gen_if_end(CodeGenerator *gen) {
     gen_addinstr(gen, ".end%lu:", gen->label_count);
+    gen_comment(gen, "END: if\n");
     gen->label_count++;
 }
 
 void gen_while_start(CodeGenerator *gen) {
+    gen_comment(gen, "START: while");
     gen_addinstr(gen, "jmp .cond%lu", gen->label_count);
     gen_addinstr(gen, ".while%lu:", gen->label_count);
 }
@@ -101,6 +104,7 @@ void gen_while_end(CodeGenerator *gen, Symbol cond) {
         cond.stack_addr
     );
     gen_addinstr(gen, "jne .while%lu", gen->label_count);
+    gen_comment(gen, "END: while\n");
     gen->label_count++;
 }
 
@@ -205,6 +209,7 @@ void gen_func_start(CodeGenerator *gen, const char *identifier) {
     gen_comment(gen, "START: function_prelude");
 
     FILE *f = gen->file;
+    gen_addinstr(gen, "");
     gen_addinstr(gen, "global %s", identifier);
     gen_addinstr(gen, "%s:",       identifier);
     gen_addinstr(gen, "push rbp"             );
@@ -240,6 +245,7 @@ void gen_assign(CodeGenerator *gen, Symbol assignee, Symbol value) {
     Type type = assignee.type;
     const char *rax = type_get_register_rax(type);
 
+    gen_comment(gen, "START: assignment");
     gen_addinstr(gen, "mov %s, [rbp-%lu]", rax, value.stack_addr);
     gen_addinstr(
         gen,
@@ -247,4 +253,5 @@ void gen_assign(CodeGenerator *gen, Symbol assignee, Symbol value) {
         assignee.stack_addr,
         rax
     );
+    gen_comment(gen, "END: assignment");
 }

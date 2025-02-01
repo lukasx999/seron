@@ -33,10 +33,8 @@ static void builtin_inlineasm(ExprCall *call, Hashtable *symboltable) {
         throw_error(&call->op, "First argument to asm() must be a string");
     }
 
-
     // union member access only safe after check
     const char *asm_src = first->expr_literal.op.value;
-
 
     // get the count of placeholders to check count of arguments
     size_t expected_args = 0;

@@ -167,7 +167,7 @@ static void parse_args(int argc, char *argv[]) {
 
 
 // TODO: synchronizing parser
-// TODO: ast optimization pass
+// TODO: synchronizing typechecker
 // TODO: assignment
 // TODO: pointers
 // TODO: call args

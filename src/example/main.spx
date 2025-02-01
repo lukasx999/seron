@@ -21,7 +21,9 @@ proc print() {
 proc _start() {
 
     val foo 'int = 1;
-    foo = 2;
+    if 1 {
+        foo = 2;
+    }
 
     print();
     exit();
