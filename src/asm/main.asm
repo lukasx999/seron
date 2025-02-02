@@ -7,26 +7,6 @@ mov rbp, rsp
 
 
 
-    mov rax, 0
-
-    jmp .cond
-    .while:
-
-    ; write()
-    mov byte [rbp-4], 65
-    mov rax, 1
-    mov rdi, 1
-    lea rsi, [rbp-4]
-    mov rdx, 1
-    syscall
-
-    .cond:
-    cmp rax, 0
-    jne .while
-
-
-
-
 
 
     ; exit(0)

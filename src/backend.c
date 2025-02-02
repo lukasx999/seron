@@ -13,7 +13,7 @@
 #include "main.h"
 
 
-CodeGenerator codegen;
+CodeGenerator codegen = { 0 };
 
 
 static Symbol traverse_ast(AstNode *node, Hashtable *symboltable);
