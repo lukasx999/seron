@@ -25,13 +25,12 @@ static void builtin_inlineasm(ExprCall *call, Hashtable *symboltable) {
     if (list.size == 0)
         throw_error(&call->op, "asm(), expects more than 0 arguments");
 
-    AstNode *first   = list.items[0];
+    AstNode *first = list.items[0];
 
     bool is_literal = first->kind == ASTNODE_LITERAL;
     bool is_string  = first->expr_literal.op.kind == TOK_STRING;
-    if (!(is_literal && is_string)) {
+    if (!(is_literal && is_string))
         throw_error(&call->op, "First argument to asm() must be a string");
-    }
 
     // union member access only safe after check
     const char *asm_src = first->expr_literal.op.value;
@@ -85,6 +84,7 @@ static Symbol ast_literal(ExprLiteral *literal, Hashtable *symboltable) {
         case TOK_IDENTIFIER: {
             const char *variable = literal->op.value;
             Symbol *sym = symboltable_lookup(symboltable, variable);
+            // TODO: make keywords return SYMBOLKIND_NONE
             assert(sym != NULL);
             return *sym;
         } break;
