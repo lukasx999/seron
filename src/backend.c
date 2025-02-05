@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <alloca.h>
 
+#include "ast.h"
 #include "types.h"
 #include "util.h"
 #include "lexer.h"
@@ -85,7 +86,6 @@ static Symbol ast_literal(ExprLiteral *literal, Hashtable *symboltable) {
         case TOK_IDENTIFIER: {
             const char *variable = literal->op.value;
             Symbol *sym = symboltable_lookup(symboltable, variable);
-            // TODO: make keywords return SYMBOLKIND_NONE
             assert(sym != NULL);
             return *sym;
         } break;
@@ -120,24 +120,24 @@ static void ast_block(Block *block) {
 }
 
 static Symbol ast_call(ExprCall *call, Hashtable *symboltable) {
-    if (call->builtin == BUILTINFUNC_ASM) {
+
+    if (call->builtin == BUILTIN_ASM) {
         builtin_inlineasm(call, symboltable);
         return (Symbol) {
             .kind = SYMBOLKIND_NONE,
             .type = TYPE_INVALID,
         };
     }
-    assert(call->builtin == BUILTINFUNC_NONE);
+    assert(call->builtin == BUILTIN_NONE);
 
     AstNodeList list = call->args;
 
     size_t symbols_i = 0;
     Symbol *symbols = alloca(list.size * sizeof(Symbol));
 
-    for (size_t i=0; i < list.size; ++i) {
-        Symbol sym = traverse_ast(list.items[i], symboltable);
-        symbols[symbols_i++] = sym;
-    }
+    for (size_t i=0; i < list.size; ++i)
+        symbols[symbols_i++] = traverse_ast(list.items[i], symboltable);
+
     assert(symbols_i == list.size);
 
     Symbol callee = traverse_ast(call->callee, symboltable);
@@ -231,6 +231,7 @@ static Symbol traverse_ast(AstNode *node, Hashtable *symboltable) {
 
     return (Symbol) {
         .kind = SYMBOLKIND_NONE,
+        .type = TYPE_INVALID,
     };
 
 }

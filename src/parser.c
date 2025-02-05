@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <stdarg.h>
 
+#include "ast.h"
 #include "util.h"
 #include "lexer.h"
 #include "parser.h"
@@ -91,7 +92,8 @@ void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down, voi
             depth++;
             ExprCall call = root->expr_call;
 
-            parser_traverse_ast(call.callee, callback, top_down, args);
+            if (call.builtin == BUILTIN_NONE)
+                parser_traverse_ast(call.callee, callback, top_down, args);
 
             AstNodeList list = call.args;
             for (size_t i=0; i < list.size; ++i)
@@ -224,7 +226,7 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
                 "call",
                 COLOR_BLUE,
                 NULL,
-                call->builtin == BUILTINFUNC_NONE ? NULL : "builtin"
+                call->builtin != BUILTIN_NONE ? "builtin" : NULL
             );
         } break;
 

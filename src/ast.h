@@ -22,17 +22,20 @@ typedef struct {
 } AstNodeList;
 
 extern AstNodeList astnodelist_new(void);
-extern void astnodelist_append (AstNodeList *list, AstNode *node);
+extern void astnodelist_append(AstNodeList *list, AstNode *node);
 extern void astnodelist_destroy(AstNodeList *list);
 
 
-typedef enum {
-    BUILTINFUNC_NONE, // call is not a builtin
-    BUILTINFUNC_ASM,
-    // TODO: sizeof
-} BuiltinFunc;
 
-extern BuiltinFunc string_to_builtinfunc(const char *str);
+typedef enum {
+    BUILTIN_ASM,
+    BUILTIN_NONE,
+} BuiltinFunction;
+
+extern BuiltinFunction builtin_from_tokenkind(TokenKind kind);
+
+
+
 
 // Token is included in AstNode for printing source location on error/warning
 
@@ -61,9 +64,9 @@ typedef struct {
 
 typedef struct {
     Token op;
-    AstNode *callee;
+    AstNode *callee; // NULL if builtin
     AstNodeList args;
-    BuiltinFunc builtin; // `BUILTINFUNC_NONE`, if no builtin
+    BuiltinFunction builtin; // BUILTIN_NONE if no builtin
 } ExprCall;
 
 typedef struct {

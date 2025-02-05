@@ -49,9 +49,6 @@ const char *type_to_string(Type type) {
         case TYPE_VOID:
             return "void";
             break;
-        case TYPE_BUILTIN:
-            return "builtin";
-            break;
         case TYPE_FUNCTION:
             return "function";
             break;
@@ -179,12 +176,15 @@ static Type traverse_ast(AstNode *root, Hashtable *symboltable) {
         } break;
 
         case ASTNODE_CALL: {
+            // TODO: return returntype of function (symboltable lookup)
             ExprCall *call = &root->expr_call;
-            Type callee = traverse_ast(call->callee, symboltable);
+            if (call->builtin == BUILTIN_NONE) {
+                Type callee = traverse_ast(call->callee, symboltable);
 
-            // TODO: function pointers
-            if (callee != TYPE_FUNCTION && callee != TYPE_BUILTIN)
-                throw_error(call->op, "Callee must be a procedure or builtin");
+                // TODO: function pointers
+                if (callee != TYPE_FUNCTION)
+                    throw_error(call->op, "Callee must be a procedure");
+            }
 
             AstNodeList list = call->args;
             for (size_t i=0; i < list.size; ++i)
@@ -230,15 +230,12 @@ static Type traverse_ast(AstNode *root, Hashtable *symboltable) {
         } break;
 
         case ASTNODE_LITERAL: {
-            const ExprLiteral* literal = &root->expr_literal;
+            const ExprLiteral *literal = &root->expr_literal;
 
             switch (literal->op.kind) {
 
                 case TOK_IDENTIFIER: {
                     const char *value = literal->op.value;
-
-                    if (string_to_builtinfunc(value) != BUILTINFUNC_NONE)
-                        return TYPE_BUILTIN;
 
                     Symbol *sym = symboltable_lookup(symboltable, value);
                     assert(sym != NULL);

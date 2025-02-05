@@ -290,7 +290,8 @@ static void traverse_ast(AstNode *root, Hashtable *parent, Symboltable *st) {
 
         case ASTNODE_CALL: {
             ExprCall call = root->expr_call;
-            traverse_ast(call.callee, parent, st);
+            if (call.builtin == BUILTIN_NONE)
+                traverse_ast(call.callee, parent, st);
 
             AstNodeList list = call.args;
             for (size_t i=0; i < list.size; ++i)
@@ -340,10 +341,6 @@ static void traverse_ast(AstNode *root, Hashtable *parent, Symboltable *st) {
 
             if (literal->op.kind == TOK_IDENTIFIER) {
                 const char *variable = literal->op.value;
-
-                /* Ignore builtin functions */
-                if (string_to_builtinfunc(variable) != BUILTINFUNC_NONE)
-                    break;
 
                 Symbol *sym = symboltable_lookup(parent, variable);
                 if (sym == NULL)

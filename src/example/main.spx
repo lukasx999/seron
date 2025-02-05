@@ -1,6 +1,5 @@
-
-proc add(a 'int, b'int) 'int {
-}
+#proc add(a 'int, b'int) 'int {
+#}
 
 proc exit() 'void {
     asm("mov rax, 60");
@@ -11,14 +10,13 @@ proc exit() 'void {
 proc print() 'int {
 
     val buf 'int = 66;
-    asm("mov rax, 1");
-    asm("mov rdi, 1");
-    asm("lea rsi, {}", buf);
-    asm("mov rdx, 1");
-    asm("syscall");
+    #asm("mov rax, 1");
+    #asm("mov rdi, 1");
+    #asm("lea rsi, {}", buf);
+    #asm("mov rdx, 1");
+    #asm("syscall");
 
 }
-
 
 proc _start() {
 

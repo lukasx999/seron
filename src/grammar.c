@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "ast.h"
 #include "util.h"
 #include "lexer.h"
 #include "parser.h"
@@ -86,20 +87,21 @@ AstNode *rule_primary(Parser *p) {
     return astnode;
 }
 
-
 AstNode *rule_call(Parser *p) {
-    // <call> ::= (<primary> | "asm") "(" ( <expr> ("," <expr>)* )? ")"
+    // <call> ::= ( <primary> | BUILTIN ) <argumentlist>
 
-    bool is_ident = parser_match_tokenkinds(p, TOK_IDENTIFIER, SENTINEL);
-    AstNode *node = rule_primary(p);
+    Token callee = parser_get_current_token(p);
+    BuiltinFunction builtin = builtin_from_tokenkind(callee.kind);
 
-    if (!parser_match_tokenkinds(p, TOK_LPAREN, SENTINEL))
-        return node;
+    AstNode *node = NULL;
+    if (builtin == BUILTIN_NONE) {
+        node = rule_primary(p);
 
-    BuiltinFunc builtin = BUILTINFUNC_NONE;
-    if (is_ident) {
-        const char *value = node->expr_literal.op.value;
-        builtin = string_to_builtinfunc(value);
+        if (!parser_match_tokenkinds(p, TOK_LPAREN, SENTINEL))
+            return node;
+
+    } else {
+        parser_advance(p);
     }
 
     Token op = parser_get_current_token(p);

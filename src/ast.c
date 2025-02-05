@@ -6,6 +6,7 @@
 #include <stdbool.h>
 
 #include "ast.h"
+#include "lexer.h"
 
 
 
@@ -32,15 +33,6 @@ void astnodelist_destroy(AstNodeList *list) {
     list->items = NULL;
 }
 
-
-
-BuiltinFunc string_to_builtinfunc(const char *str) {
-    if (!strcmp(str, "asm"))
-        return BUILTINFUNC_ASM;
-    else
-        return BUILTINFUNC_NONE;
-}
-
 BinOpKind binopkind_from_tokenkind(TokenKind kind) {
     switch (kind) {
         case TOK_PLUS:
@@ -57,6 +49,17 @@ BinOpKind binopkind_from_tokenkind(TokenKind kind) {
             break;
         default:
             assert(!"Unknown Tokenkind");
+            break;
+    }
+}
+
+BuiltinFunction builtin_from_tokenkind(TokenKind kind) {
+    switch (kind) {
+        case TOK_BUILTIN_ASM:
+            return BUILTIN_ASM;
+            break;
+        default:
+            return BUILTIN_NONE;
             break;
     }
 }

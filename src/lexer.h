@@ -42,6 +42,8 @@ typedef enum {
     TOK_KW_WHILE,
     TOK_KW_RETURN,
 
+    TOK_BUILTIN_ASM,
+
     TOK_TYPE_VOID,
     TOK_TYPE_BYTE,
     TOK_TYPE_INT,

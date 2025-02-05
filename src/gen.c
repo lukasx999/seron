@@ -260,12 +260,10 @@ Symbol gen_call(
 
     }
 
-
     Type returntype = TYPE_INT;
 
     gen_comment(gen, "START: call");
     gen_addinstr(gen, "call %s", callee.label);
-
 
     gen_addinstr(gen, "sub rsp, %lu", type_get_size(returntype));
     gen->rbp_offset += type_get_size(returntype);

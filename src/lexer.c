@@ -40,6 +40,7 @@ const char *tokenkind_to_string(TokenKind tok) {
         [TOK_KW_ELSIF]    = "elsif",
         [TOK_KW_WHILE]    = "while",
         [TOK_KW_RETURN]   = "return",
+        [TOK_BUILTIN_ASM] = "asm",
         [TOK_TYPE_VOID]   = "void",
         [TOK_TYPE_BYTE]   = "byte",
         [TOK_TYPE_SIZE]   = "size",
@@ -118,6 +119,8 @@ static TokenKind match_keywords(const char *str, size_t len) {
         TOK_KW_WHILE,
         TOK_KW_RETURN,
 
+        TOK_BUILTIN_ASM,
+
         TOK_TYPE_VOID,
         TOK_TYPE_BYTE,
         TOK_TYPE_INT,
@@ -132,6 +135,8 @@ static TokenKind match_keywords(const char *str, size_t len) {
         "elsif",
         "while",
         "return",
+
+        "asm",
 
         "void",
         "byte",

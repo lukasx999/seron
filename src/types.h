@@ -11,7 +11,6 @@ typedef struct AstNode AstNode;
 
 typedef enum {
     TYPE_INVALID, // used for error checking
-    TYPE_BUILTIN, // only used for type checking
 
     TYPE_VOID,
     TYPE_BYTE,

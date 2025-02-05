@@ -178,9 +178,6 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: pointers
 // TODO: buffer generated assembly
 
-// FIX: asm("{}", asm);
-
-
 
 
 
