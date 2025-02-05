@@ -24,7 +24,7 @@ typedef struct {
     union {
         size_t stack_addr;
         const char *label;
-        // enum Register register;
+        // TODO: function params + returntype
     };
 } Symbol;
 

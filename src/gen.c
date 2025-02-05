@@ -234,7 +234,7 @@ Symbol gen_call(
     const Symbol  *arguments,
     size_t         arguments_len
 ) {
-    // TODO: add function pointers
+    // TODO: function pointers
     assert(callee.kind == SYMBOLKIND_LABEL);
 
     for (size_t i=0; i < arguments_len; ++i) {
@@ -242,7 +242,7 @@ Symbol gen_call(
         size_t argnum = i+1;
 
         /* first 6 arguments are stored in registers, the rest goes onto the stack */
-        const char *regmap[] = {
+        const char *registers[] = {
             [1] = "rdi",
             [2] = "rsi",
             [3] = "rdx",
@@ -252,7 +252,7 @@ Symbol gen_call(
         };
 
         const char *reg = argnum <= 6
-            ? regmap[argnum]
+            ? registers[argnum]
             : NULL;
 
         assert(reg != NULL && "TODO");

@@ -236,7 +236,6 @@ static Type traverse_ast(AstNode *root, Hashtable *symboltable) {
 
                 case TOK_IDENTIFIER: {
                     const char *value = literal->op.value;
-
                     Symbol *sym = symboltable_lookup(symboltable, value);
                     assert(sym != NULL);
                     return sym->type;

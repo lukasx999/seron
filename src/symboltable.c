@@ -258,6 +258,7 @@ static void traverse_ast(AstNode *root, Hashtable *parent, Symboltable *st) {
             const StmtFunc *func = &root->stmt_func;
             const char *ident = func->identifier.value;
 
+            // TODO: insert type information here
             Symbol sym = {
                 .type  = TYPE_FUNCTION,
                 .kind  = SYMBOLKIND_LABEL,

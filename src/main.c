@@ -5,7 +5,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <unistd.h>
-#include <alloca.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <getopt.h>
@@ -27,7 +26,7 @@ struct CompilerContext compiler_context = { 0 };
 
 static void check_fileextension(const char *filename, const char *extension) {
 
-    if (strlen(filename) <= strlen(extension) + 1) // eg: `.spx`
+    if (strlen(filename) <= strlen(extension) + 1) // eg: `.___`
         throw_error_simple("Invalid filename `%s`", filename);
 
     size_t dot_offset = strlen(filename) - 1 - strlen(extension);
@@ -170,13 +169,12 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: char literal
 // TODO: analysis: dont allow statements in global scope
 // TODO: make blocks expressions
-// TODO: add gen comments
-// TODO: maybe destroy tokenlist to reduce memory usage
-// TODO: throw_error remove pointer as program exits
 // TODO: synchronizing parser
 // TODO: synchronizing typechecker
 // TODO: pointers
 // TODO: buffer generated assembly
+// TODO: static global variables
+// TODO: function paramlist + returntype
 
 
 
@@ -191,16 +189,21 @@ int main(int argc, char *argv[]) {
     TokenList tokens = tokenize(file);
     if (compiler_context.opts.dump_tokens)
         tokenlist_print(&tokens);
+    free(file);
+
 
     printf("Parsing...\n");
     AstNode *node_root = parser_parse(&tokens);
     if (compiler_context.opts.dump_ast)
         parser_print_ast(node_root, 2);
+    tokenlist_destroy(&tokens);
+
 
     printf("Building Symboltable...\n");
     Symboltable symboltable = symboltable_construct(node_root, 5);
     if (compiler_context.opts.dump_symboltable)
         symboltable_print(&symboltable);
+
 
     printf("Checking Types...\n");
     check_types(node_root);
@@ -217,8 +220,6 @@ int main(int argc, char *argv[]) {
 
     symboltable_destroy(&symboltable);
     parser_free_ast(node_root);
-    tokenlist_destroy(&tokens);
-    free(file);
 
     return EXIT_SUCCESS;
 }
