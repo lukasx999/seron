@@ -27,6 +27,7 @@ typedef enum {
     TOK_TICK,
     TOK_ASSIGN,
     TOK_EQUALS,
+    TOK_AMPERSAND,
 
     TOK_LPAREN,
     TOK_RPAREN,
@@ -37,6 +38,7 @@ typedef enum {
     TOK_KW_VARDECL,
     TOK_KW_IF,
     TOK_KW_ELSE,
+    TOK_KW_ELSIF,
     TOK_KW_WHILE,
     TOK_KW_RETURN,
 

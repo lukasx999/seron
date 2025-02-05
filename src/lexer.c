@@ -28,6 +28,7 @@ const char *tokenkind_to_string(TokenKind tok) {
         [TOK_ASSIGN]      = "assign",
         [TOK_EQUALS]      = "equals",
         [TOK_BANG]        = "bang",
+        [TOK_AMPERSAND]   = "ampersand",
         [TOK_LPAREN]      = "lparen",
         [TOK_RPAREN]      = "rparen",
         [TOK_LBRACE]      = "lbrace",
@@ -36,6 +37,7 @@ const char *tokenkind_to_string(TokenKind tok) {
         [TOK_KW_VARDECL]  = "val",
         [TOK_KW_IF]       = "if",
         [TOK_KW_ELSE]     = "else",
+        [TOK_KW_ELSIF]    = "elsif",
         [TOK_KW_WHILE]    = "while",
         [TOK_KW_RETURN]   = "return",
         [TOK_TYPE_VOID]   = "void",
@@ -112,6 +114,7 @@ static TokenKind match_keywords(const char *str, size_t len) {
         TOK_KW_VARDECL,
         TOK_KW_IF,
         TOK_KW_ELSE,
+        TOK_KW_ELSIF,
         TOK_KW_WHILE,
         TOK_KW_RETURN,
 
@@ -126,6 +129,7 @@ static TokenKind match_keywords(const char *str, size_t len) {
         "val",
         "if",
         "else",
+        "elsif",
         "while",
         "return",
 
@@ -196,6 +200,9 @@ TokenList tokenize(const char *src) {
                 break;
             case '!':
                 tok.kind = TOK_BANG;
+                break;
+            case '&':
+                tok.kind = TOK_AMPERSAND;
                 break;
             case '#':
                 if (src[i+1] == '#') { // multi line comments

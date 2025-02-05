@@ -10,10 +10,10 @@
 
 
 static void throw_thing(
-    const Token *tok,
-    bool         is_error, // else warning
-    const char  *fmt,
-    va_list      va
+    Token       tok,
+    bool        is_error, // else warning
+    const char *fmt,
+    va_list     va
 ) {
 
     const char *color = is_error ? COLOR_RED : COLOR_YELLOW;
@@ -22,7 +22,7 @@ static void throw_thing(
     fprintf(
         stderr,
         "%s:%d:%d: %s%s%s%s: ",
-        compiler_context.filename.raw, tok->pos_line, tok->pos_column,
+        compiler_context.filename.raw, tok.pos_line, tok.pos_column,
         COLOR_BOLD, color, str, COLOR_END
     );
 
@@ -34,7 +34,7 @@ static void throw_thing(
 }
 
 void throw_error(
-    const Token *tok,
+    Token tok,
     const char *fmt, ...
 ) {
     va_list va;
@@ -44,7 +44,7 @@ void throw_error(
 }
 
 void throw_warning(
-    const Token *tok,
+    Token tok,
     const char *fmt, ...
 ) {
     va_list va;

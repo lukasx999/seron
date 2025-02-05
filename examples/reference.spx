@@ -1,5 +1,5 @@
 
-proc exit() {
+proc exit() 'void {
     asm("mov rax, 60");
     asm("mov rdi, 0");
     asm("syscall");

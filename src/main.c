@@ -176,7 +176,6 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: synchronizing parser
 // TODO: synchronizing typechecker
 // TODO: pointers
-// TODO: call args
 // TODO: buffer generated assembly
 
 // FIX: asm("{}", asm);
@@ -216,9 +215,6 @@ int main(int argc, char *argv[]) {
     build_binary();
 
     printf("%s%sBinary `%s` has been built!%s\n", COLOR_BOLD, COLOR_BLUE, compiler_context.filename.stripped, COLOR_END);
-
-
-
 
 
 

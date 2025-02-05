@@ -26,8 +26,8 @@ extern Symbol gen_store_literal(CodeGenerator *gen, int64_t value, Type type);
 extern void gen_func_start(CodeGenerator *c, const char *identifier);
 extern void gen_func_end(CodeGenerator *c);
 extern void gen_inlineasm(CodeGenerator *c, const char *src, const Symbol *symbols, size_t symbols_len);
+extern Symbol gen_call(CodeGenerator *gen, Symbol callee, const Symbol *arguments, size_t arguments_len);
 
-extern void gen_call(CodeGenerator *gen, Symbol callee);
 
 extern void gen_if_then(CodeGenerator *gen, Symbol cond);
 extern void gen_if_else(CodeGenerator *gen);

@@ -6,6 +6,7 @@
 
 
 extern AstNodeList rule_util_arglist(Parser *p);
+extern Type        rule_util_type   (Parser *p);
 
 extern AstNode *rule_primary    (Parser *p);
 extern AstNode *rule_call       (Parser *p);

@@ -208,12 +208,11 @@ void gen_func_start(CodeGenerator *gen, const char *identifier) {
     gen_comment(gen, "START: function");
     gen_comment(gen, "START: function_prelude");
 
-    FILE *f = gen->file;
     gen_addinstr(gen, "");
     gen_addinstr(gen, "global %s", identifier);
-    gen_addinstr(gen, "%s:",       identifier);
-    gen_addinstr(gen, "push rbp"             );
-    gen_addinstr(gen, "mov rbp, rsp"         );
+    gen_addinstr(gen, "%s:", identifier);
+    gen_addinstr(gen, "push rbp");
+    gen_addinstr(gen, "mov rbp, rsp");
 
     gen_comment(gen, "END: function_prelude\n");
 }
@@ -229,13 +228,62 @@ void gen_func_end(CodeGenerator *gen) {
     gen_comment(gen, "END: function\n");
 }
 
-void gen_call(CodeGenerator *gen, Symbol callee) {
+Symbol gen_call(
+    CodeGenerator *gen,
+    Symbol         callee,
+    const Symbol  *arguments,
+    size_t         arguments_len
+) {
     // TODO: add function pointers
     assert(callee.kind == SYMBOLKIND_LABEL);
 
+    for (size_t i=0; i < arguments_len; ++i) {
+        Symbol arg = arguments[i];
+        size_t argnum = i+1;
+
+        /* first 6 arguments are stored in registers, the rest goes onto the stack */
+        const char *regmap[] = {
+            [1] = "rdi",
+            [2] = "rsi",
+            [3] = "rdx",
+            [4] = "rcx",
+            [5] = "r8",
+            [6] = "r9",
+        };
+
+        const char *reg = argnum <= 6
+            ? regmap[argnum]
+            : NULL;
+
+        assert(reg != NULL && "TODO");
+        gen_addinstr(gen, "mov %s, [rbp-%lu]", reg, arg.stack_addr);
+
+    }
+
+
+    Type returntype = TYPE_INT;
+
     gen_comment(gen, "START: call");
     gen_addinstr(gen, "call %s", callee.label);
+
+
+    gen_addinstr(gen, "sub rsp, %lu", type_get_size(returntype));
+    gen->rbp_offset += type_get_size(returntype);
+    gen_addinstr(
+        gen,
+        "mov %s [rbp-%lu], %s",
+        type_get_size_operand(returntype),
+        gen->rbp_offset,
+        type_get_register_rax(returntype)
+    );
     gen_comment(gen, "END: call\n");
+
+    return (Symbol) {
+        .kind       = SYMBOLKIND_ADDRESS,
+        .stack_addr = gen->rbp_offset,
+        .type       = returntype,
+    };
+
 }
 
 void gen_assign(CodeGenerator *gen, Symbol assignee, Symbol value) {

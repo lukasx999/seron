@@ -85,8 +85,7 @@ typedef struct {
 typedef struct {
     Token op, identifier;
     AstNode *body; // NULL if declaration
-    // TODO:
-    // Type returntype;
+    Type returntype;
 } StmtFunc;
 
 typedef struct {

@@ -49,13 +49,13 @@ void parser_expect_token(
 ) {
     if (!parser_match_tokenkinds(p, tokenkind, SENTINEL)) {
         Token tok = parser_get_current_token(p);
-        throw_error(&tok, "Expected `%s`", expected);
+        throw_error(tok, "Expected `%s`", expected);
     }
 }
 
 void parser_throw_error(const Parser *p, const char *msg) {
     Token tok = parser_get_current_token(p);
-    throw_error(&tok, "%s", msg);
+    throw_error(tok, "%s", msg);
 }
 
 bool parser_is_at_end(const Parser *p) {

@@ -156,7 +156,7 @@ static Type traverse_ast(AstNode *root, Hashtable *symboltable) {
             assert(sym != NULL);
 
             if (sym->type != type)
-                throw_error(&assign->op, "Cannot assign %s to %s", type_to_string(type), type_to_string(sym->type));
+                throw_error(assign->op, "Cannot assign %s to %s", type_to_string(type), type_to_string(sym->type));
 
         } break;
 
@@ -171,7 +171,7 @@ static Type traverse_ast(AstNode *root, Hashtable *symboltable) {
 
             if (vardecl->type != type)
                 throw_error(
-                    &vardecl->op,
+                    vardecl->op,
                     "Type annotation (%s) does not match assigned expression (%s)",
                     type_to_string(vardecl->type),
                     type_to_string(type)
@@ -184,7 +184,7 @@ static Type traverse_ast(AstNode *root, Hashtable *symboltable) {
 
             // TODO: function pointers
             if (callee != TYPE_FUNCTION && callee != TYPE_BUILTIN)
-                throw_error(&call->op, "Callee must be a procedure or builtin");
+                throw_error(call->op, "Callee must be a procedure or builtin");
 
             AstNodeList list = call->args;
             for (size_t i=0; i < list.size; ++i)
@@ -214,7 +214,7 @@ static Type traverse_ast(AstNode *root, Hashtable *symboltable) {
 
             if (lhs != rhs)
                 throw_error(
-                    &binop->op,
+                    binop->op,
                     "Types do not match (`%s` and `%s`)",
                     type_to_string(lhs),
                     type_to_string(rhs)

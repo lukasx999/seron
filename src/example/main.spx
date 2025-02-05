@@ -1,12 +1,14 @@
 
+proc add(a 'int, b'int) 'int {
+}
 
-proc exit() {
+proc exit() 'void {
     asm("mov rax, 60");
-    asm("mov rdi, 45");
+    asm("mov rdi, rdi");
     asm("syscall");
 }
 
-proc print() {
+proc print() 'int {
 
     val buf 'int = 66;
     asm("mov rax, 1");
@@ -20,11 +22,5 @@ proc print() {
 
 proc _start() {
 
-    val foo 'int = 1;
-    if 1 {
-        foo = 2;
-    }
-
-    print();
     exit();
 }

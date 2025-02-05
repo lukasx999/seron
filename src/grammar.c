@@ -38,6 +38,22 @@ AstNodeList rule_util_arglist(Parser *p) {
     return args;
 }
 
+Type rule_util_type(Parser *p) {
+    // <type> ::= "'" TYPE
+
+    parser_expect_token(p, TOK_TICK, "type annotation");
+    parser_advance(p);
+
+    Token type_tok = parser_get_current_token(p);
+    Type type = type_from_tokenkind(type_tok.kind);
+
+    if (type == TYPE_INVALID)
+        throw_error(type_tok, "Unknown type `%s`", type_tok.value);
+
+    parser_advance(p);
+    return type;
+}
+
 AstNode *rule_primary(Parser *p) {
     // <primary> ::= NUMBER | IDENTIFIER | STRING | "(" <expression> ")"
 
@@ -177,7 +193,7 @@ AstNode *rule_term(Parser *p) {
 }
 
 AstNode *rule_vardecl(Parser *p) {
-    // <vardecl> ::= "val" <identifier> "'" TYPE "=" <expression> ";"
+    // <vardecl> ::= "val" <identifier> <type> "=" <expression> ";"
 
     assert(parser_match_tokenkinds(p, TOK_KW_VARDECL, SENTINEL));
     Token op = parser_get_current_token(p);
@@ -187,15 +203,7 @@ AstNode *rule_vardecl(Parser *p) {
     Token identifier = parser_get_current_token(p);
     parser_advance(p);
 
-    parser_expect_token(p, TOK_TICK, "type annotation");
-    parser_advance(p);
-
-    Token type_tok = parser_get_current_token(p);
-    Type type = type_from_tokenkind(type_tok.kind);
-    if (type == TYPE_INVALID)
-        throw_error(&type_tok, "Unknown type `%s`", type_tok.value);
-
-    parser_advance(p);
+    Type type = rule_util_type(p);
 
     parser_expect_token(p, TOK_ASSIGN, "=");
     parser_advance(p);
@@ -265,10 +273,9 @@ AstNode *rule_if(Parser *p) {
 }
 
 AstNode *rule_function(Parser *p) {
-    // <function> ::= "proc" IDENTIFIER "(" ")" <block>
+    // <function> ::= "proc" IDENTIFIER "(" ")" <type> <block>
 
     // TODO: paramlist
-    // TODO: returntype
 
     assert(parser_match_tokenkinds(p, TOK_KW_FUNCTION, SENTINEL));
     Token op = parser_get_current_token(p);
@@ -285,12 +292,20 @@ AstNode *rule_function(Parser *p) {
     parser_expect_token(p, TOK_RPAREN, ")");
     parser_advance(p);
 
+    /* Returntype is void if not specified */
+    Type returntype = parser_match_tokenkinds(p, TOK_LBRACE, SENTINEL)
+        ? TYPE_VOID
+        : rule_util_type(p);
+
+    AstNode *body = rule_block(p);
+
     AstNode *function   = malloc(sizeof(AstNode));
     function->kind      = ASTNODE_FUNC;
     function->stmt_func = (StmtFunc) {
         .op         = op,
-        .body       = rule_block(p),
+        .body       = body,
         .identifier = identifier,
+        .returntype = returntype,
     };
 
     return function;

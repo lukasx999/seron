@@ -303,7 +303,7 @@ static void traverse_ast(AstNode *root, Hashtable *parent, Symboltable *st) {
 
             Symbol *sym = symboltable_lookup(parent, ident);
             if (sym == NULL)
-                throw_error(&assign.identifier, "Symbol `%s` does not exist", ident);
+                throw_error(assign.identifier, "Symbol `%s` does not exist", ident);
 
             traverse_ast(assign.value, parent, st);
         } break;

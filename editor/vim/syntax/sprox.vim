@@ -1,6 +1,7 @@
 syn keyword spxKeyword
       \ if
       \ else
+      \ elsif
       \ while
       \ val
       \ proc
