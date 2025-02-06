@@ -64,8 +64,6 @@ void gen_prelude(CodeGenerator *gen) {
 }
 
 void gen_if_then(CodeGenerator *gen, Symbol cond) {
-    assert(cond.kind == SYMBOLKIND_ADDRESS);
-
     gen_comment(gen, "START: if");
     gen_addinstr(
         gen,
@@ -94,8 +92,6 @@ void gen_while_start(CodeGenerator *gen) {
 }
 
 void gen_while_end(CodeGenerator *gen, Symbol cond) {
-    assert(cond.kind == SYMBOLKIND_ADDRESS);
-
     gen_addinstr(gen, ".cond%lu:", gen->label_count);
     gen_addinstr(
         gen,
@@ -109,7 +105,6 @@ void gen_while_end(CodeGenerator *gen, Symbol cond) {
 }
 
 Symbol gen_binop(CodeGenerator *gen, Symbol a, Symbol b, BinOpKind kind) {
-    assert(a.kind == SYMBOLKIND_ADDRESS && b.kind == SYMBOLKIND_ADDRESS);
     assert(a.type == a.type);
     Type type = a.type;
     gen_comment(gen, "START: binop");
@@ -146,9 +141,9 @@ Symbol gen_binop(CodeGenerator *gen, Symbol a, Symbol b, BinOpKind kind) {
 
     gen_comment(gen, "END: binop\n");
     return (Symbol) {
-        .kind       = SYMBOLKIND_ADDRESS,
         .stack_addr = gen->rbp_offset,
         .type       = type,
+        .name       = NULL,
     };
 }
 
@@ -167,9 +162,9 @@ Symbol gen_store_literal(CodeGenerator *gen, int64_t value, Type type) {
 
     gen_comment(gen, "END: store\n");
     return (Symbol) {
-        .kind       = SYMBOLKIND_ADDRESS,
         .stack_addr = gen->rbp_offset,
         .type       = type,
+        .name       = NULL,
     };
 }
 
@@ -187,7 +182,6 @@ void gen_inlineasm(
 
         if (src[i] == '{' && src[i+1] == '}') {
             Symbol sym = symbols[arg_index];
-            assert(sym.kind == SYMBOLKIND_ADDRESS);
             fprintf(gen->file, "[rbp-%lu]", sym.stack_addr);
             i++;
             arg_index++;
@@ -204,7 +198,9 @@ void gen_inlineasm(
     gen_comment(gen, "END: inline\n");
 }
 
-void gen_func_start(CodeGenerator *gen, const char *identifier) {
+void gen_procedure_start(CodeGenerator *gen, const char *identifier) {
+    gen->rbp_offset = 0;
+
     gen_comment(gen, "START: function");
     gen_comment(gen, "START: function_prelude");
 
@@ -217,7 +213,7 @@ void gen_func_start(CodeGenerator *gen, const char *identifier) {
     gen_comment(gen, "END: function_prelude\n");
 }
 
-void gen_func_end(CodeGenerator *gen) {
+void gen_procedure_end(CodeGenerator *gen) {
     gen_comment(gen, "START: function_postlude");
 
     gen_addinstr(gen, "mov rsp, rbp");
@@ -231,16 +227,15 @@ void gen_func_end(CodeGenerator *gen) {
 Symbol gen_call(
     CodeGenerator *gen,
     Symbol         callee,
-    const Symbol  *arguments,
-    size_t         arguments_len
+    const Symbol  *args,
+    size_t         args_len
 ) {
-    // TODO: function pointers
-    assert(callee.kind == SYMBOLKIND_LABEL);
 
-    for (size_t i=0; i < arguments_len; ++i) {
-        Symbol arg = arguments[i];
+    for (size_t i=0; i < args_len; ++i) {
+        Symbol arg = args[i];
         size_t argnum = i+1;
 
+        // TODO: spill the rest of arguments onto stack
         /* first 6 arguments are stored in registers, the rest goes onto the stack */
         const char *registers[] = {
             [1] = "rdi",
@@ -263,7 +258,7 @@ Symbol gen_call(
     Type returntype = TYPE_INT;
 
     gen_comment(gen, "START: call");
-    gen_addinstr(gen, "call %s", callee.label);
+    gen_addinstr(gen, "call %s", callee.name);
 
     gen_addinstr(gen, "sub rsp, %lu", type_get_size(returntype));
     gen->rbp_offset += type_get_size(returntype);
@@ -277,15 +272,14 @@ Symbol gen_call(
     gen_comment(gen, "END: call\n");
 
     return (Symbol) {
-        .kind       = SYMBOLKIND_ADDRESS,
         .stack_addr = gen->rbp_offset,
         .type       = returntype,
+        .name       = NULL,
     };
 
 }
 
 void gen_assign(CodeGenerator *gen, Symbol assignee, Symbol value) {
-    assert(assignee.kind == SYMBOLKIND_ADDRESS && value.kind == SYMBOLKIND_ADDRESS);
     assert(assignee.type == value.type);
 
     Type type = assignee.type;

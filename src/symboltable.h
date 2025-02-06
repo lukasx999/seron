@@ -11,21 +11,20 @@
 
 
 
+// TODO: function params + returntype
 
 typedef enum {
-    SYMBOLKIND_ADDRESS, /* base pointer offset */
-    SYMBOLKIND_LABEL,
-    SYMBOLKIND_NONE, /* side effect */
+    SYMBOL_NONE,
+    SYMBOL_VARIABLE,
+    /*SYMBOL_STATIC_VARIABLE,*/
+    SYMBOL_PROCEDURE,
 } SymbolKind;
 
 typedef struct {
     Type type;
-    SymbolKind kind;
-    union {
-        size_t stack_addr;
-        const char *label;
-        // TODO: function params + returntype
-    };
+    const char *name;
+    size_t stack_addr; /* 0 if symbol is global or procedure */
+    ProcSignature sig;
 } Symbol;
 
 typedef struct HashtableEntry {

@@ -130,12 +130,80 @@ const char *type_get_register_rdi(Type type) {
 }
 
 
+static Type traverse_ast(AstNode *root, Hashtable *symboltable);
+
+
+static Type ast_assignment(ExprAssignment *assign, Hashtable *symboltable) {
+    Type type = traverse_ast(assign->value, symboltable);
+
+    const char *ident = assign->identifier.value;
+    Symbol *sym = symboltable_lookup(symboltable, ident);
+    assert(sym != NULL);
+
+    if (sym->type != type)
+        throw_error(assign->op, "Cannot assign %s to %s", type_to_string(type), type_to_string(sym->type));
+
+    return type;
+}
+
+static void ast_vardecl(StmtVarDecl *vardecl, Hashtable *symboltable) {
+    Type type = traverse_ast(vardecl->value, symboltable);
+
+    if (vardecl->type != type)
+        throw_error(
+            vardecl->op,
+            "Type annotation (%s) does not match assigned expression (%s)",
+            type_to_string(vardecl->type),
+            type_to_string(type)
+        );
+}
+
+static Type ast_call(ExprCall *call, Hashtable *symboltable) {
+
+    if (call->builtin == BUILTIN_NONE) {
+        Type callee = traverse_ast(call->callee, symboltable);
+
+        if (callee != TYPE_FUNCTION)
+            throw_error(call->op, "Callee must be a procedure");
+    }
+
+    AstNodeList list = call->args;
+    for (size_t i=0; i < list.size; ++i)
+        traverse_ast(list.items[i], symboltable);
+
+}
+
+static Type ast_literal(ExprLiteral *literal, Hashtable *symboltable) {
+
+    switch (literal->op.kind) {
+
+        case TOK_IDENTIFIER: {
+            const char *value = literal->op.value;
+            Symbol *sym = symboltable_lookup(symboltable, value);
+            assert(sym != NULL);
+            return sym->type;
+        } break;
+
+        case TOK_NUMBER:
+            return INTLITERAL;
+            break;
+
+        case TOK_STRING:
+            return TYPE_POINTER;
+            break;
+
+        default:
+            assert(!"Unknown Type");
+            break;
+    }
+}
 
 
 static Type traverse_ast(AstNode *root, Hashtable *symboltable) {
     assert(root != NULL);
 
     switch (root->kind) {
+
         case ASTNODE_BLOCK: {
             Block *block     = &root->block;
             AstNodeList list = block->stmts;
@@ -143,57 +211,6 @@ static Type traverse_ast(AstNode *root, Hashtable *symboltable) {
             for (size_t i=0; i < list.size; ++i)
                 traverse_ast(list.items[i], block->symboltable);
         } break;
-
-        case ASTNODE_ASSIGN: {
-            ExprAssignment *assign = &root->expr_assign;
-            Type type = traverse_ast(assign->value, symboltable);
-
-            const char *ident = assign->identifier.value;
-            Symbol *sym = symboltable_lookup(symboltable, ident);
-            assert(sym != NULL);
-
-            if (sym->type != type)
-                throw_error(assign->op, "Cannot assign %s to %s", type_to_string(type), type_to_string(sym->type));
-
-        } break;
-
-        case ASTNODE_FUNC: {
-            const StmtFunc *func = &root->stmt_func;
-            traverse_ast(func->body, symboltable);
-        } break;
-
-        case ASTNODE_VARDECL: {
-            const StmtVarDecl *vardecl = &root->stmt_vardecl;
-            Type type = traverse_ast(vardecl->value, symboltable);
-
-            if (vardecl->type != type)
-                throw_error(
-                    vardecl->op,
-                    "Type annotation (%s) does not match assigned expression (%s)",
-                    type_to_string(vardecl->type),
-                    type_to_string(type)
-                );
-        } break;
-
-        case ASTNODE_CALL: {
-            // TODO: return returntype of function (symboltable lookup)
-            ExprCall *call = &root->expr_call;
-            if (call->builtin == BUILTIN_NONE) {
-                Type callee = traverse_ast(call->callee, symboltable);
-
-                // TODO: function pointers
-                if (callee != TYPE_FUNCTION)
-                    throw_error(call->op, "Callee must be a procedure");
-            }
-
-            AstNodeList list = call->args;
-            for (size_t i=0; i < list.size; ++i)
-                traverse_ast(list.items[i], symboltable);
-        } break;
-
-        case ASTNODE_GROUPING:
-            return traverse_ast(root->expr_grouping.expr, symboltable);
-            break;
 
         case ASTNODE_WHILE:
             traverse_ast(root->stmt_while.condition, symboltable);
@@ -229,32 +246,31 @@ static Type traverse_ast(AstNode *root, Hashtable *symboltable) {
             // TODO: check operand type. eg: logical operators cannot be used on integers
         } break;
 
-        case ASTNODE_LITERAL: {
-            const ExprLiteral *literal = &root->expr_literal;
+        case ASTNODE_LITERAL:
+            ast_literal(&root->expr_literal, symboltable);
+            break;
 
-            switch (literal->op.kind) {
+        case ASTNODE_GROUPING:
+            return traverse_ast(root->expr_grouping.expr, symboltable);
+            break;
 
-                case TOK_IDENTIFIER: {
-                    const char *value = literal->op.value;
-                    Symbol *sym = symboltable_lookup(symboltable, value);
-                    assert(sym != NULL);
-                    return sym->type;
-                } break;
+        case ASTNODE_ASSIGN:
+            ast_assignment(&root->expr_assign, symboltable);
+            break;
 
-                case TOK_NUMBER:
-                    return INTLITERAL;
-                    break;
-
-                case TOK_STRING:
-                    return TYPE_POINTER;
-                    break;
-
-                default:
-                    assert(!"Unknown Type");
-                    break;
-            }
-
+        case ASTNODE_FUNC: {
+            const StmtProcedure *func = &root->stmt_func;
+            traverse_ast(func->body, symboltable);
         } break;
+
+        case ASTNODE_VARDECL:
+            ast_vardecl(&root->stmt_vardecl, symboltable);
+            break;
+
+        case ASTNODE_CALL:
+            // TODO: return returntype of function (symboltable lookup)
+            ast_call(&root->expr_call, symboltable);
+            break;
 
         default:
             assert(!"Unexpected Node Kind");

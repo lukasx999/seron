@@ -174,7 +174,7 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: pointers
 // TODO: buffer generated assembly
 // TODO: static global variables
-// TODO: function paramlist + returntype
+// TODO: inserting func signature into symboltable + pushing func params onto stack (via sysv abi)
 
 
 

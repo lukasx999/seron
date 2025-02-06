@@ -1,3 +1,9 @@
+
+
+section .data
+foo: dq 45
+
+
 section .text
 
 global _start
@@ -6,6 +12,7 @@ push rbp
 mov rbp, rsp
 
 
+    mov rax, [foo]
 
 
 
@@ -16,3 +23,4 @@ mov rbp, rsp
 
 pop rbp
 ret
+

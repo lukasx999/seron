@@ -274,28 +274,65 @@ AstNode *rule_if(Parser *p) {
     return node;
 }
 
-AstNode *rule_function(Parser *p) {
-    // <function> ::= "proc" IDENTIFIER "(" ")" <type> <block>
+/*
+ * the max size of out_params is assumed to be MAX_ARG_COUNT
+ * returns paramlist param count
+ */
+size_t rule_util_paramlist(Parser *p, Param *out_params) {
+    // <paramlist> ::= "(" (IDENTIFIER <type> ("," IDENTIFIER <type>)* )? ")"
 
-    // TODO: paramlist
+    size_t i = 0;
+
+    parser_expect_token(p, TOK_LPAREN, "(");
+    parser_advance(p);
+
+    while (!parser_match_tokenkinds(p, TOK_RPAREN, SENTINEL)) {
+        parser_expect_token(p, TOK_IDENTIFIER, "identifier");
+        Token tok = parser_get_current_token(p);
+        const char *ident = tok.value;
+        parser_advance(p);
+
+        Type type = rule_util_type(p);
+
+        if (i >= MAX_ARG_COUNT)
+            throw_error(tok, "Procedures may not have more than %lu arguments", MAX_ARG_COUNT);
+
+        out_params[i++] = (Param) {
+            .ident = ident,
+            .type  = type,
+        };
+
+        if (parser_match_tokenkinds(p, TOK_COMMA, SENTINEL)) {
+            parser_advance(p);
+
+            if (parser_match_tokenkinds(p, TOK_RPAREN, SENTINEL))
+                parser_throw_error(p,"Extraneous `,`");
+        }
+
+    }
+
+    parser_expect_token(p, TOK_RPAREN, ")");
+    parser_advance(p);
+
+    return i;
+}
+
+AstNode *rule_function(Parser *p) {
+    // <function> ::= "proc" IDENTIFIER <paramlist> <type> <block>
 
     assert(parser_match_tokenkinds(p, TOK_KW_FUNCTION, SENTINEL));
     Token op = parser_get_current_token(p);
     parser_advance(p);
 
     parser_expect_token(p, TOK_IDENTIFIER, "identifier");
-
     Token identifier = parser_get_current_token(p);
     parser_advance(p);
 
-    parser_expect_token(p, TOK_LPAREN, "(");
-    parser_advance(p);
-
-    parser_expect_token(p, TOK_RPAREN, ")");
-    parser_advance(p);
+    ProcSignature sig = { 0 };
+    sig.params_count = rule_util_paramlist(p, sig.params);
 
     /* Returntype is void if not specified */
-    Type returntype = parser_match_tokenkinds(p, TOK_LBRACE, SENTINEL)
+    sig.returntype = parser_match_tokenkinds(p, TOK_LBRACE, SENTINEL)
         ? TYPE_VOID
         : rule_util_type(p);
 
@@ -303,11 +340,11 @@ AstNode *rule_function(Parser *p) {
 
     AstNode *function   = malloc(sizeof(AstNode));
     function->kind      = ASTNODE_FUNC;
-    function->stmt_func = (StmtFunc) {
+    function->stmt_func = (StmtProcedure) {
         .op         = op,
         .body       = body,
         .identifier = identifier,
-        .returntype = returntype,
+        .sig        = sig,
     };
 
     return function;

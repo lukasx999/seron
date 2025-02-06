@@ -231,7 +231,7 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
         } break;
 
         case ASTNODE_FUNC: {
-            StmtFunc *func = &root->stmt_func;
+            StmtProcedure *func = &root->stmt_func;
             print_ast_value(tokenkind_to_string(func->op.kind), COLOR_RED, func->identifier.value, NULL);
         } break;
 

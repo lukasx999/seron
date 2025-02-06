@@ -105,10 +105,10 @@ static void ast_vardecl(StmtVarDecl *vardecl, Hashtable *symboltable) {
     assert(ret != -1);
 }
 
-static void ast_func(StmtFunc *func, Hashtable *symboltable) {
-    gen_func_start(&codegen, func->identifier.value);
-    traverse_ast(func->body, symboltable);
-    gen_func_end(&codegen);
+static void ast_procedure(StmtProcedure *proc, Hashtable *symboltable) {
+    gen_procedure_start(&codegen, proc->identifier.value);
+    traverse_ast(proc->body, symboltable);
+    gen_procedure_end(&codegen);
 }
 
 static void ast_block(Block *block) {
@@ -124,7 +124,6 @@ static Symbol ast_call(ExprCall *call, Hashtable *symboltable) {
     if (call->builtin == BUILTIN_ASM) {
         builtin_inlineasm(call, symboltable);
         return (Symbol) {
-            .kind = SYMBOLKIND_NONE,
             .type = TYPE_INVALID,
         };
     }
@@ -175,7 +174,7 @@ static Symbol ast_assign(ExprAssignment *assign, Hashtable *symboltable) {
     return value;
 }
 
-// returns the location of the evaluated expression in memory
+/* returns the location of the evaluated expression in memory */
 static Symbol traverse_ast(AstNode *node, Hashtable *symboltable) {
     assert(node != NULL);
 
@@ -193,7 +192,7 @@ static Symbol traverse_ast(AstNode *node, Hashtable *symboltable) {
             break;
 
         case ASTNODE_FUNC:
-            ast_func(&node->stmt_func, symboltable);
+            ast_procedure(&node->stmt_func, symboltable);
             break;
 
         case ASTNODE_IF:
@@ -230,7 +229,6 @@ static Symbol traverse_ast(AstNode *node, Hashtable *symboltable) {
     }
 
     return (Symbol) {
-        .kind = SYMBOLKIND_NONE,
         .type = TYPE_INVALID,
     };
 

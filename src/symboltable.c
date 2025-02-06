@@ -147,17 +147,7 @@ void hashtable_print(const Hashtable *ht) {
                 COLOR_END
             );
 
-            switch (entry->value.kind) {
-                case SYMBOLKIND_ADDRESS:
-                    printf("%lu", entry->value.stack_addr);
-                    break;
-                case SYMBOLKIND_LABEL:
-                    printf("%s", entry->value.label);
-                    break;
-                default:
-                    assert(false);
-                    break;
-            }
+            printf("%lu", entry->value.stack_addr);
 
             printf(
                 " %s|%s ",
@@ -236,119 +226,145 @@ void symboltable_print(const Symboltable *st) {
 
 
 
-static void traverse_ast(AstNode *root, Hashtable *parent, Symboltable *st) {
+static void traverse_ast(AstNode *root, Hashtable *scope, Symboltable *st);
+
+
+
+
+static void ast_block(Block *block, Hashtable *scope, Symboltable *st) {
+    AstNodeList list = block->stmts;
+
+    symboltable_append(st, scope);
+    Hashtable *last = symboltable_get_last(st);
+    assert(last != NULL);
+    block->symboltable = last;
+
+    for (size_t i=0; i < list.size; ++i)
+        traverse_ast(list.items[i], last, st);
+}
+
+static void ast_procedure(StmtProcedure *proc, Hashtable *scope, Symboltable *st) {
+    const char *ident = proc->identifier.value;
+
+    // TODO: insert type information here
+    Symbol sym = {
+        .type       = TYPE_FUNCTION,
+        .stack_addr = 0,
+        .name       = ident,
+    };
+    // TODO: insert parameters into current scope
+
+    int ret = hashtable_insert(scope, ident, sym);
+    if (ret != 0)
+        throw_error_simple("Procedure `%s` already exists", ident);
+
+    traverse_ast(proc->body, scope, st);
+}
+
+static void ast_vardecl(StmtVarDecl *vardecl, Hashtable *scope, Symboltable *st) {
+    const char *ident = vardecl->identifier.value;
+
+    // TODO: global variables
+    Symbol sym = {
+        .name       = ident,
+        .stack_addr = 0,
+        .type       = vardecl->type,
+    };
+
+    int ret = hashtable_insert(scope, ident, sym);
+    if (ret == -1)
+        throw_warning_simple("Variable `%s` already exists", ident);
+
+    traverse_ast(vardecl->value, scope, st);
+}
+
+static void ast_assignment(ExprAssignment *assign, Hashtable *scope, Symboltable *st) {
+    const char *ident = assign->identifier.value;
+
+    Symbol *sym = symboltable_lookup(scope, ident);
+    if (sym == NULL)
+        throw_error(assign->identifier, "Symbol `%s` does not exist", ident);
+
+    traverse_ast(assign->value, scope, st);
+}
+
+static void ast_literal(ExprLiteral *literal, Hashtable *scope, Symboltable *st) {
+
+    if (literal->op.kind == TOK_IDENTIFIER) {
+        const char *variable = literal->op.value;
+
+        Symbol *sym = symboltable_lookup(scope, variable);
+        if (sym == NULL)
+            throw_error_simple("Symbol `%s` does not exist", variable);
+    }
+
+}
+
+
+/*
+ * `parent` is the symboltable of the current scope
+ * `st` is an array of all symboltables
+ */
+static void traverse_ast(AstNode *root, Hashtable *scope, Symboltable *st) {
     assert(root != NULL);
 
     switch (root->kind) {
-        case ASTNODE_BLOCK: {
-            Block *block     = &root->block;
-            AstNodeList list = block->stmts;
+        case ASTNODE_BLOCK:
+            ast_block(&root->block, scope, st);
+            break;
 
-            symboltable_append(st, parent);
-            Hashtable *last = symboltable_get_last(st);
-            assert(last != NULL);
-            block->symboltable = last;
+        case ASTNODE_FUNC:
+            ast_procedure(&root->stmt_func, scope, st);
+            break;
 
-            for (size_t i=0; i < list.size; ++i)
-                traverse_ast(list.items[i], last, st);
-
-        } break;
-
-        case ASTNODE_FUNC: {
-            const StmtFunc *func = &root->stmt_func;
-            const char *ident = func->identifier.value;
-
-            // TODO: insert type information here
-            Symbol sym = {
-                .type  = TYPE_FUNCTION,
-                .kind  = SYMBOLKIND_LABEL,
-                .label = ident,
-            };
-
-            int ret = hashtable_insert(parent, ident, sym);
-            if (ret != 0)
-                throw_error_simple("Procedure `%s` already exists", ident);
-
-            traverse_ast(func->body, parent, st);
-        } break;
-
-        case ASTNODE_VARDECL: {
-            const StmtVarDecl *vardecl = &root->stmt_vardecl;
-            const char *ident = vardecl->identifier.value;
-
-            Symbol sym = {
-                .kind       = SYMBOLKIND_ADDRESS,
-                .stack_addr = 0,
-                .type       = vardecl->type,
-            };
-
-            int ret = hashtable_insert(parent, ident, sym);
-            if (ret == -1)
-                throw_warning_simple("Variable `%s` already exists", ident);
-
-            traverse_ast(vardecl->value, parent, st);
-        } break;
+        case ASTNODE_VARDECL:
+            ast_vardecl(&root->stmt_vardecl, scope, st);
+            break;
 
         case ASTNODE_CALL: {
             ExprCall call = root->expr_call;
             if (call.builtin == BUILTIN_NONE)
-                traverse_ast(call.callee, parent, st);
+                traverse_ast(call.callee, scope, st);
 
             AstNodeList list = call.args;
             for (size_t i=0; i < list.size; ++i)
-                traverse_ast(list.items[i], parent, st);
+                traverse_ast(list.items[i], scope, st);
         } break;
 
-        case ASTNODE_ASSIGN: {
-            ExprAssignment assign = root->expr_assign;
-            const char *ident = assign.identifier.value;
-
-            Symbol *sym = symboltable_lookup(parent, ident);
-            if (sym == NULL)
-                throw_error(assign.identifier, "Symbol `%s` does not exist", ident);
-
-            traverse_ast(assign.value, parent, st);
-        } break;
+        case ASTNODE_ASSIGN:
+            ast_assignment(&root->expr_assign, scope, st);
+            break;
 
         case ASTNODE_GROUPING:
-            traverse_ast(root->expr_grouping.expr, parent, st);
+            traverse_ast(root->expr_grouping.expr, scope, st);
             break;
 
         case ASTNODE_WHILE:
-            traverse_ast(root->stmt_while.condition, parent, st);
-            traverse_ast(root->stmt_while.body, parent, st);
+            traverse_ast(root->stmt_while.condition, scope, st);
+            traverse_ast(root->stmt_while.body, scope, st);
             break;
 
         case ASTNODE_IF:
-            traverse_ast(root->stmt_if.condition, parent, st);
-            traverse_ast(root->stmt_if.then_body, parent, st);
+            traverse_ast(root->stmt_if.condition, scope, st);
+            traverse_ast(root->stmt_if.then_body, scope, st);
             if (root->stmt_if.else_body != NULL)
-                traverse_ast(root->stmt_if.else_body, parent, st);
+                traverse_ast(root->stmt_if.else_body, scope, st);
             break;
 
         case ASTNODE_BINOP: {
             const ExprBinOp *binop = &root->expr_binop;
-            traverse_ast(binop->lhs, parent, st);
-            traverse_ast(binop->rhs, parent, st);
+            traverse_ast(binop->lhs, scope, st);
+            traverse_ast(binop->rhs, scope, st);
         } break;
 
         case ASTNODE_UNARYOP: {
             const ExprUnaryOp *unaryop = &root->expr_unaryop;
-            traverse_ast(unaryop->node, parent, st);
+            traverse_ast(unaryop->node, scope, st);
         } break;
 
-        case ASTNODE_LITERAL: {
-            const ExprLiteral* literal = &root->expr_literal;
-
-            if (literal->op.kind == TOK_IDENTIFIER) {
-                const char *variable = literal->op.value;
-
-                Symbol *sym = symboltable_lookup(parent, variable);
-                if (sym == NULL)
-                    throw_error_simple("Symbol `%s` does not exist", variable);
-            }
-
-        } break;
+        case ASTNODE_LITERAL:
+            ast_literal(&root->expr_literal, scope, st);
+            break;
 
         default:
             assert(!"Unexpected Node Kind");

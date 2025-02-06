@@ -27,17 +27,11 @@ extern void astnodelist_destroy(AstNodeList *list);
 
 
 
-typedef enum {
-    BUILTIN_ASM,
-    BUILTIN_NONE,
-} BuiltinFunction;
-
-extern BuiltinFunction builtin_from_tokenkind(TokenKind kind);
-
-
-
 
 // Token is included in AstNode for printing source location on error/warning
+
+
+
 
 typedef struct {
     Token op;
@@ -46,6 +40,8 @@ typedef struct {
 typedef struct {
     AstNode *expr;
 } ExprGrouping;
+
+/* Binary Operations */
 
 typedef enum {
     BINOP_ADD,
@@ -62,12 +58,24 @@ typedef struct {
     BinOpKind kind;
 } ExprBinOp;
 
+
+/* Procedure Calls */
+
+typedef enum {
+    BUILTIN_ASM,
+    BUILTIN_NONE,
+} BuiltinFunction;
+
+extern BuiltinFunction builtin_from_tokenkind(TokenKind kind);
+
 typedef struct {
     Token op;
     AstNode *callee; // NULL if builtin
     AstNodeList args;
     BuiltinFunction builtin; // BUILTIN_NONE if no builtin
 } ExprCall;
+
+
 
 typedef struct {
     AstNode *node;
@@ -85,11 +93,30 @@ typedef struct {
     Hashtable *symboltable;
 } Block;
 
+
+/* Procedures */
+
+#define MAX_ARG_COUNT 255
+
+typedef struct {
+    Type type;
+    const char *ident;
+} Param;
+
+typedef struct {
+    Param params[MAX_ARG_COUNT];
+    size_t params_count;
+    Type returntype;
+} ProcSignature;
+
 typedef struct {
     Token op, identifier;
     AstNode *body; // NULL if declaration
-    Type returntype;
-} StmtFunc;
+    ProcSignature sig;
+} StmtProcedure;
+
+
+/* Control Flow */
 
 typedef struct {
     Token op;
@@ -100,6 +127,8 @@ typedef struct {
     Token op;
     AstNode *condition, *body;
 } StmtWhile;
+
+/* Variable Declarations */
 
 typedef struct {
     Token op, identifier;
@@ -131,7 +160,7 @@ struct AstNode {
         ExprCall       expr_call;
         ExprAssignment expr_assign;
         Block          block;
-        StmtFunc       stmt_func;
+        StmtProcedure  stmt_func;
         StmtVarDecl    stmt_vardecl;
         StmtIf         stmt_if;
         StmtWhile      stmt_while;
