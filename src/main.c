@@ -196,7 +196,6 @@ int main(int argc, char *argv[]) {
     AstNode *node_root = parser_parse(&tokens);
     if (compiler_context.opts.dump_ast)
         parser_print_ast(node_root, 2);
-    tokenlist_destroy(&tokens);
 
 
     printf("Building Symboltable...\n");
@@ -220,6 +219,7 @@ int main(int argc, char *argv[]) {
 
     symboltable_destroy(&symboltable);
     parser_free_ast(node_root);
+    tokenlist_destroy(&tokens);
 
     return EXIT_SUCCESS;
 }

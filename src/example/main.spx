@@ -1,32 +1,7 @@
-##
-#proc add(a 'int, b'int) 'int {
-#}
-
-proc exit() 'void {
-    asm("mov rax, 60");
-    asm("mov rdi, rdi");
-    asm("syscall");
-}
-
-proc print() 'int {
-
-    val buf 'int = 66;
-    #asm("mov rax, 1");
-    #asm("mov rdi, 1");
-    #asm("lea rsi, {}", buf);
-    #asm("mov rdx, 1");
-    #asm("syscall");
-
-}
-##
-
-proc foo() 'void {
-    3;
+proc add(foo 'int, bar 'int) {
 }
 
 proc _start() {
-    1;
-    2;
 
     #exit();
 }

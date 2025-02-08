@@ -14,7 +14,7 @@ extern AstNode *rule_unary      (Parser *p);
 extern AstNode *rule_factor     (Parser *p);
 extern AstNode *rule_term       (Parser *p);
 extern AstNode *rule_vardecl    (Parser *p);
-extern AstNode *rule_function   (Parser *p);
+extern AstNode *rule_procedure  (Parser *p);
 extern AstNode *rule_block      (Parser *p);
 extern AstNode *rule_expression (Parser *p);
 extern AstNode *rule_exprstmt   (Parser *p);

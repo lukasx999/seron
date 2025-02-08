@@ -15,10 +15,10 @@
 
 
 
-Token parser_get_current_token(const Parser *p) {
-    const Token *tok = tokenlist_get(p->tokens, p->current);
+Token *parser_get_current_token(const Parser *p) {
+    Token *tok = tokenlist_get(p->tokens, p->current);
     assert(tok != NULL);
-    return *tok;
+    return tok;
 }
 
 void parser_advance(Parser *p) {
@@ -33,7 +33,7 @@ bool parser_match_tokenkinds(const Parser *p, ...) {
 
     while (1) {
         TokenKind tok = va_arg(va, TokenKind);
-        bool matched = parser_get_current_token(p).kind == tok;
+        bool matched = parser_get_current_token(p)->kind == tok;
         if (matched || tok == SENTINEL) {
             va_end(va);
             return matched;
@@ -49,14 +49,14 @@ void parser_expect_token(
     const char *expected
 ) {
     if (!parser_match_tokenkinds(p, tokenkind, SENTINEL)) {
-        Token tok = parser_get_current_token(p);
-        throw_error(tok, "Expected `%s`", expected);
+        Token *tok = parser_get_current_token(p);
+        throw_error(*tok, "Expected `%s`", expected);
     }
 }
 
 void parser_throw_error(const Parser *p, const char *msg) {
-    Token tok = parser_get_current_token(p);
-    throw_error(tok, "%s", msg);
+    Token *tok = parser_get_current_token(p);
+    throw_error(*tok, "%s", msg);
 }
 
 bool parser_is_at_end(const Parser *p) {
@@ -126,9 +126,9 @@ void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down, voi
             depth--;
             break;
 
-        case ASTNODE_FUNC:
+        case ASTNODE_PROCEDURE:
             depth++;
-            parser_traverse_ast(root->stmt_func.body, callback, top_down, args);
+            parser_traverse_ast(root->stmt_procedure.body, callback, top_down, args);
             depth--;
             break;
 
@@ -230,8 +230,8 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
             );
         } break;
 
-        case ASTNODE_FUNC: {
-            StmtProcedure *func = &root->stmt_func;
+        case ASTNODE_PROCEDURE: {
+            StmtProcedure *func = &root->stmt_procedure;
             print_ast_value(tokenkind_to_string(func->op.kind), COLOR_RED, func->identifier.value, NULL);
         } break;
 
@@ -280,7 +280,7 @@ static void parser_free_ast_callback(AstNode *node, int _depth, void *_args) {
         case ASTNODE_GROUPING:
         case ASTNODE_ASSIGN:
         case ASTNODE_LITERAL:
-        case ASTNODE_FUNC:
+        case ASTNODE_PROCEDURE:
         case ASTNODE_VARDECL:
         case ASTNODE_BINOP:
         case ASTNODE_UNARYOP:

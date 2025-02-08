@@ -191,8 +191,8 @@ static Symbol traverse_ast(AstNode *node, Hashtable *symboltable) {
             return traverse_ast(node->expr_grouping.expr, symboltable);
             break;
 
-        case ASTNODE_FUNC:
-            ast_procedure(&node->stmt_func, symboltable);
+        case ASTNODE_PROCEDURE:
+            ast_procedure(&node->stmt_procedure, symboltable);
             break;
 
         case ASTNODE_IF:

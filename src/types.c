@@ -258,8 +258,8 @@ static Type traverse_ast(AstNode *root, Hashtable *symboltable) {
             ast_assignment(&root->expr_assign, symboltable);
             break;
 
-        case ASTNODE_FUNC: {
-            const StmtProcedure *func = &root->stmt_func;
+        case ASTNODE_PROCEDURE: {
+            const StmtProcedure *func = &root->stmt_procedure;
             traverse_ast(func->body, symboltable);
         } break;
 

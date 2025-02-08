@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "types.h"
 #include "util.h"
 #include "lexer.h"
 #include "parser.h"
@@ -63,6 +64,8 @@ void hashtable_destroy(Hashtable *ht) {
 }
 
 int hashtable_insert(Hashtable *ht, const char *key, Symbol value) {
+    assert(ht != NULL);
+
     size_t index = hash(ht->size, key);
     HashtableEntry *current = ht->buckets[index];
 
@@ -226,42 +229,76 @@ void symboltable_print(const Symboltable *st) {
 
 
 
-static void traverse_ast(AstNode *root, Hashtable *scope, Symboltable *st);
+
+typedef struct {
+    Hashtable *scope;
+    Symboltable *st;
+    ProcSignature *sig; /* for adding function parameters to function body. NULL if not used */
+} TraversalContext;
+
+static void traverse_ast(AstNode *root, TraversalContext *ctx);
 
 
 
-
-static void ast_block(Block *block, Hashtable *scope, Symboltable *st) {
+static void ast_block(Block *block, TraversalContext *ctx) {
     AstNodeList list = block->stmts;
 
-    symboltable_append(st, scope);
-    Hashtable *last = symboltable_get_last(st);
+    symboltable_append(ctx->st, ctx->scope);
+    Hashtable *last = symboltable_get_last(ctx->st);
     assert(last != NULL);
     block->symboltable = last;
 
-    for (size_t i=0; i < list.size; ++i)
-        traverse_ast(list.items[i], last, st);
+
+
+    /* Insert parameters as variables in the scope of the procedure */
+    ProcSignature *sig = ctx->sig;
+
+    #if 1
+    if (sig != NULL) {
+
+        for (size_t i=0; i < sig->params_count; ++i) {
+            Param param = sig->params[i];
+            Symbol sym = {
+                .name       = param.ident,
+                .type       = param.type,
+                .stack_addr = 0,
+            };
+
+            int ret = hashtable_insert(block->symboltable, sym.name, sym);
+            assert(ret == 0);
+        }
+
+        ctx->sig = NULL;
+    }
+    #endif
+
+
+    for (size_t i=0; i < list.size; ++i) {
+        ctx->scope = block->symboltable;
+        traverse_ast(list.items[i], ctx);
+    }
 }
 
-static void ast_procedure(StmtProcedure *proc, Hashtable *scope, Symboltable *st) {
+static void ast_procedure(StmtProcedure *proc, TraversalContext *ctx) {
     const char *ident = proc->identifier.value;
 
-    // TODO: insert type information here
+    ctx->sig = &proc->sig;
+
     Symbol sym = {
         .type       = TYPE_FUNCTION,
         .stack_addr = 0,
         .name       = ident,
+        .sig        = proc->sig,
     };
-    // TODO: insert parameters into current scope
 
-    int ret = hashtable_insert(scope, ident, sym);
+    int ret = hashtable_insert(ctx->scope, ident, sym);
     if (ret != 0)
         throw_error_simple("Procedure `%s` already exists", ident);
 
-    traverse_ast(proc->body, scope, st);
+    traverse_ast(proc->body, ctx);
 }
 
-static void ast_vardecl(StmtVarDecl *vardecl, Hashtable *scope, Symboltable *st) {
+static void ast_vardecl(StmtVarDecl *vardecl, TraversalContext *ctx) {
     const char *ident = vardecl->identifier.value;
 
     // TODO: global variables
@@ -271,29 +308,29 @@ static void ast_vardecl(StmtVarDecl *vardecl, Hashtable *scope, Symboltable *st)
         .type       = vardecl->type,
     };
 
-    int ret = hashtable_insert(scope, ident, sym);
+    int ret = hashtable_insert(ctx->scope, ident, sym);
     if (ret == -1)
         throw_warning_simple("Variable `%s` already exists", ident);
 
-    traverse_ast(vardecl->value, scope, st);
+    traverse_ast(vardecl->value, ctx);
 }
 
-static void ast_assignment(ExprAssignment *assign, Hashtable *scope, Symboltable *st) {
+static void ast_assignment(ExprAssignment *assign, TraversalContext *ctx) {
     const char *ident = assign->identifier.value;
 
-    Symbol *sym = symboltable_lookup(scope, ident);
+    Symbol *sym = symboltable_lookup(ctx->scope, ident);
     if (sym == NULL)
         throw_error(assign->identifier, "Symbol `%s` does not exist", ident);
 
-    traverse_ast(assign->value, scope, st);
+    traverse_ast(assign->value, ctx);
 }
 
-static void ast_literal(ExprLiteral *literal, Hashtable *scope, Symboltable *st) {
+static void ast_literal(ExprLiteral *literal, TraversalContext *ctx) {
 
     if (literal->op.kind == TOK_IDENTIFIER) {
         const char *variable = literal->op.value;
 
-        Symbol *sym = symboltable_lookup(scope, variable);
+        Symbol *sym = symboltable_lookup(ctx->scope, variable);
         if (sym == NULL)
             throw_error_simple("Symbol `%s` does not exist", variable);
     }
@@ -305,65 +342,65 @@ static void ast_literal(ExprLiteral *literal, Hashtable *scope, Symboltable *st)
  * `parent` is the symboltable of the current scope
  * `st` is an array of all symboltables
  */
-static void traverse_ast(AstNode *root, Hashtable *scope, Symboltable *st) {
+static void traverse_ast(AstNode *root, TraversalContext *ctx) {
     assert(root != NULL);
 
     switch (root->kind) {
         case ASTNODE_BLOCK:
-            ast_block(&root->block, scope, st);
+            ast_block(&root->block, ctx);
             break;
 
-        case ASTNODE_FUNC:
-            ast_procedure(&root->stmt_func, scope, st);
+        case ASTNODE_PROCEDURE:
+            ast_procedure(&root->stmt_procedure, ctx);
             break;
 
         case ASTNODE_VARDECL:
-            ast_vardecl(&root->stmt_vardecl, scope, st);
+            ast_vardecl(&root->stmt_vardecl, ctx);
             break;
 
         case ASTNODE_CALL: {
             ExprCall call = root->expr_call;
             if (call.builtin == BUILTIN_NONE)
-                traverse_ast(call.callee, scope, st);
+                traverse_ast(call.callee, ctx);
 
             AstNodeList list = call.args;
             for (size_t i=0; i < list.size; ++i)
-                traverse_ast(list.items[i], scope, st);
+                traverse_ast(list.items[i], ctx);
         } break;
 
         case ASTNODE_ASSIGN:
-            ast_assignment(&root->expr_assign, scope, st);
+            ast_assignment(&root->expr_assign, ctx);
             break;
 
         case ASTNODE_GROUPING:
-            traverse_ast(root->expr_grouping.expr, scope, st);
+            traverse_ast(root->expr_grouping.expr, ctx);
             break;
 
         case ASTNODE_WHILE:
-            traverse_ast(root->stmt_while.condition, scope, st);
-            traverse_ast(root->stmt_while.body, scope, st);
+            traverse_ast(root->stmt_while.condition, ctx);
+            traverse_ast(root->stmt_while.body, ctx);
             break;
 
         case ASTNODE_IF:
-            traverse_ast(root->stmt_if.condition, scope, st);
-            traverse_ast(root->stmt_if.then_body, scope, st);
+            traverse_ast(root->stmt_if.condition, ctx);
+            traverse_ast(root->stmt_if.then_body, ctx);
             if (root->stmt_if.else_body != NULL)
-                traverse_ast(root->stmt_if.else_body, scope, st);
+                traverse_ast(root->stmt_if.else_body, ctx);
             break;
 
         case ASTNODE_BINOP: {
             const ExprBinOp *binop = &root->expr_binop;
-            traverse_ast(binop->lhs, scope, st);
-            traverse_ast(binop->rhs, scope, st);
+            traverse_ast(binop->lhs, ctx);
+            traverse_ast(binop->rhs, ctx);
         } break;
 
         case ASTNODE_UNARYOP: {
             const ExprUnaryOp *unaryop = &root->expr_unaryop;
-            traverse_ast(unaryop->node, scope, st);
+            traverse_ast(unaryop->node, ctx);
         } break;
 
         case ASTNODE_LITERAL:
-            ast_literal(&root->expr_literal, scope, st);
+            ast_literal(&root->expr_literal, ctx);
             break;
 
         default:
@@ -379,7 +416,6 @@ static void scope_count_callback(AstNode *node, int _depth, void *args) {
 
     if (node->kind == ASTNODE_BLOCK)
         ++*count;
-
 }
 
 Symboltable symboltable_construct(AstNode *root, size_t table_size) {
@@ -389,7 +425,12 @@ Symboltable symboltable_construct(AstNode *root, size_t table_size) {
     Symboltable symboltable = { 0 };
     symboltable_init(&symboltable, count, table_size);
 
-    traverse_ast(root, NULL, &symboltable);
+    TraversalContext ctx = {
+        .scope = NULL,
+        .st = &symboltable,
+    };
+
+    traverse_ast(root, &ctx);
 
     return symboltable;
 }

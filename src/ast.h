@@ -143,7 +143,7 @@ typedef enum {
     ASTNODE_UNARYOP,
     ASTNODE_CALL,
     ASTNODE_BLOCK,
-    ASTNODE_FUNC,
+    ASTNODE_PROCEDURE,
     ASTNODE_VARDECL,
     ASTNODE_IF,
     ASTNODE_WHILE,
@@ -160,7 +160,7 @@ struct AstNode {
         ExprCall       expr_call;
         ExprAssignment expr_assign;
         Block          block;
-        StmtProcedure  stmt_func;
+        StmtProcedure  stmt_procedure;
         StmtVarDecl    stmt_vardecl;
         StmtIf         stmt_if;
         StmtWhile      stmt_while;

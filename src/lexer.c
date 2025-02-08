@@ -72,7 +72,7 @@ void tokenlist_append(TokenList *tokens, Token item) {
     tokens->items[tokens->size++] = item;
 }
 
-const Token *tokenlist_get(const TokenList *tokens, size_t index) {
+Token *tokenlist_get(const TokenList *tokens, size_t index) {
     return index < tokens->size ? &tokens->items[index] : NULL;
 }
 
