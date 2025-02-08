@@ -19,6 +19,7 @@ typedef enum {
 } SymbolKind;
 
 typedef struct {
+    SymbolKind kind;
     Type type;
     const char *name;
     size_t stack_addr; /* 0 if symbol is global or procedure */

@@ -155,16 +155,6 @@ static TokenKind match_keywords(const char *str, size_t len) {
     return TOK_INVALID;
 }
 
-static Token token_new(void) {
-    return (Token) {
-        .kind       = TOK_INVALID,
-        .value      = { 0 },
-        .pos_column = 0,
-        .pos_line   = 0,
-        .length     = 0,
-    };
-}
-
 TokenList tokenize(const char *src) {
     TokenList tokens = tokenlist_new();
     int linecount   = 1;
@@ -172,7 +162,7 @@ TokenList tokenize(const char *src) {
 
     for (size_t i=0; i < strlen(src); ++i) {
         char c    = src[i];
-        Token tok = token_new();
+        Token tok = { 0 };
 
         tok.pos_line     = linecount;
         tok.pos_column   = columncount;
@@ -330,8 +320,10 @@ TokenList tokenize(const char *src) {
 
     }
 
-    Token tok_eof = token_new();
-    tok_eof.kind  = TOK_EOF;
+    Token tok_eof = {
+        .kind = TOK_EOF,
+    };
+
     tokenlist_append(&tokens, tok_eof);
 
     return tokens;

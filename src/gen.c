@@ -63,7 +63,9 @@ void gen_prelude(CodeGenerator *gen) {
     gen_addinstr(gen, "section .text");
 }
 
-void gen_if_then(CodeGenerator *gen, Symbol cond) {
+gen_ctx gen_if_then(CodeGenerator *gen, Symbol cond) {
+    gen_ctx ctx = gen->label_count;
+
     gen_comment(gen, "START: if");
     gen_addinstr(
         gen,
@@ -71,37 +73,43 @@ void gen_if_then(CodeGenerator *gen, Symbol cond) {
         type_get_size_operand(cond.type),
         cond.stack_addr
     );
-    gen_addinstr(gen, "je .else%lu", gen->label_count);
-}
+    gen_addinstr(gen, "je .else_%lu", ctx);
 
-void gen_if_else(CodeGenerator *gen) {
-    gen_addinstr(gen, "jmp .end%lu", gen->label_count);
-    gen_addinstr(gen, ".else%lu:", gen->label_count);
-}
-
-void gen_if_end(CodeGenerator *gen) {
-    gen_addinstr(gen, ".end%lu:", gen->label_count);
-    gen_comment(gen, "END: if\n");
     gen->label_count++;
+    return ctx;
 }
 
-void gen_while_start(CodeGenerator *gen) {
+void gen_if_else(CodeGenerator *gen, gen_ctx ctx) {
+    gen_addinstr(gen, "jmp .end_%lu", ctx);
+    gen_addinstr(gen, ".else_%lu:", ctx);
+}
+
+void gen_if_end(CodeGenerator *gen, gen_ctx ctx) {
+    gen_addinstr(gen, ".end_%lu:", ctx);
+    gen_comment(gen, "END: if\n");
+}
+
+gen_ctx gen_while_start(CodeGenerator *gen) {
+    gen_ctx ctx = gen->label_count;
+
     gen_comment(gen, "START: while");
-    gen_addinstr(gen, "jmp .cond%lu", gen->label_count);
-    gen_addinstr(gen, ".while%lu:", gen->label_count);
+    gen_addinstr(gen, "jmp .cond_%lu", ctx);
+    gen_addinstr(gen, ".while_%lu:", ctx);
+
+    gen->label_count++;
+    return ctx;
 }
 
-void gen_while_end(CodeGenerator *gen, Symbol cond) {
-    gen_addinstr(gen, ".cond%lu:", gen->label_count);
+void gen_while_end(CodeGenerator *gen, Symbol cond, gen_ctx ctx) {
+    gen_addinstr(gen, ".cond_%lu:", ctx);
     gen_addinstr(
         gen,
         "cmp %s [rbp-%lu], 0",
         type_get_size_operand(cond.type),
         cond.stack_addr
     );
-    gen_addinstr(gen, "jne .while%lu", gen->label_count);
+    gen_addinstr(gen, "jne .while_%lu", ctx);
     gen_comment(gen, "END: while\n");
-    gen->label_count++;
 }
 
 Symbol gen_binop(CodeGenerator *gen, Symbol a, Symbol b, BinOpKind kind) {

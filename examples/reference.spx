@@ -35,6 +35,11 @@ proc _start() {
     val foo 'int  = 4;
     val foo 'size = 8;
 
+    val x 'int = 1;
+    x = 2;
+    x = 3;
+
+
     exit();
 
 }

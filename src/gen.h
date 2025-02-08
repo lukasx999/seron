@@ -7,6 +7,9 @@
 
 #include "symboltable.h"
 
+/* context needed for if/while */
+/* remembers the current label count, to make nested if/while work */
+typedef size_t gen_ctx;
 
 typedef struct {
     FILE       *file;
@@ -29,12 +32,14 @@ extern void gen_inlineasm(CodeGenerator *c, const char *src, const Symbol *symbo
 extern Symbol gen_call(CodeGenerator *gen, Symbol callee, const Symbol *args, size_t args_len);
 
 
-extern void gen_if_then(CodeGenerator *gen, Symbol cond);
-extern void gen_if_else(CodeGenerator *gen);
-extern void gen_if_end(CodeGenerator *gen);
 
-extern void gen_while_start(CodeGenerator *gen);
-extern void gen_while_end(CodeGenerator *gen, Symbol cond);
+extern gen_ctx gen_if_then(CodeGenerator *gen, Symbol cond);
+extern void gen_if_else(CodeGenerator *gen, gen_ctx ctx);
+extern void gen_if_end(CodeGenerator *gen, gen_ctx ctx);
+
+extern gen_ctx gen_while_start(CodeGenerator *gen);
+extern void gen_while_end(CodeGenerator *gen, Symbol cond, gen_ctx ctx);
+
 
 extern void gen_assign(CodeGenerator *gen, Symbol assignee, Symbol value);
 

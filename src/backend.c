@@ -146,21 +146,22 @@ static Symbol ast_call(ExprCall *call, Hashtable *symboltable) {
 static void ast_if(StmtIf *if_, Hashtable *symboltable) {
     Symbol cond = traverse_ast(if_->condition, symboltable);
 
-    gen_if_then(&codegen, cond);
+    gen_ctx if_ctx = gen_if_then(&codegen, cond);
     traverse_ast(if_->then_body, symboltable);
-    gen_if_else(&codegen);
+    gen_if_else(&codegen, if_ctx);
 
     if (if_->else_body != NULL)
         traverse_ast(if_->else_body, symboltable);
 
-    gen_if_end(&codegen);
+    gen_if_end(&codegen, if_ctx);
 }
 
 static void ast_while(StmtWhile *while_, Hashtable *symboltable) {
     Symbol cond = traverse_ast(while_->condition, symboltable);
-    gen_while_start(&codegen);
+
+    gen_ctx while_ctx = gen_while_start(&codegen);
     traverse_ast(while_->body, symboltable);
-    gen_while_end(&codegen, cond);
+    gen_while_end(&codegen, cond, while_ctx);
 }
 
 static Symbol ast_assign(ExprAssignment *assign, Hashtable *symboltable) {

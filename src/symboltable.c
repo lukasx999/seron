@@ -259,9 +259,9 @@ static void ast_block(Block *block, TraversalContext *ctx) {
         for (size_t i=0; i < sig->params_count; ++i) {
             Param param = sig->params[i];
             Symbol sym = {
+                .kind       = SYMBOL_VARIABLE,
                 .name       = param.ident,
                 .type       = param.type,
-                .stack_addr = 0,
             };
 
             int ret = hashtable_insert(block->symboltable, sym.name, sym);
@@ -285,8 +285,8 @@ static void ast_procedure(StmtProcedure *proc, TraversalContext *ctx) {
     ctx->sig = &proc->sig;
 
     Symbol sym = {
+        .kind       = SYMBOL_PROCEDURE,
         .type       = TYPE_FUNCTION,
-        .stack_addr = 0,
         .name       = ident,
         .sig        = proc->sig,
     };
@@ -303,8 +303,8 @@ static void ast_vardecl(StmtVarDecl *vardecl, TraversalContext *ctx) {
 
     // TODO: global variables
     Symbol sym = {
+        .kind       = SYMBOL_VARIABLE,
         .name       = ident,
-        .stack_addr = 0,
         .type       = vardecl->type,
     };
 
