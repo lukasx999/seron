@@ -1,5 +1,5 @@
 
-proc exit() {
+proc exit(status 'int) 'void {
     asm("
     mov rax, 60
     mov rdi, 0
@@ -19,7 +19,6 @@ proc print() {
     ", buf);
 }
 
-
 proc add(a 'int, b 'int) 'int {
 }
 
@@ -30,6 +29,8 @@ proc _start() {
         print();
         foo = foo-1;
     }
+
+    foo;
 
     exit();
 }

@@ -292,7 +292,7 @@ static void ast_procedure(StmtProcedure *proc, TraversalContext *ctx) {
     };
 
     int ret = hashtable_insert(ctx->scope, ident, sym);
-    if (ret != 0)
+    if (ret == -1)
         throw_error_simple("Procedure `%s` already exists", ident);
 
     traverse_ast(proc->body, ctx);
@@ -325,18 +325,15 @@ static void ast_assignment(ExprAssignment *assign, TraversalContext *ctx) {
     traverse_ast(assign->value, ctx);
 }
 
-static void ast_literal(ExprLiteral *literal, TraversalContext *ctx) {
+static void ast_call(ExprCall *call, TraversalContext *ctx) {
 
-    if (literal->op.kind == TOK_IDENTIFIER) {
-        const char *variable = literal->op.value;
+    if (call->builtin == BUILTIN_NONE)
+        traverse_ast(call->callee, ctx);
 
-        Symbol *sym = symboltable_lookup(ctx->scope, variable);
-        if (sym == NULL)
-            throw_error_simple("Symbol `%s` does not exist", variable);
-    }
-
+    AstNodeList list = call->args;
+    for (size_t i=0; i < list.size; ++i)
+        traverse_ast(list.items[i], ctx);
 }
-
 
 /*
  * `parent` is the symboltable of the current scope
@@ -358,15 +355,9 @@ static void traverse_ast(AstNode *root, TraversalContext *ctx) {
             ast_vardecl(&root->stmt_vardecl, ctx);
             break;
 
-        case ASTNODE_CALL: {
-            ExprCall call = root->expr_call;
-            if (call.builtin == BUILTIN_NONE)
-                traverse_ast(call.callee, ctx);
-
-            AstNodeList list = call.args;
-            for (size_t i=0; i < list.size; ++i)
-                traverse_ast(list.items[i], ctx);
-        } break;
+        case ASTNODE_CALL:
+            ast_call(&root->expr_call, ctx);
+            break;
 
         case ASTNODE_ASSIGN:
             ast_assignment(&root->expr_assign, ctx);
@@ -400,7 +391,6 @@ static void traverse_ast(AstNode *root, TraversalContext *ctx) {
         } break;
 
         case ASTNODE_LITERAL:
-            ast_literal(&root->expr_literal, ctx);
             break;
 
         default:

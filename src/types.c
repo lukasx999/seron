@@ -180,7 +180,10 @@ static Type ast_literal(ExprLiteral *literal, Hashtable *symboltable) {
         case TOK_IDENTIFIER: {
             const char *value = literal->op.value;
             Symbol *sym = symboltable_lookup(symboltable, value);
-            assert(sym != NULL);
+
+            if (sym == NULL)
+                throw_error_simple("Symbol `%s` does not exist", value);
+
             return sym->type;
         } break;
 
