@@ -249,7 +249,6 @@ static void ast_block(Block *block, TraversalContext *ctx) {
     block->symboltable = last;
 
 
-
     /* Insert parameters as variables in the scope of the procedure */
     ProcSignature *sig = ctx->sig;
 
@@ -301,7 +300,6 @@ static void ast_procedure(StmtProcedure *proc, TraversalContext *ctx) {
 static void ast_vardecl(StmtVarDecl *vardecl, TraversalContext *ctx) {
     const char *ident = vardecl->identifier.value;
 
-    // TODO: global variables
     Symbol sym = {
         .kind       = SYMBOL_VARIABLE,
         .name       = ident,

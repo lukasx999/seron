@@ -150,7 +150,6 @@ static void parse_args(int argc, char *argv[]) {
             default:
                 throw_error_simple("Unknown option");
                 break;
-
         }
 
     }
