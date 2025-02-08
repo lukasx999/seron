@@ -11,8 +11,6 @@
 
 
 
-// TODO: function params + returntype
-
 typedef enum {
     SYMBOL_NONE,
     SYMBOL_VARIABLE,

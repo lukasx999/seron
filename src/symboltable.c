@@ -253,7 +253,7 @@ static void ast_block(Block *block, TraversalContext *ctx) {
     /* Insert parameters as variables in the scope of the procedure */
     ProcSignature *sig = ctx->sig;
 
-    #if 1
+    // only if parent node is a function
     if (sig != NULL) {
 
         for (size_t i=0; i < sig->params_count; ++i) {
@@ -270,13 +270,13 @@ static void ast_block(Block *block, TraversalContext *ctx) {
 
         ctx->sig = NULL;
     }
-    #endif
 
 
     for (size_t i=0; i < list.size; ++i) {
         ctx->scope = block->symboltable;
         traverse_ast(list.items[i], ctx);
     }
+
 }
 
 static void ast_procedure(StmtProcedure *proc, TraversalContext *ctx) {

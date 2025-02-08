@@ -1,4 +1,4 @@
-proc add(foo 'int, bar 'int) {
+proc add(a 'int, b 'int) 'int {
 }
 
 proc _start() {

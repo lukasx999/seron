@@ -175,6 +175,7 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: buffer generated assembly
 // TODO: static global variables
 // TODO: inserting func signature into symboltable + pushing func params onto stack (via sysv abi)
+// TODO: change Token in ast to Token*
 
 
 

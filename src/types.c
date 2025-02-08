@@ -247,7 +247,7 @@ static Type traverse_ast(AstNode *root, Hashtable *symboltable) {
         } break;
 
         case ASTNODE_LITERAL:
-            ast_literal(&root->expr_literal, symboltable);
+            return ast_literal(&root->expr_literal, symboltable);
             break;
 
         case ASTNODE_GROUPING:
