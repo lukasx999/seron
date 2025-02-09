@@ -166,6 +166,7 @@ static void parse_args(int argc, char *argv[]) {
 
 // TODO: --run argument
 // TODO: char literal
+// TODO: warn for unused symbols
 // TODO: analysis: dont allow statements in global scope
 // TODO: make blocks expressions
 // TODO: synchronizing parser
@@ -175,6 +176,7 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: static global variables
 // TODO: inserting func signature into symboltable + pushing func params onto stack (via sysv abi)
 // TODO: change Token in ast to Token*
+// TODO: function signature in call expression types.c
 
 
 

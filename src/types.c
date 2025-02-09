@@ -50,7 +50,7 @@ const char *type_to_string(Type type) {
             return "void";
             break;
         case TYPE_FUNCTION:
-            return "function";
+            return "proc";
             break;
         default:
             assert(!"Unknown Type");
@@ -130,56 +130,80 @@ const char *type_get_register_rdi(Type type) {
 }
 
 
-static Type traverse_ast(AstNode *root, Hashtable *symboltable);
+static Type traverse_ast(AstNode *root, Hashtable *scope);
 
 
-static Type ast_assignment(ExprAssignment *assign, Hashtable *symboltable) {
-    Type type = traverse_ast(assign->value, symboltable);
+static Type ast_assignment(ExprAssignment *assign, Hashtable *scope) {
+    Type type = traverse_ast(assign->value, scope);
 
     const char *ident = assign->identifier.value;
-    Symbol *sym = symboltable_lookup(symboltable, ident);
-    assert(sym != NULL);
+    Symbol *sym = symboltable_lookup(scope, ident);
 
-    if (sym->type != type)
-        throw_error(assign->op, "Cannot assign %s to %s", type_to_string(type), type_to_string(sym->type));
+    if (sym == NULL)
+        throw_error(assign->identifier, "Symbol `%s` does not exist", ident);
+
+    if (sym->type != type) {
+        throw_error(
+            assign->op,
+            "Invalid type %s, expected %s",
+            type_to_string(type),
+            type_to_string(sym->type)
+        );
+    }
 
     return type;
 }
 
-static void ast_vardecl(StmtVarDecl *vardecl, Hashtable *symboltable) {
-    Type type = traverse_ast(vardecl->value, symboltable);
+static void ast_vardecl(StmtVarDecl *vardecl, Hashtable *scope) {
+    Type type = traverse_ast(vardecl->value, scope);
 
-    if (vardecl->type != type)
+    if (vardecl->type != type) {
         throw_error(
             vardecl->op,
-            "Type annotation (%s) does not match assigned expression (%s)",
-            type_to_string(vardecl->type),
-            type_to_string(type)
+            "Invalid type %s, expected %s",
+            type_to_string(type),
+            type_to_string(vardecl->type)
         );
+    }
 }
 
-static Type ast_call(ExprCall *call, Hashtable *symboltable) {
-
-    if (call->builtin == BUILTIN_NONE) {
-        Type callee = traverse_ast(call->callee, symboltable);
-
-        if (callee != TYPE_FUNCTION)
-            throw_error(call->op, "Callee must be a procedure");
-    }
+static Type ast_call(ExprCall *call, Hashtable *scope) {
 
     AstNodeList list = call->args;
     for (size_t i=0; i < list.size; ++i)
-        traverse_ast(list.items[i], symboltable);
+        traverse_ast(list.items[i], scope);
 
+    if (call->builtin != BUILTIN_NONE)
+        return TYPE_VOID;
+
+
+    Type callee = traverse_ast(call->callee, scope);
+
+    if (callee != TYPE_FUNCTION)
+        throw_error(call->op, "Callee must be a procedure");
+
+
+    // TODO: get function signature
+
+    // HACK: returntype
+    /*
+    const char *ident = call->callee->expr_literal.op.value;
+    Symbol *sym = symboltable_lookup(scope, ident);
+    assert(sym != NULL);
+    Type returntype = sym->sig.returntype;
+    return returntype;
+    */
+
+    return TYPE_VOID;
 }
 
-static Type ast_literal(ExprLiteral *literal, Hashtable *symboltable) {
+static Type ast_literal(ExprLiteral *literal, Hashtable *scope) {
 
     switch (literal->op.kind) {
 
         case TOK_IDENTIFIER: {
             const char *value = literal->op.value;
-            Symbol *sym = symboltable_lookup(symboltable, value);
+            Symbol *sym = symboltable_lookup(scope, value);
 
             if (sym == NULL)
                 throw_error_simple("Symbol `%s` does not exist", value);
@@ -202,7 +226,7 @@ static Type ast_literal(ExprLiteral *literal, Hashtable *symboltable) {
 }
 
 
-static Type traverse_ast(AstNode *root, Hashtable *symboltable) {
+static Type traverse_ast(AstNode *root, Hashtable *scope) {
     assert(root != NULL);
 
     switch (root->kind) {
@@ -216,21 +240,21 @@ static Type traverse_ast(AstNode *root, Hashtable *symboltable) {
         } break;
 
         case ASTNODE_WHILE:
-            traverse_ast(root->stmt_while.condition, symboltable);
-            traverse_ast(root->stmt_while.body, symboltable);
+            traverse_ast(root->stmt_while.condition, scope);
+            traverse_ast(root->stmt_while.body, scope);
             break;
 
         case ASTNODE_IF:
-            traverse_ast(root->stmt_if.condition, symboltable);
-            traverse_ast(root->stmt_if.then_body, symboltable);
+            traverse_ast(root->stmt_if.condition, scope);
+            traverse_ast(root->stmt_if.then_body, scope);
             if (root->stmt_if.else_body != NULL)
-                traverse_ast(root->stmt_if.else_body, symboltable);
+                traverse_ast(root->stmt_if.else_body, scope);
             break;
 
         case ASTNODE_BINOP: {
             const ExprBinOp *binop = &root->expr_binop;
-            Type lhs = traverse_ast(binop->lhs, symboltable);
-            Type rhs = traverse_ast(binop->rhs, symboltable);
+            Type lhs = traverse_ast(binop->lhs, scope);
+            Type rhs = traverse_ast(binop->rhs, scope);
 
             if (lhs != rhs)
                 throw_error(
@@ -245,34 +269,33 @@ static Type traverse_ast(AstNode *root, Hashtable *symboltable) {
 
         case ASTNODE_UNARYOP: {
             const ExprUnaryOp *unaryop = &root->expr_unaryop;
-            traverse_ast(unaryop->node, symboltable);
+            traverse_ast(unaryop->node, scope);
             // TODO: check operand type. eg: logical operators cannot be used on integers
         } break;
 
         case ASTNODE_LITERAL:
-            return ast_literal(&root->expr_literal, symboltable);
+            return ast_literal(&root->expr_literal, scope);
             break;
 
         case ASTNODE_GROUPING:
-            return traverse_ast(root->expr_grouping.expr, symboltable);
+            return traverse_ast(root->expr_grouping.expr, scope);
             break;
 
         case ASTNODE_ASSIGN:
-            ast_assignment(&root->expr_assign, symboltable);
+            ast_assignment(&root->expr_assign, scope);
             break;
 
         case ASTNODE_PROCEDURE: {
             const StmtProcedure *func = &root->stmt_procedure;
-            traverse_ast(func->body, symboltable);
+            traverse_ast(func->body, scope);
         } break;
 
         case ASTNODE_VARDECL:
-            ast_vardecl(&root->stmt_vardecl, symboltable);
+            ast_vardecl(&root->stmt_vardecl, scope);
             break;
 
         case ASTNODE_CALL:
-            // TODO: return returntype of function (symboltable lookup)
-            ast_call(&root->expr_call, symboltable);
+            return ast_call(&root->expr_call, scope);
             break;
 
         default:

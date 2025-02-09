@@ -21,9 +21,11 @@ typedef enum {
 typedef struct {
     SymbolKind kind;
     Type type;
-    const char *name;
-    size_t stack_addr; /* 0 if symbol is global or procedure */
-    ProcSignature sig;
+
+    /* symbol-specific fields */
+    const char *name;  // used for procedured and static variables
+    size_t stack_addr; // used for variables
+    ProcSignature sig; // used for procedures
 } Symbol;
 
 typedef struct HashtableEntry {

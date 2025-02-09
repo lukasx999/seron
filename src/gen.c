@@ -209,8 +209,8 @@ void gen_inlineasm(
 void gen_procedure_start(CodeGenerator *gen, const char *identifier) {
     gen->rbp_offset = 0;
 
-    gen_comment(gen, "START: function");
-    gen_comment(gen, "START: function_prelude");
+    gen_comment(gen, "START: proc");
+    gen_comment(gen, "START: proc_prelude");
 
     gen_addinstr(gen, "");
     gen_addinstr(gen, "global %s", identifier);
@@ -218,18 +218,18 @@ void gen_procedure_start(CodeGenerator *gen, const char *identifier) {
     gen_addinstr(gen, "push rbp");
     gen_addinstr(gen, "mov rbp, rsp");
 
-    gen_comment(gen, "END: function_prelude\n");
+    gen_comment(gen, "END: proc_prelude\n");
 }
 
 void gen_procedure_end(CodeGenerator *gen) {
-    gen_comment(gen, "START: function_postlude");
+    gen_comment(gen, "START: proc_postlude");
 
     gen_addinstr(gen, "mov rsp, rbp");
     gen_addinstr(gen, "pop rbp");
     gen_addinstr(gen, "ret");
 
-    gen_comment(gen, "END: function_postlude");
-    gen_comment(gen, "END: function\n");
+    gen_comment(gen, "END: proc_postlude");
+    gen_comment(gen, "END: proc\n");
 }
 
 Symbol gen_call(

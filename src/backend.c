@@ -18,10 +18,10 @@
 CodeGenerator codegen = { 0 };
 
 
-static Symbol traverse_ast(AstNode *node, Hashtable *symboltable);
+static Symbol traverse_ast(AstNode *node, Hashtable *scope);
 
 
-static void builtin_inlineasm(ExprCall *call, Hashtable *symboltable) {
+static void builtin_inlineasm(ExprCall *call, Hashtable *scope) {
 
     AstNodeList list = call->args;
     if (list.size == 0)
@@ -60,7 +60,7 @@ static void builtin_inlineasm(ExprCall *call, Hashtable *symboltable) {
     size_t addrs_i   = 0;
 
     for (size_t i=1; i < list.size; ++i) {
-        Symbol sym = traverse_ast(list.items[i], symboltable);
+        Symbol sym = traverse_ast(list.items[i], scope);
         addrs[addrs_i++] = sym;
     }
 
@@ -68,13 +68,13 @@ static void builtin_inlineasm(ExprCall *call, Hashtable *symboltable) {
 
 }
 
-static Symbol ast_binop(ExprBinOp *binop, Hashtable *symboltable) {
-    Symbol sym_lhs  = traverse_ast(binop->lhs, symboltable);
-    Symbol sym_rhs  = traverse_ast(binop->rhs, symboltable);
+static Symbol ast_binop(ExprBinOp *binop, Hashtable *scope) {
+    Symbol sym_lhs  = traverse_ast(binop->lhs, scope);
+    Symbol sym_rhs  = traverse_ast(binop->rhs, scope);
     return gen_binop(&codegen, sym_lhs, sym_rhs, binop->kind);
 }
 
-static Symbol ast_literal(ExprLiteral *literal, Hashtable *symboltable) {
+static Symbol ast_literal(ExprLiteral *literal, Hashtable *scope) {
     switch (literal->op.kind) {
 
         case TOK_NUMBER: {
@@ -85,7 +85,7 @@ static Symbol ast_literal(ExprLiteral *literal, Hashtable *symboltable) {
 
         case TOK_IDENTIFIER: {
             const char *variable = literal->op.value;
-            Symbol *sym = symboltable_lookup(symboltable, variable);
+            Symbol *sym = symboltable_lookup(scope, variable);
             assert(sym != NULL);
             return *sym;
         } break;
@@ -96,18 +96,18 @@ static Symbol ast_literal(ExprLiteral *literal, Hashtable *symboltable) {
     }
 }
 
-static void ast_vardecl(StmtVarDecl *vardecl, Hashtable *symboltable) {
+static void ast_vardecl(StmtVarDecl *vardecl, Hashtable *scope) {
     const char *variable = vardecl->identifier.value;
-    Symbol sym = traverse_ast(vardecl->value, symboltable);
+    Symbol sym = traverse_ast(vardecl->value, scope);
 
     /* populate address in symboltable */
-    int ret = hashtable_set(symboltable, variable, sym);
+    int ret = hashtable_set(scope, variable, sym);
     assert(ret != -1);
 }
 
-static void ast_procedure(StmtProcedure *proc, Hashtable *symboltable) {
+static void ast_procedure(StmtProcedure *proc, Hashtable *scope) {
     gen_procedure_start(&codegen, proc->identifier.value);
-    traverse_ast(proc->body, symboltable);
+    traverse_ast(proc->body, scope);
     gen_procedure_end(&codegen);
 }
 
@@ -119,15 +119,16 @@ static void ast_block(Block *block) {
         traverse_ast(list.items[i], block->symboltable);
 }
 
-static Symbol ast_call(ExprCall *call, Hashtable *symboltable) {
+static Symbol ast_call(ExprCall *call, Hashtable *scope) {
 
     if (call->builtin == BUILTIN_ASM) {
-        builtin_inlineasm(call, symboltable);
+        builtin_inlineasm(call, scope);
         return (Symbol) {
             .type = TYPE_INVALID,
         };
     }
     assert(call->builtin == BUILTIN_NONE);
+
 
     AstNodeList list = call->args;
 
@@ -135,40 +136,40 @@ static Symbol ast_call(ExprCall *call, Hashtable *symboltable) {
     Symbol *symbols = alloca(list.size * sizeof(Symbol));
 
     for (size_t i=0; i < list.size; ++i)
-        symbols[symbols_i++] = traverse_ast(list.items[i], symboltable);
+        symbols[symbols_i++] = traverse_ast(list.items[i], scope);
 
     assert(symbols_i == list.size);
 
-    Symbol callee = traverse_ast(call->callee, symboltable);
+    Symbol callee = traverse_ast(call->callee, scope);
     return gen_call(&codegen, callee, symbols, list.size);
 }
 
-static void ast_if(StmtIf *if_, Hashtable *symboltable) {
-    Symbol cond = traverse_ast(if_->condition, symboltable);
+static void ast_if(StmtIf *if_, Hashtable *scope) {
+    Symbol cond = traverse_ast(if_->condition, scope);
 
     gen_ctx if_ctx = gen_if_then(&codegen, cond);
-    traverse_ast(if_->then_body, symboltable);
+    traverse_ast(if_->then_body, scope);
     gen_if_else(&codegen, if_ctx);
 
     if (if_->else_body != NULL)
-        traverse_ast(if_->else_body, symboltable);
+        traverse_ast(if_->else_body, scope);
 
     gen_if_end(&codegen, if_ctx);
 }
 
-static void ast_while(StmtWhile *while_, Hashtable *symboltable) {
-    Symbol cond = traverse_ast(while_->condition, symboltable);
+static void ast_while(StmtWhile *while_, Hashtable *scope) {
+    Symbol cond = traverse_ast(while_->condition, scope);
 
     gen_ctx while_ctx = gen_while_start(&codegen);
-    traverse_ast(while_->body, symboltable);
+    traverse_ast(while_->body, scope);
     gen_while_end(&codegen, cond, while_ctx);
 }
 
-static Symbol ast_assign(ExprAssignment *assign, Hashtable *symboltable) {
+static Symbol ast_assign(ExprAssignment *assign, Hashtable *scope) {
     const char *ident = assign->identifier.value;
-    Symbol value = traverse_ast(assign->value, symboltable);
+    Symbol value = traverse_ast(assign->value, scope);
 
-    Symbol *assignee = symboltable_lookup(symboltable, ident);
+    Symbol *assignee = symboltable_lookup(scope, ident);
     assert(assignee != NULL);
     gen_assign(&codegen, *assignee, value);
 
@@ -176,7 +177,7 @@ static Symbol ast_assign(ExprAssignment *assign, Hashtable *symboltable) {
 }
 
 /* returns the location of the evaluated expression in memory */
-static Symbol traverse_ast(AstNode *node, Hashtable *symboltable) {
+static Symbol traverse_ast(AstNode *node, Hashtable *scope) {
     assert(node != NULL);
 
     switch (node->kind) {
@@ -185,31 +186,31 @@ static Symbol traverse_ast(AstNode *node, Hashtable *symboltable) {
             break;
 
         case ASTNODE_CALL:
-            return ast_call(&node->expr_call, symboltable);
+            return ast_call(&node->expr_call, scope);
             break;
 
         case ASTNODE_GROUPING:
-            return traverse_ast(node->expr_grouping.expr, symboltable);
+            return traverse_ast(node->expr_grouping.expr, scope);
             break;
 
         case ASTNODE_PROCEDURE:
-            ast_procedure(&node->stmt_procedure, symboltable);
+            ast_procedure(&node->stmt_procedure, scope);
             break;
 
         case ASTNODE_IF:
-            ast_if(&node->stmt_if, symboltable);
+            ast_if(&node->stmt_if, scope);
             break;
 
         case ASTNODE_WHILE:
-            ast_while(&node->stmt_while, symboltable);
+            ast_while(&node->stmt_while, scope);
             break;
 
         case ASTNODE_VARDECL:
-            ast_vardecl(&node->stmt_vardecl, symboltable);
+            ast_vardecl(&node->stmt_vardecl, scope);
             break;
 
         case ASTNODE_BINOP:
-            return ast_binop(&node->expr_binop, symboltable);
+            return ast_binop(&node->expr_binop, scope);
             break;
 
         case ASTNODE_UNARYOP:
@@ -217,11 +218,11 @@ static Symbol traverse_ast(AstNode *node, Hashtable *symboltable) {
             break;
 
         case ASTNODE_LITERAL:
-            return ast_literal(&node->expr_literal, symboltable);
+            return ast_literal(&node->expr_literal, scope);
             break;
 
         case ASTNODE_ASSIGN:
-            return ast_assign(&node->expr_assign, symboltable);
+            return ast_assign(&node->expr_assign, scope);
             break;
 
         default:

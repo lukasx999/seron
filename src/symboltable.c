@@ -141,23 +141,41 @@ void hashtable_print(const Hashtable *ht) {
 
         while (entry != NULL) {
             printf(
-                "%s%s%s%s %s|%s ",
+                "%s%s%s%s",
                 COLOR_BOLD,
                 COLOR_RED,
                 entry->key,
-                COLOR_END,
-                COLOR_GRAY,
                 COLOR_END
             );
 
-            printf("%lu", entry->value.stack_addr);
+            Symbol *sym = &entry->value;
 
-            printf(
-                " %s|%s ",
-                COLOR_GRAY,
-                COLOR_END
-            );
-            printf("%s%s%s", COLOR_BLUE, type_to_string(entry->value.type), COLOR_END);
+            if (sym->type == TYPE_FUNCTION) {
+                printf(" %s(%s", COLOR_GRAY, COLOR_END);
+
+                /*
+                 * we have to check that count is non-zero before subtracting 1,
+                 * as it will otherwise underflow
+                 */
+                size_t count = sym->sig.params_count;
+                for (size_t i=0; i < (count ? count-1 : count); ++i) {
+                    printf(
+                        "%s%s,%s ",
+                        type_to_string(sym->sig.params[i].type),
+                        COLOR_GRAY,
+                        COLOR_END
+                    );
+                }
+
+                if (count)
+                    printf("%s ", type_to_string(sym->sig.params[count-1].type));
+                else
+                    printf("%s ", type_to_string(TYPE_VOID));
+
+                printf("%s->%s %s", COLOR_GRAY, COLOR_END, type_to_string(sym->sig.returntype));
+                printf("%s)%s", COLOR_GRAY, COLOR_END);
+            }
+
 
 
             printf("\n");
@@ -301,9 +319,9 @@ static void ast_vardecl(StmtVarDecl *vardecl, TraversalContext *ctx) {
     const char *ident = vardecl->identifier.value;
 
     Symbol sym = {
-        .kind       = SYMBOL_VARIABLE,
-        .name       = ident,
-        .type       = vardecl->type,
+        .kind = SYMBOL_VARIABLE,
+        .name = ident,
+        .type = vardecl->type,
     };
 
     int ret = hashtable_insert(ctx->scope, ident, sym);
@@ -311,16 +329,6 @@ static void ast_vardecl(StmtVarDecl *vardecl, TraversalContext *ctx) {
         throw_warning_simple("Variable `%s` already exists", ident);
 
     traverse_ast(vardecl->value, ctx);
-}
-
-static void ast_assignment(ExprAssignment *assign, TraversalContext *ctx) {
-    const char *ident = assign->identifier.value;
-
-    Symbol *sym = symboltable_lookup(ctx->scope, ident);
-    if (sym == NULL)
-        throw_error(assign->identifier, "Symbol `%s` does not exist", ident);
-
-    traverse_ast(assign->value, ctx);
 }
 
 static void ast_call(ExprCall *call, TraversalContext *ctx) {
@@ -357,9 +365,10 @@ static void traverse_ast(AstNode *root, TraversalContext *ctx) {
             ast_call(&root->expr_call, ctx);
             break;
 
-        case ASTNODE_ASSIGN:
-            ast_assignment(&root->expr_assign, ctx);
-            break;
+        case ASTNODE_ASSIGN: {
+            ExprAssignment *assign = &root->expr_assign;
+            traverse_ast(assign->value, ctx);
+        } break;
 
         case ASTNODE_GROUPING:
             traverse_ast(root->expr_grouping.expr, ctx);
@@ -407,15 +416,16 @@ static void scope_count_callback(AstNode *node, int _depth, void *args) {
 }
 
 Symboltable symboltable_construct(AstNode *root, size_t table_size) {
-    int count = 0;
-    parser_traverse_ast(root, scope_count_callback, true, &count);
+    int block_count = 0;
+    parser_traverse_ast(root, scope_count_callback, true, &block_count);
 
     Symboltable symboltable = { 0 };
-    symboltable_init(&symboltable, count, table_size);
+    symboltable_init(&symboltable, block_count, table_size);
 
     TraversalContext ctx = {
         .scope = NULL,
-        .st = &symboltable,
+        .st    = &symboltable,
+        .sig   = NULL,
     };
 
     traverse_ast(root, &ctx);

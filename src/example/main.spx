@@ -24,7 +24,9 @@ proc add(a 'int, b 'int) 'int {
 
 proc _start() {
 
+    #val foo 'int = add();
     val foo 'int = 5;
+
     while foo {
         print();
         foo = foo-1;
