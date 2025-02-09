@@ -239,6 +239,11 @@ Symbol gen_call(
     size_t         args_len
 ) {
 
+    ProcSignature *sig = &callee.sig;
+
+    gen_comment(gen, "START: call");
+    gen_comment(gen, "START: call_prelude");
+
     for (size_t i=0; i < args_len; ++i) {
         Symbol arg = args[i];
         size_t argnum = i+1;
@@ -262,11 +267,19 @@ Symbol gen_call(
         gen_addinstr(gen, "mov %s, [rbp-%lu]", reg, arg.stack_addr);
 
     }
+    gen_comment(gen, "END: call_prelude");
 
-    Type returntype = TYPE_INT;
 
-    gen_comment(gen, "START: call");
     gen_addinstr(gen, "call %s", callee.name);
+
+    Type returntype = sig->returntype;
+
+    if (returntype == TYPE_VOID) {
+        return (Symbol) {
+            .type = returntype,
+            .kind = SYMBOL_NONE,
+        };
+    }
 
     gen_addinstr(gen, "sub rsp, %lu", type_get_size(returntype));
     gen->rbp_offset += type_get_size(returntype);
@@ -282,7 +295,7 @@ Symbol gen_call(
     return (Symbol) {
         .stack_addr = gen->rbp_offset,
         .type       = returntype,
-        .name       = NULL,
+        .kind       = SYMBOL_VARIABLE,
     };
 
 }

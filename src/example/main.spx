@@ -24,6 +24,8 @@ proc add(a 'int, b 'int) 'int {
 
 proc _start() {
 
+    add(1, 2);
+
     #val foo 'int = add();
     val foo 'int = 5;
 
