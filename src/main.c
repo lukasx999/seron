@@ -184,6 +184,7 @@ static void parse_args(int argc, char *argv[]) {
 consider turning Type into struct
 - function type containing function signature
 - pointers containing type information
+- information for user defined types
 */
 
 
