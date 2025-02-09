@@ -106,7 +106,20 @@ static void ast_vardecl(StmtVarDecl *vardecl, Hashtable *scope) {
 }
 
 static void ast_procedure(StmtProcedure *proc, Hashtable *scope) {
-    gen_procedure_start(&codegen, proc->identifier.value);
+    const char *ident = proc->identifier.value;
+    ProcSignature *sig = &proc->sig;
+
+    size_t count = sig->params_count;
+    for (size_t i=0; i < count; ++i) {
+        Param *param = &sig->params[i];
+        // TODO: do lookup inside of function scope
+
+        /*Symbol *sym = symboltable_lookup(scope, param->ident);*/
+        /*assert(sym != NULL);*/
+
+    }
+
+    gen_procedure_start(&codegen, ident);
     traverse_ast(proc->body, scope);
     gen_procedure_end(&codegen);
 }

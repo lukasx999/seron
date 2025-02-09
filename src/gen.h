@@ -26,8 +26,10 @@ extern void gen_prelude(CodeGenerator *c);
 
 extern Symbol gen_binop(CodeGenerator *gen, Symbol a, Symbol b, BinOpKind kind);
 extern Symbol gen_store_literal(CodeGenerator *gen, int64_t value, Type type);
-extern void gen_procedure_start(CodeGenerator *c, const char *identifier);
+
+extern void gen_procedure_start(CodeGenerator *gen, const char *identifier);
 extern void gen_procedure_end(CodeGenerator *c);
+
 extern void gen_inlineasm(CodeGenerator *c, const char *src, const Symbol *symbols, size_t symbols_len);
 extern Symbol gen_call(CodeGenerator *gen, Symbol callee, const Symbol *args, size_t args_len);
 

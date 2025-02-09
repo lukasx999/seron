@@ -249,6 +249,8 @@ Symbol gen_call(
         size_t argnum = i+1;
 
         // TODO: spill the rest of arguments onto stack
+
+        /* x86_64 linux SystemV ABI */
         /* first 6 arguments are stored in registers, the rest goes onto the stack */
         const char *registers[] = {
             [1] = "rdi",

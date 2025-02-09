@@ -302,10 +302,10 @@ static void ast_procedure(StmtProcedure *proc, TraversalContext *ctx) {
     ctx->sig = &proc->sig;
 
     Symbol sym = {
-        .kind       = SYMBOL_PROCEDURE,
-        .type       = TYPE_FUNCTION,
-        .name       = ident,
-        .sig        = proc->sig,
+        .kind = SYMBOL_PROCEDURE,
+        .type = TYPE_FUNCTION,
+        .name = ident,
+        .sig  = proc->sig,
     };
 
     int ret = hashtable_insert(ctx->scope, ident, sym);
