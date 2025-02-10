@@ -150,30 +150,35 @@ void hashtable_print(const Hashtable *ht) {
 
             Symbol *sym = &entry->value;
 
-            if (sym->type == TYPE_FUNCTION) {
+            if (sym->type.kind == TYPE_FUNCTION) {
+                // TODO:
+#if 0
                 printf(" %s(%s", COLOR_GRAY, COLOR_END);
+
+                ProcSignature *sig = &sym->type.type_signature;
 
                 /*
                  * we have to check that count is non-zero before subtracting 1,
                  * as it will otherwise underflow
                  */
-                size_t count = sym->sig.params_count;
+                size_t count = sig->params_count;
                 for (size_t i=0; i < (count ? count-1 : count); ++i) {
                     printf(
                         "%s%s,%s ",
-                        type_to_string(sym->sig.params[i].type),
+                        typekind_to_string(sig->params[i].type->kind),
                         COLOR_GRAY,
                         COLOR_END
                     );
                 }
 
                 if (count)
-                    printf("%s ", type_to_string(sym->sig.params[count-1].type));
+                    printf("%s ", typekind_to_string(sig->params[count-1].type->kind));
                 else
-                    printf("%s ", type_to_string(TYPE_VOID));
+                    printf("%s ", typekind_to_string(TYPE_VOID));
 
-                printf("%s->%s %s", COLOR_GRAY, COLOR_END, type_to_string(sym->sig.returntype));
+                printf("%s->%s %s", COLOR_GRAY, COLOR_END, typekind_to_string(sig->returntype->kind));
                 printf("%s)%s", COLOR_GRAY, COLOR_END);
+#endif
             }
 
 
@@ -267,6 +272,8 @@ static void ast_block(Block *block, TraversalContext *ctx) {
     block->symboltable = last;
 
 
+    // TODO: this
+#if 0
     /* Insert parameters as variables in the scope of the procedure */
     ProcSignature *sig = ctx->sig;
 
@@ -276,17 +283,18 @@ static void ast_block(Block *block, TraversalContext *ctx) {
         for (size_t i=0; i < sig->params_count; ++i) {
             Param param = sig->params[i];
             Symbol sym = {
-                .kind       = SYMBOL_VARIABLE,
-                .name       = param.ident,
-                .type       = param.type,
+                .kind  = SYMBOL_VARIABLE,
+                .label = param.ident,
+                .type  = *param.type, // TODO: check
             };
 
-            int ret = hashtable_insert(block->symboltable, sym.name, sym);
+            int ret = hashtable_insert(block->symboltable, sym.label, sym);
             assert(ret == 0);
         }
 
         ctx->sig = NULL;
     }
+#endif
 
 
     for (size_t i=0; i < list.size; ++i) {
@@ -299,13 +307,18 @@ static void ast_block(Block *block, TraversalContext *ctx) {
 static void ast_procedure(StmtProcedure *proc, TraversalContext *ctx) {
     const char *ident = proc->identifier.value;
 
-    ctx->sig = &proc->sig;
+    ctx->sig = &proc->type.type_signature;
+
+    // TODO: check
+    Type type = {
+        .kind = TYPE_FUNCTION,
+        .type_signature = *ctx->sig
+    };
 
     Symbol sym = {
         .kind = SYMBOL_PROCEDURE,
-        .type = TYPE_FUNCTION,
-        .name = ident,
-        .sig  = proc->sig,
+        .type = type,
+        .label = ident,
     };
 
     int ret = hashtable_insert(ctx->scope, ident, sym);
@@ -320,7 +333,7 @@ static void ast_vardecl(StmtVarDecl *vardecl, TraversalContext *ctx) {
 
     Symbol sym = {
         .kind = SYMBOL_VARIABLE,
-        .name = ident,
+        .label = ident,
         .type = vardecl->type,
     };
 
@@ -329,16 +342,6 @@ static void ast_vardecl(StmtVarDecl *vardecl, TraversalContext *ctx) {
         throw_warning_simple("Variable `%s` already exists", ident);
 
     traverse_ast(vardecl->value, ctx);
-}
-
-static void ast_call(ExprCall *call, TraversalContext *ctx) {
-
-    if (call->builtin == BUILTIN_NONE)
-        traverse_ast(call->callee, ctx);
-
-    AstNodeList list = call->args;
-    for (size_t i=0; i < list.size; ++i)
-        traverse_ast(list.items[i], ctx);
 }
 
 /*
@@ -361,47 +364,7 @@ static void traverse_ast(AstNode *root, TraversalContext *ctx) {
             ast_vardecl(&root->stmt_vardecl, ctx);
             break;
 
-        case ASTNODE_CALL:
-            ast_call(&root->expr_call, ctx);
-            break;
-
-        case ASTNODE_ASSIGN: {
-            ExprAssignment *assign = &root->expr_assign;
-            traverse_ast(assign->value, ctx);
-        } break;
-
-        case ASTNODE_GROUPING:
-            traverse_ast(root->expr_grouping.expr, ctx);
-            break;
-
-        case ASTNODE_WHILE:
-            traverse_ast(root->stmt_while.condition, ctx);
-            traverse_ast(root->stmt_while.body, ctx);
-            break;
-
-        case ASTNODE_IF:
-            traverse_ast(root->stmt_if.condition, ctx);
-            traverse_ast(root->stmt_if.then_body, ctx);
-            if (root->stmt_if.else_body != NULL)
-                traverse_ast(root->stmt_if.else_body, ctx);
-            break;
-
-        case ASTNODE_BINOP: {
-            const ExprBinOp *binop = &root->expr_binop;
-            traverse_ast(binop->lhs, ctx);
-            traverse_ast(binop->rhs, ctx);
-        } break;
-
-        case ASTNODE_UNARYOP: {
-            const ExprUnaryOp *unaryop = &root->expr_unaryop;
-            traverse_ast(unaryop->node, ctx);
-        } break;
-
-        case ASTNODE_LITERAL:
-            break;
-
         default:
-            assert(!"Unexpected Node Kind");
             break;
     }
 

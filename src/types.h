@@ -9,6 +9,21 @@ typedef struct AstNode AstNode;
 #define INTLITERAL TYPE_INT
 
 
+typedef struct Type Type;
+
+typedef struct {
+    Type *type;
+    const char *ident;
+} Param;
+
+#define MAX_ARG_COUNT 255
+
+typedef struct {
+    Param params[MAX_ARG_COUNT];
+    size_t params_count;
+    Type *returntype;
+} ProcSignature;
+
 typedef enum {
     TYPE_INVALID, // used for error checking
 
@@ -18,7 +33,21 @@ typedef enum {
     TYPE_SIZE,
     TYPE_FUNCTION,
     TYPE_POINTER,
-} Type;
+} TypeKind;
+
+struct Type {
+    TypeKind kind;
+    /*
+     * This union contains additional information for complex types,
+     * such as functions, pointers and user-defined types
+     */
+    union {
+        ProcSignature type_signature; // used only for procedures
+        /*Type type_pointee; // TODO: pointers*/
+    };
+};
+
+
 
 /*
  TODO:
@@ -26,14 +55,14 @@ typedef enum {
  coerced into any other integer type
 */
 
-extern Type type_from_tokenkind(TokenKind kind);
-extern const char *type_to_string(Type type);
-extern size_t type_get_size(Type type);
-extern const char *type_get_size_operand(Type type);
-extern const char *type_get_register_rax(Type type);
-extern const char *type_get_register_rdi(Type type);
+TypeKind typekind_from_tokenkind(TokenKind kind);
+const char *typekind_to_string(TypeKind type);
+size_t typekind_get_size(TypeKind type);
+const char *typekind_get_size_operand(TypeKind type);
+const char *typekind_get_register_rax(TypeKind type);
+const char *typekind_get_register_rdi(TypeKind type);
 
-extern void check_types(AstNode *root);
+void check_types(AstNode *root);
 
 
 

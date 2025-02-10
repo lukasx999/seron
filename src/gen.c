@@ -70,7 +70,7 @@ gen_ctx gen_if_then(CodeGenerator *gen, Symbol cond) {
     gen_addinstr(
         gen,
         "cmp %s [rbp-%lu], 0",
-        type_get_size_operand(cond.type),
+        typekind_get_size_operand(cond.type.kind),
         cond.stack_addr
     );
     gen_addinstr(gen, "je .else_%lu", ctx);
@@ -105,7 +105,7 @@ void gen_while_end(CodeGenerator *gen, Symbol cond, gen_ctx ctx) {
     gen_addinstr(
         gen,
         "cmp %s [rbp-%lu], 0",
-        type_get_size_operand(cond.type),
+        typekind_get_size_operand(cond.type.kind),
         cond.stack_addr
     );
     gen_addinstr(gen, "jne .while_%lu", ctx);
@@ -113,15 +113,15 @@ void gen_while_end(CodeGenerator *gen, Symbol cond, gen_ctx ctx) {
 }
 
 Symbol gen_binop(CodeGenerator *gen, Symbol a, Symbol b, BinOpKind kind) {
-    assert(a.type == a.type);
+    assert(a.type.kind == a.type.kind);
     Type type = a.type;
     gen_comment(gen, "START: binop");
 
-    gen->rbp_offset += type_get_size(type);
+    gen->rbp_offset += typekind_get_size(type.kind);
     size_t rbp_offset_a = a.stack_addr;
     size_t rbp_offset_b = b.stack_addr;
-    const char *rax = type_get_register_rax(type);
-    const char *rdi = type_get_register_rdi(type);
+    const char *rax = typekind_get_register_rax(type.kind);
+    const char *rdi = typekind_get_register_rdi(type.kind);
 
     gen_addinstr(gen, "mov %s, [rbp-%lu]", rax, rbp_offset_a);
     gen_addinstr(gen, "mov %s, [rbp-%lu]", rdi, rbp_offset_b);
@@ -144,26 +144,26 @@ Symbol gen_binop(CodeGenerator *gen, Symbol a, Symbol b, BinOpKind kind) {
             break;
     }
 
-    gen_addinstr(gen, "sub rsp, %lu", type_get_size(type));
-    gen_addinstr(gen, "mov %s [rbp-%lu], %s", type_get_size_operand(type), gen->rbp_offset, rax);
+    gen_addinstr(gen, "sub rsp, %lu", typekind_get_size(type.kind));
+    gen_addinstr(gen, "mov %s [rbp-%lu], %s", typekind_get_size_operand(type.kind), gen->rbp_offset, rax);
 
     gen_comment(gen, "END: binop\n");
     return (Symbol) {
         .stack_addr = gen->rbp_offset,
         .type       = type,
-        .name       = NULL,
+        .label      = NULL,
     };
 }
 
-Symbol gen_store_literal(CodeGenerator *gen, int64_t value, Type type) {
-    gen->rbp_offset += type_get_size(type);
+Symbol gen_store_literal(CodeGenerator *gen, int64_t value, TypeKind type) {
+    gen->rbp_offset += typekind_get_size(type);
     gen_comment(gen, "START: store");
 
-    gen_addinstr(gen, "sub rsp, %lu", type_get_size(type));
+    gen_addinstr(gen, "sub rsp, %lu", typekind_get_size(type));
     gen_addinstr(
         gen,
         "mov %s [rbp-%lu], %lu",
-        type_get_size_operand(type),
+        typekind_get_size_operand(type),
         gen->rbp_offset,
         value
     );
@@ -171,8 +171,8 @@ Symbol gen_store_literal(CodeGenerator *gen, int64_t value, Type type) {
     gen_comment(gen, "END: store\n");
     return (Symbol) {
         .stack_addr = gen->rbp_offset,
-        .type       = type,
-        .name       = NULL,
+        .type       = (Type) { .kind = type },
+        .label       = NULL,
     };
 }
 
@@ -239,7 +239,7 @@ Symbol gen_call(
     size_t         args_len
 ) {
 
-    ProcSignature *sig = &callee.sig;
+    ProcSignature *sig = &callee.type.type_signature;
 
     gen_comment(gen, "START: call");
     gen_comment(gen, "START: call_prelude");
@@ -272,47 +272,44 @@ Symbol gen_call(
     gen_comment(gen, "END: call_prelude");
 
 
-    gen_addinstr(gen, "call %s", callee.name);
+    gen_addinstr(gen, "call %s", callee.label);
 
-    Type returntype = sig->returntype;
+    TypeKind returntype = sig->returntype->kind;
 
     if (returntype == TYPE_VOID) {
-        return (Symbol) {
-            .type = returntype,
-            .kind = SYMBOL_NONE,
-        };
+        return (Symbol) { .kind = SYMBOL_NONE };
     }
 
-    gen_addinstr(gen, "sub rsp, %lu", type_get_size(returntype));
-    gen->rbp_offset += type_get_size(returntype);
+    gen_addinstr(gen, "sub rsp, %lu", typekind_get_size(returntype));
+    gen->rbp_offset += typekind_get_size(returntype);
     gen_addinstr(
         gen,
         "mov %s [rbp-%lu], %s",
-        type_get_size_operand(returntype),
+        typekind_get_size_operand(returntype),
         gen->rbp_offset,
-        type_get_register_rax(returntype)
+        typekind_get_register_rax(returntype)
     );
     gen_comment(gen, "END: call\n");
 
     return (Symbol) {
         .stack_addr = gen->rbp_offset,
-        .type       = returntype,
+        .type       = (Type) { .kind = returntype },
         .kind       = SYMBOL_VARIABLE,
     };
 
 }
 
 void gen_assign(CodeGenerator *gen, Symbol assignee, Symbol value) {
-    assert(assignee.type == value.type);
+    assert(assignee.type.kind == value.type.kind);
 
     Type type = assignee.type;
-    const char *rax = type_get_register_rax(type);
+    const char *rax = typekind_get_register_rax(type.kind);
 
     gen_comment(gen, "START: assignment");
     gen_addinstr(gen, "mov %s, [rbp-%lu]", rax, value.stack_addr);
     gen_addinstr(
         gen,
-        "mov %s [rbp-%lu], %s", type_get_size_operand(type),
+        "mov %s [rbp-%lu], %s", typekind_get_size_operand(type.kind),
         assignee.stack_addr,
         rax
     );

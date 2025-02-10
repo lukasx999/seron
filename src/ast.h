@@ -11,9 +11,6 @@
 typedef struct Hashtable Hashtable;
 
 
-
-
-
 typedef struct AstNode AstNode;
 
 typedef struct {
@@ -21,9 +18,9 @@ typedef struct {
     AstNode **items;
 } AstNodeList;
 
-extern AstNodeList astnodelist_new(void);
-extern void astnodelist_append(AstNodeList *list, AstNode *node);
-extern void astnodelist_destroy(AstNodeList *list);
+AstNodeList astnodelist_new(void);
+void astnodelist_append(AstNodeList *list, AstNode *node);
+void astnodelist_destroy(AstNodeList *list);
 
 
 
@@ -66,7 +63,7 @@ typedef enum {
     BUILTIN_NONE,
 } BuiltinFunction;
 
-extern BuiltinFunction builtin_from_tokenkind(TokenKind kind);
+BuiltinFunction builtin_from_tokenkind(TokenKind kind);
 
 typedef struct {
     Token op;
@@ -96,23 +93,10 @@ typedef struct {
 
 /* Procedures */
 
-#define MAX_ARG_COUNT 255
-
-typedef struct {
-    Type type;
-    const char *ident;
-} Param;
-
-typedef struct {
-    Param params[MAX_ARG_COUNT];
-    size_t params_count;
-    Type returntype;
-} ProcSignature;
-
 typedef struct {
     Token op, identifier;
     AstNode *body; // NULL if declaration
-    ProcSignature sig;
+    Type type; // type is holding function signature
 } StmtProcedure;
 
 

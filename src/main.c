@@ -218,6 +218,7 @@ int main(int argc, char *argv[]) {
     printf("Checking Types...\n");
     check_types(node_root);
 
+#if 0
     printf("Generating Code...\n");
     generate_code(node_root);
 
@@ -225,6 +226,8 @@ int main(int argc, char *argv[]) {
     build_binary();
 
     printf("%s%sBinary `%s` has been built!%s\n", COLOR_BOLD, COLOR_BLUE, compiler_context.filename.stripped, COLOR_END);
+#endif
+
 
 
 

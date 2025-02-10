@@ -12,7 +12,7 @@
 
 
 
-Type type_from_tokenkind(TokenKind kind) {
+TypeKind typekind_from_tokenkind(TokenKind kind) {
     switch (kind) {
         case TOK_TYPE_INT:
             return TYPE_INT;
@@ -32,7 +32,7 @@ Type type_from_tokenkind(TokenKind kind) {
     }
 }
 
-const char *type_to_string(Type type) {
+const char *typekind_to_string(TypeKind type) {
     switch (type) {
         case TYPE_BYTE:
             return "byte";
@@ -58,7 +58,7 @@ const char *type_to_string(Type type) {
     }
 }
 
-size_t type_get_size(Type type) {
+size_t typekind_get_size(TypeKind type) {
     switch (type) {
         case TYPE_BYTE:
             return 1;
@@ -78,7 +78,7 @@ size_t type_get_size(Type type) {
     }
 }
 
-const char *type_get_size_operand(Type type) {
+const char *typekind_get_size_operand(TypeKind type) {
     switch (type) {
         case TYPE_BYTE:
             return "byte";
@@ -95,7 +95,7 @@ const char *type_get_size_operand(Type type) {
     }
 }
 
-const char *type_get_register_rax(Type type) {
+const char *typekind_get_register_rax(TypeKind type) {
     switch (type) {
         case TYPE_BYTE:
             return "al";
@@ -112,7 +112,7 @@ const char *type_get_register_rax(Type type) {
     }
 }
 
-const char *type_get_register_rdi(Type type) {
+const char *typekind_get_register_rdi(TypeKind type) {
     switch (type) {
         case TYPE_BYTE:
             return "dil";
@@ -142,12 +142,15 @@ static Type ast_assignment(ExprAssignment *assign, Hashtable *scope) {
     if (sym == NULL)
         throw_error(assign->identifier, "Symbol `%s` does not exist", ident);
 
-    if (sym->type != type) {
+
+    TypeKind sym_type = sym->type.kind;
+
+    if (sym_type != type.kind) {
         throw_error(
             assign->op,
             "Invalid type %s, expected %s",
-            type_to_string(type),
-            type_to_string(sym->type)
+            typekind_to_string(type.kind),
+            typekind_to_string(sym_type)
         );
     }
 
@@ -156,13 +159,14 @@ static Type ast_assignment(ExprAssignment *assign, Hashtable *scope) {
 
 static void ast_vardecl(StmtVarDecl *vardecl, Hashtable *scope) {
     Type type = traverse_ast(vardecl->value, scope);
+    TypeKind expected = vardecl->type.kind;
 
-    if (vardecl->type != type) {
+    if (expected != type.kind) {
         throw_error(
             vardecl->op,
             "Invalid type %s, expected %s",
-            type_to_string(type),
-            type_to_string(vardecl->type)
+            typekind_to_string(type.kind),
+            typekind_to_string(expected)
         );
     }
 }
@@ -174,27 +178,19 @@ static Type ast_call(ExprCall *call, Hashtable *scope) {
         traverse_ast(list.items[i], scope);
 
     if (call->builtin != BUILTIN_NONE)
-        return TYPE_VOID;
+        return (Type) { .kind = TYPE_VOID };
 
 
     Type callee = traverse_ast(call->callee, scope);
 
-    if (callee != TYPE_FUNCTION)
+    if (callee.kind != TYPE_FUNCTION)
         throw_error(call->op, "Callee must be a procedure");
 
+    ProcSignature *sig = &callee.type_signature;
 
-    // TODO: get function signature
+    // TODO: check function signature
 
-    // HACK: returntype
-    /*
-    const char *ident = call->callee->expr_literal.op.value;
-    Symbol *sym = symboltable_lookup(scope, ident);
-    assert(sym != NULL);
-    Type returntype = sym->sig.returntype;
-    return returntype;
-    */
-
-    return TYPE_VOID;
+    return *sig->returntype;
 }
 
 static Type ast_literal(ExprLiteral *literal, Hashtable *scope) {
@@ -212,11 +208,11 @@ static Type ast_literal(ExprLiteral *literal, Hashtable *scope) {
         } break;
 
         case TOK_NUMBER:
-            return INTLITERAL;
+            return (Type) { .kind = INTLITERAL };
             break;
 
         case TOK_STRING:
-            return TYPE_POINTER;
+            return (Type) { .kind = TYPE_POINTER };
             break;
 
         default:
@@ -225,11 +221,51 @@ static Type ast_literal(ExprLiteral *literal, Hashtable *scope) {
     }
 }
 
+static Type ast_binop(ExprBinOp *binop, Hashtable *scope) {
+    Type lhs = traverse_ast(binop->lhs, scope);
+    Type rhs = traverse_ast(binop->rhs, scope);
+
+    if (lhs.kind != rhs.kind)
+        throw_error(
+            binop->op,
+            "Types do not match (`%s` and `%s`)",
+            typekind_to_string(lhs.kind),
+            typekind_to_string(rhs.kind)
+        );
+
+    return lhs;
+}
 
 static Type traverse_ast(AstNode *root, Hashtable *scope) {
     assert(root != NULL);
 
     switch (root->kind) {
+
+        case ASTNODE_LITERAL:
+            return ast_literal(&root->expr_literal, scope);
+            break;
+
+        case ASTNODE_BINOP:
+            return ast_binop(&root->expr_binop, scope);
+            break;
+
+        case ASTNODE_ASSIGN:
+            ast_assignment(&root->expr_assign, scope);
+            break;
+
+        case ASTNODE_VARDECL:
+            ast_vardecl(&root->stmt_vardecl, scope);
+            break;
+
+        case ASTNODE_CALL:
+            return ast_call(&root->expr_call, scope);
+            break;
+
+        case ASTNODE_UNARYOP: {
+            const ExprUnaryOp *unaryop = &root->expr_unaryop;
+            traverse_ast(unaryop->node, scope);
+            // TODO: check operand type. eg: logical operators cannot be used on integers
+        } break;
 
         case ASTNODE_BLOCK: {
             Block *block     = &root->block;
@@ -245,44 +281,15 @@ static Type traverse_ast(AstNode *root, Hashtable *scope) {
             break;
 
         case ASTNODE_IF:
+            // TODO: check if condition is boolean
             traverse_ast(root->stmt_if.condition, scope);
             traverse_ast(root->stmt_if.then_body, scope);
             if (root->stmt_if.else_body != NULL)
                 traverse_ast(root->stmt_if.else_body, scope);
             break;
 
-        case ASTNODE_BINOP: {
-            const ExprBinOp *binop = &root->expr_binop;
-            Type lhs = traverse_ast(binop->lhs, scope);
-            Type rhs = traverse_ast(binop->rhs, scope);
-
-            if (lhs != rhs)
-                throw_error(
-                    binop->op,
-                    "Types do not match (`%s` and `%s`)",
-                    type_to_string(lhs),
-                    type_to_string(rhs)
-                );
-
-            return lhs;
-        } break;
-
-        case ASTNODE_UNARYOP: {
-            const ExprUnaryOp *unaryop = &root->expr_unaryop;
-            traverse_ast(unaryop->node, scope);
-            // TODO: check operand type. eg: logical operators cannot be used on integers
-        } break;
-
-        case ASTNODE_LITERAL:
-            return ast_literal(&root->expr_literal, scope);
-            break;
-
         case ASTNODE_GROUPING:
             return traverse_ast(root->expr_grouping.expr, scope);
-            break;
-
-        case ASTNODE_ASSIGN:
-            ast_assignment(&root->expr_assign, scope);
             break;
 
         case ASTNODE_PROCEDURE: {
@@ -290,20 +297,12 @@ static Type traverse_ast(AstNode *root, Hashtable *scope) {
             traverse_ast(func->body, scope);
         } break;
 
-        case ASTNODE_VARDECL:
-            ast_vardecl(&root->stmt_vardecl, scope);
-            break;
-
-        case ASTNODE_CALL:
-            return ast_call(&root->expr_call, scope);
-            break;
-
         default:
             assert(!"Unexpected Node Kind");
             break;
     }
 
-    return TYPE_VOID;
+    return (Type) { .kind = TYPE_VOID };
 
 }
 

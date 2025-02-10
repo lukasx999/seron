@@ -10,6 +10,7 @@
 #include "types.h"
 
 
+// TODO: maybe different kind for function parameters
 
 typedef enum {
     SYMBOL_NONE,
@@ -23,9 +24,8 @@ typedef struct {
     Type type;
 
     /* symbol-specific fields */
-    const char *name;  // used for procedured and static variables
+    const char *label; // used for procedured and static variables
     size_t stack_addr; // used for variables
-    ProcSignature sig; // used for procedures
 } Symbol;
 
 typedef struct HashtableEntry {

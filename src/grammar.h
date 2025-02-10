@@ -5,21 +5,21 @@
 #include "ast.h"
 
 
-extern AstNodeList rule_util_arglist(Parser *p);
-extern Type        rule_util_type   (Parser *p);
+AstNodeList rule_util_arglist(Parser *p);
+TypeKind    rule_util_type   (Parser *p);
 
-extern AstNode *rule_primary    (Parser *p);
-extern AstNode *rule_call       (Parser *p);
-extern AstNode *rule_unary      (Parser *p);
-extern AstNode *rule_factor     (Parser *p);
-extern AstNode *rule_term       (Parser *p);
-extern AstNode *rule_vardecl    (Parser *p);
-extern AstNode *rule_procedure  (Parser *p);
-extern AstNode *rule_block      (Parser *p);
-extern AstNode *rule_expression (Parser *p);
-extern AstNode *rule_exprstmt   (Parser *p);
-extern AstNode *rule_stmt       (Parser *p);
-extern AstNode *rule_program    (Parser *p);
+AstNode *rule_primary    (Parser *p);
+AstNode *rule_call       (Parser *p);
+AstNode *rule_unary      (Parser *p);
+AstNode *rule_factor     (Parser *p);
+AstNode *rule_term       (Parser *p);
+AstNode *rule_vardecl    (Parser *p);
+AstNode *rule_procedure  (Parser *p);
+AstNode *rule_block      (Parser *p);
+AstNode *rule_expression (Parser *p);
+AstNode *rule_exprstmt   (Parser *p);
+AstNode *rule_stmt       (Parser *p);
+AstNode *rule_program    (Parser *p);
 
 
 

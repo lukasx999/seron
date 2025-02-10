@@ -39,14 +39,14 @@ AstNodeList rule_util_arglist(Parser *p) {
     return args;
 }
 
-Type rule_util_type(Parser *p) {
+TypeKind rule_util_type(Parser *p) {
     // <type> ::= "'" TYPE
 
     parser_expect_token(p, TOK_TICK, "type annotation");
     parser_advance(p);
 
     Token *type_tok = parser_get_current_token(p);
-    Type type = type_from_tokenkind(type_tok->kind);
+    TypeKind type = typekind_from_tokenkind(type_tok->kind);
 
     if (type == TYPE_INVALID)
         throw_error(*type_tok, "Unknown type `%s`", type_tok->value);
@@ -205,7 +205,7 @@ AstNode *rule_vardecl(Parser *p) {
     Token *identifier = parser_get_current_token(p);
     parser_advance(p);
 
-    Type type = rule_util_type(p);
+    Type type = { .kind = rule_util_type(p) };
 
     parser_expect_token(p, TOK_ASSIGN, "=");
     parser_advance(p);
@@ -293,7 +293,9 @@ size_t rule_util_paramlist(Parser *p, Param *out_params) {
         const char *ident = tok->value;
         parser_advance(p);
 
-        Type type = rule_util_type(p);
+        // TODO:
+        Type *type = malloc(sizeof(Type));
+        type->kind = rule_util_type(p);
 
         if (i >= MAX_ARG_COUNT)
             throw_error(*tok, "Procedures may not have more than %lu arguments", MAX_ARG_COUNT);
@@ -332,10 +334,13 @@ AstNode *rule_procedure(Parser *p) {
     ProcSignature sig = { 0 };
     sig.params_count = rule_util_paramlist(p, sig.params);
 
+    // TODO:
+    sig.returntype = malloc(sizeof(Type));
     /* Returntype is void if not specified */
-    sig.returntype = parser_match_tokenkinds(p, TOK_LBRACE, SENTINEL)
+    sig.returntype->kind = parser_match_tokenkinds(p, TOK_LBRACE, SENTINEL)
         ? TYPE_VOID
         : rule_util_type(p);
+
 
     AstNode *body = rule_block(p);
 
@@ -345,7 +350,6 @@ AstNode *rule_procedure(Parser *p) {
         .op         = *op,
         .body       = body,
         .identifier = *identifier,
-        .sig        = sig,
     };
 
     return proc;

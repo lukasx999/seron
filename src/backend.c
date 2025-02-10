@@ -107,7 +107,7 @@ static void ast_vardecl(StmtVarDecl *vardecl, Hashtable *scope) {
 
 static void ast_procedure(StmtProcedure *proc, Hashtable *scope) {
     const char *ident = proc->identifier.value;
-    ProcSignature *sig = &proc->sig;
+    ProcSignature *sig = &proc->type.type_signature;
 
     size_t count = sig->params_count;
     for (size_t i=0; i < count; ++i) {
@@ -137,7 +137,7 @@ static Symbol ast_call(ExprCall *call, Hashtable *scope) {
     if (call->builtin == BUILTIN_ASM) {
         builtin_inlineasm(call, scope);
         return (Symbol) {
-            .type = TYPE_INVALID,
+            .type = (Type) { .kind = TYPE_INVALID },
         };
     }
     assert(call->builtin == BUILTIN_NONE);
@@ -244,7 +244,7 @@ static Symbol traverse_ast(AstNode *node, Hashtable *scope) {
     }
 
     return (Symbol) {
-        .type = TYPE_INVALID,
+        .type = (Type) { .kind = TYPE_INVALID },
     };
 
 }

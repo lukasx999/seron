@@ -20,30 +20,30 @@ typedef struct {
 } CodeGenerator;
 
 
-extern int  gen_init(CodeGenerator *gen, const char *filename_asm, bool print_comments);
-extern void gen_destroy(CodeGenerator *c);
-extern void gen_prelude(CodeGenerator *c);
+int  gen_init(CodeGenerator *gen, const char *filename_asm, bool print_comments);
+void gen_destroy(CodeGenerator *c);
+void gen_prelude(CodeGenerator *c);
 
-extern Symbol gen_binop(CodeGenerator *gen, Symbol a, Symbol b, BinOpKind kind);
-extern Symbol gen_store_literal(CodeGenerator *gen, int64_t value, Type type);
+Symbol gen_binop(CodeGenerator *gen, Symbol a, Symbol b, BinOpKind kind);
+Symbol gen_store_literal(CodeGenerator *gen, int64_t value, TypeKind type);
 
-extern void gen_procedure_start(CodeGenerator *gen, const char *identifier);
-extern void gen_procedure_end(CodeGenerator *c);
+void gen_procedure_start(CodeGenerator *gen, const char *identifier);
+void gen_procedure_end(CodeGenerator *c);
 
-extern void gen_inlineasm(CodeGenerator *c, const char *src, const Symbol *symbols, size_t symbols_len);
-extern Symbol gen_call(CodeGenerator *gen, Symbol callee, const Symbol *args, size_t args_len);
-
-
-
-extern gen_ctx gen_if_then(CodeGenerator *gen, Symbol cond);
-extern void gen_if_else(CodeGenerator *gen, gen_ctx ctx);
-extern void gen_if_end(CodeGenerator *gen, gen_ctx ctx);
-
-extern gen_ctx gen_while_start(CodeGenerator *gen);
-extern void gen_while_end(CodeGenerator *gen, Symbol cond, gen_ctx ctx);
+void gen_inlineasm(CodeGenerator *c, const char *src, const Symbol *symbols, size_t symbols_len);
+Symbol gen_call(CodeGenerator *gen, Symbol callee, const Symbol *args, size_t args_len);
 
 
-extern void gen_assign(CodeGenerator *gen, Symbol assignee, Symbol value);
+
+gen_ctx gen_if_then(CodeGenerator *gen, Symbol cond);
+void gen_if_else(CodeGenerator *gen, gen_ctx ctx);
+void gen_if_end(CodeGenerator *gen, gen_ctx ctx);
+
+gen_ctx gen_while_start(CodeGenerator *gen);
+void gen_while_end(CodeGenerator *gen, Symbol cond, gen_ctx ctx);
+
+
+void gen_assign(CodeGenerator *gen, Symbol assignee, Symbol value);
 
 
 
