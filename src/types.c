@@ -251,7 +251,7 @@ static Type traverse_ast(AstNode *root, Hashtable *scope) {
             break;
 
         case ASTNODE_ASSIGN:
-            ast_assignment(&root->expr_assign, scope);
+            return ast_assignment(&root->expr_assign, scope);
             break;
 
         case ASTNODE_VARDECL:

@@ -14,6 +14,7 @@
 
 typedef enum {
     SYMBOL_NONE,
+
     SYMBOL_VARIABLE,
     /*SYMBOL_STATIC_VARIABLE,*/
     SYMBOL_PROCEDURE,
