@@ -1,10 +1,42 @@
 
-proc add(a 'int, b 'int) 'int {
-    val result 'int = 123;
+##
+proc exit(status 'int) 'void {
+    asm("
+    mov rax, 60
+    mov rdi, 0
+    syscall
+    ");
 }
 
+proc print() {
+    val buf 'int = 65;
 
-proc main() 'void {
+    asm("
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, {}
+    mov rdx, 1
+    syscall
+    ", buf);
+}
 
+##
+proc add(a 'int, b 'int) 'int {
+}
 
+proc _start() {
+
+    #add(1, 2);
+
+    #val foo 'int = add();
+    val foo 'int = 5;
+
+    #while foo {
+    #    print();
+    #    foo = foo-1;
+    #}
+    #
+    #foo;
+
+    #exit();
 }

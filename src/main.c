@@ -218,7 +218,7 @@ int main(int argc, char *argv[]) {
     printf("Checking Types...\n");
     check_types(node_root);
 
-#if 0
+#if 1
     printf("Generating Code...\n");
     generate_code(node_root);
 

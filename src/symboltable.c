@@ -273,7 +273,7 @@ static void ast_block(Block *block, TraversalContext *ctx) {
 
 
     // TODO: this
-#if 0
+#if 1
     /* Insert parameters as variables in the scope of the procedure */
     ProcSignature *sig = ctx->sig;
 
@@ -309,15 +309,9 @@ static void ast_procedure(StmtProcedure *proc, TraversalContext *ctx) {
 
     ctx->sig = &proc->type.type_signature;
 
-    // TODO: check
-    Type type = {
-        .kind = TYPE_FUNCTION,
-        .type_signature = *ctx->sig
-    };
-
     Symbol sym = {
-        .kind = SYMBOL_PROCEDURE,
-        .type = type,
+        .kind  = SYMBOL_PROCEDURE,
+        .type  = proc->type,
         .label = ident,
     };
 

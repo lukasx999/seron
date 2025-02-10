@@ -342,6 +342,12 @@ AstNode *rule_procedure(Parser *p) {
         : rule_util_type(p);
 
 
+    Type type = {
+        .kind = TYPE_FUNCTION,
+        .type_signature = sig,
+    };
+
+
     AstNode *body = rule_block(p);
 
     AstNode *proc = malloc(sizeof(AstNode));
@@ -350,6 +356,7 @@ AstNode *rule_procedure(Parser *p) {
         .op         = *op,
         .body       = body,
         .identifier = *identifier,
+        .type       = type,
     };
 
     return proc;

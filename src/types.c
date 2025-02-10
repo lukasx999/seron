@@ -225,13 +225,14 @@ static Type ast_binop(ExprBinOp *binop, Hashtable *scope) {
     Type lhs = traverse_ast(binop->lhs, scope);
     Type rhs = traverse_ast(binop->rhs, scope);
 
-    if (lhs.kind != rhs.kind)
+    if (lhs.kind != rhs.kind) {
         throw_error(
             binop->op,
             "Types do not match (`%s` and `%s`)",
             typekind_to_string(lhs.kind),
             typekind_to_string(rhs.kind)
         );
+    }
 
     return lhs;
 }
