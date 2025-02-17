@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -Wextra -ggdb -std=c11 -pedantic -Wdouble-promotion -fsanitize=undefined -fsanitize-trap
+CFLAGS=-Wall -Wextra -ggdb -std=c11 -pedantic -fsanitize=address,undefined
 
 BIN=compiler
 
@@ -27,8 +27,7 @@ grammar.o     \
 ast.o         \
 
 
-
-all: compiler memtest
+all: compiler
 
 compiler: main.o $(SOURCES)
 	@$(CC) $(CFLAGS) $^ -o $(BIN)

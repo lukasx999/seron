@@ -341,12 +341,10 @@ AstNode *rule_procedure(Parser *p) {
         ? TYPE_VOID
         : rule_util_type(p);
 
-
     Type type = {
         .kind = TYPE_FUNCTION,
         .type_signature = sig,
     };
-
 
     AstNode *body = rule_block(p);
 

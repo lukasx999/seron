@@ -20,23 +20,26 @@ proc print() {
     ", buf);
 }
 
-##
 proc add(a 'int, b 'int) 'int {
 }
 
+##
+
 proc _start() {
 
-    #add(1, 2);
-
-    #val foo 'int = add();
+    #val foo 'int = add(1, 2);
     val foo 'int = 5;
 
-    #while foo {
-    #    print();
-    #    foo = foo-1;
-    #}
-    #
+    if foo {
+    } else {
+    }
+
+    while foo {
+        #print();
+        #foo = foo-1;
+    }
+
     #foo;
 
-    #exit();
+    #exit(0);
 }

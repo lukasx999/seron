@@ -69,9 +69,6 @@ size_t typekind_get_size(TypeKind type) {
         case TYPE_SIZE:
             return 8;
             break;
-        case TYPE_POINTER:
-            return 8;
-            break;
         default:
             assert(!"Unknown Type");
             break;
@@ -173,22 +170,41 @@ static void ast_vardecl(StmtVarDecl *vardecl, Hashtable *scope) {
 
 static Type ast_call(ExprCall *call, Hashtable *scope) {
 
-    AstNodeList list = call->args;
-    for (size_t i=0; i < list.size; ++i)
-        traverse_ast(list.items[i], scope);
+    if (call->builtin != BUILTIN_NONE) {
+        AstNodeList list = call->args;
+        for (size_t i=0; i < list.size; ++i)
+            traverse_ast(list.items[i], scope);
 
-    if (call->builtin != BUILTIN_NONE)
         return (Type) { .kind = TYPE_VOID };
+    }
 
 
     Type callee = traverse_ast(call->callee, scope);
+    ProcSignature *sig = &callee.type_signature;
 
     if (callee.kind != TYPE_FUNCTION)
         throw_error(call->op, "Callee must be a procedure");
 
-    ProcSignature *sig = &callee.type_signature;
 
-    // TODO: check function signature
+    AstNodeList list = call->args;
+
+    if (list.size != sig->params_count)
+        throw_error(call->op, "Expected %lu arguments, got %lu", sig->params_count, list.size);
+
+    for (size_t i=0; i < list.size; ++i) {
+        Type *paramtype = sig->params[i].type;
+        Type type = traverse_ast(list.items[i], scope);
+
+        if (type.kind != paramtype->kind) {
+            throw_error(
+                call->op,
+                "Expected argument of type %s, got %s",
+                typekind_to_string(paramtype->kind),
+                typekind_to_string(type.kind)
+            );
+        }
+
+    }
 
     return *sig->returntype;
 }
@@ -282,7 +298,6 @@ static Type traverse_ast(AstNode *root, Hashtable *scope) {
             break;
 
         case ASTNODE_IF:
-            // TODO: check if condition is boolean
             traverse_ast(root->stmt_if.condition, scope);
             traverse_ast(root->stmt_if.then_body, scope);
             if (root->stmt_if.else_body != NULL)

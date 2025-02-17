@@ -37,13 +37,14 @@ typedef enum {
 
 struct Type {
     TypeKind kind;
+    /*bool mutable;*/ // TODO:
     /*
      * This union contains additional information for complex types,
      * such as functions, pointers and user-defined types
      */
     union {
         ProcSignature type_signature; // used only for procedures
-        /*Type type_pointee; // TODO: pointers*/
+        /*Type *type_pointee; // TODO: pointers*/
     };
 };
 
@@ -51,7 +52,7 @@ struct Type {
 
 /*
  TODO:
- have a type: TYPE_WHATEVER_INT be returned from integer literals, which can be
+ have a type: TYPE_COERCABLE_INT be returned from integer literals, which can be
  coerced into any other integer type
 */
 

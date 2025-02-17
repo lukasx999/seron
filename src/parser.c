@@ -277,10 +277,16 @@ static void parser_free_ast_callback(AstNode *node, int _depth, void *_args) {
             astnodelist_destroy(&node->expr_call.args);
             break;
 
+        case ASTNODE_PROCEDURE: {
+            ProcSignature *sig = &node->stmt_procedure.type.type_signature;
+            free(sig->returntype);
+            for (size_t i=0; i < sig->params_count; ++i)
+                free(sig->params[i].type);
+        } break;
+
         case ASTNODE_GROUPING:
         case ASTNODE_ASSIGN:
         case ASTNODE_LITERAL:
-        case ASTNODE_PROCEDURE:
         case ASTNODE_VARDECL:
         case ASTNODE_BINOP:
         case ASTNODE_UNARYOP:

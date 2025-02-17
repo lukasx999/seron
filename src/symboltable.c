@@ -281,11 +281,11 @@ static void ast_block(Block *block, TraversalContext *ctx) {
     if (sig != NULL) {
 
         for (size_t i=0; i < sig->params_count; ++i) {
-            Param param = sig->params[i];
+            Param *param = &sig->params[i];
             Symbol sym = {
                 .kind  = SYMBOL_VARIABLE,
-                .label = param.ident,
-                .type  = *param.type, // TODO: check
+                .label = param->ident,
+                .type  = *param->type, // TODO: check
             };
 
             int ret = hashtable_insert(block->symboltable, sym.label, sym);
@@ -357,6 +357,18 @@ static void traverse_ast(AstNode *root, TraversalContext *ctx) {
         case ASTNODE_VARDECL:
             ast_vardecl(&root->stmt_vardecl, ctx);
             break;
+
+        case ASTNODE_WHILE: {
+            StmtWhile *while_ = &root->stmt_while;
+            traverse_ast(while_->body, ctx);
+        } break;
+
+        case ASTNODE_IF: {
+            StmtIf *if_ = &root->stmt_if;
+            traverse_ast(if_->then_body, ctx);
+            if (if_->else_body != NULL)
+                traverse_ast(if_->else_body, ctx);
+        } break;
 
         default:
             break;

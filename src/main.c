@@ -171,21 +171,11 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: make blocks expressions
 // TODO: synchronizing parser
 // TODO: synchronizing typechecker
-// TODO: pointers
 // TODO: buffer generated assembly
 // TODO: static global variables
 // TODO: inserting func signature into symboltable + pushing func params onto stack (via sysv abi)
 // TODO: change Token in ast to Token*
-// TODO: function signature in call expression types.c
-// TODO: consider returning Symbol from types.c for function signatures
-
-// TODO:
-/*
-consider turning Type into struct
-- function type containing function signature
-- pointers containing type information
-- information for user defined types
-*/
+// TODO: pointers!
 
 
 
