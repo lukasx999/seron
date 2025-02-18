@@ -35,8 +35,13 @@ typedef enum {
     TYPE_POINTER,
 } TypeKind;
 
+// TODO:
+/*typedef struct {*/
+/*} SimpleType;*/
+
 struct Type {
     TypeKind kind;
+    /*bool pointer;*/ // TODO:
     /*bool mutable;*/ // TODO:
     /*
      * This union contains additional information for complex types,
