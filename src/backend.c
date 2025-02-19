@@ -98,11 +98,12 @@ static Symbol ast_literal(ExprLiteral *literal, Hashtable *scope) {
 
 static void ast_vardecl(StmtVarDecl *vardecl, Hashtable *scope) {
     const char *variable = vardecl->identifier.value;
-    Symbol sym = traverse_ast(vardecl->value, scope);
+    Symbol value = traverse_ast(vardecl->value, scope);
 
     /* populate address in symboltable */
-    int ret = hashtable_set(scope, variable, sym);
-    assert(ret != -1);
+    Symbol *sym = hashtable_get(scope, variable);
+    assert(sym != NULL);
+    sym->stack_addr = value.stack_addr;
 }
 
 static void ast_procedure(StmtProcedure *proc, Hashtable *scope) {

@@ -242,7 +242,7 @@ void gen_procedure_start(
     gen_addinstr(gen, "mov rbp, rsp");
 
 
-    gen_comment(gen, "START: calling_conv");
+    gen_comment(gen, "START: abi");
 
     for (size_t i=0; i < sig->params_count; ++i) {
         const Param *param = &sig->params[i];
@@ -261,12 +261,13 @@ void gen_procedure_start(
             reg
         );
 
+        // fill in address of params
         Symbol *sym = symboltable_lookup(scope, param->ident);
         assert(sym != NULL);
         sym->stack_addr = gen->rbp_offset;
     }
 
-    gen_comment(gen, "END: calling_conv");
+    gen_comment(gen, "END: abi");
     gen_comment(gen, "END: proc_prelude\n");
 }
 
@@ -304,7 +305,7 @@ Symbol gen_call(
     ProcSignature *sig = &callee.type.type_signature;
 
     gen_comment(gen, "START: call");
-    gen_comment(gen, "START: calling_conv");
+    gen_comment(gen, "START: abi");
 
     for (size_t i=0; i < args_len; ++i) {
         const Symbol *arg = &args[i];
@@ -318,7 +319,7 @@ Symbol gen_call(
         gen_addinstr(gen, "mov %s, [rbp-%lu]", reg, arg->stack_addr);
 
     }
-    gen_comment(gen, "END: calling_conv");
+    gen_comment(gen, "END: abi");
 
 
     gen_addinstr(gen, "call %s", callee.label);

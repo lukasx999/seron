@@ -107,15 +107,6 @@ Symbol *hashtable_get(const Hashtable *ht, const char *key) {
 
 }
 
-int hashtable_set(Hashtable *ht, const char *key, Symbol value) {
-    Symbol *v = hashtable_get(ht, key);
-    if (v == NULL)
-        return -1;
-
-    *v = value;
-    return 0;
-}
-
 Symbol *symboltable_lookup(const Hashtable *ht, const char *key) {
     assert(ht != NULL);
     const Hashtable *current = ht;
@@ -324,7 +315,6 @@ static void ast_vardecl(StmtVarDecl *vardecl, TraversalContext *ctx) {
 
     Symbol sym = {
         .kind = SYMBOL_VARIABLE,
-        .label = ident,
         .type = vardecl->type,
     };
 

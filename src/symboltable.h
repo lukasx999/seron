@@ -41,16 +41,14 @@ typedef struct Hashtable {
     struct Hashtable *parent;
 } Hashtable;
 
-extern void hashtable_init(Hashtable *ht, size_t size);
-extern void hashtable_destroy(Hashtable *ht);
+void hashtable_init(Hashtable *ht, size_t size);
+void hashtable_destroy(Hashtable *ht);
 /* returns -1 if key already exists, else 0 */
-extern int  hashtable_insert(Hashtable *ht, const char *key, Symbol value);
+int  hashtable_insert(Hashtable *ht, const char *key, Symbol value);
 /* does a lookup in the current hashtable */
 /* returns NULL if the key does not exist */
-extern Symbol *hashtable_get(const Hashtable *ht, const char *key);
-extern void hashtable_print(const Hashtable *ht);
-/* returns -1 if key does not exist */
-extern int hashtable_set(Hashtable *ht, const char *key, Symbol value);
+Symbol *hashtable_get(const Hashtable *ht, const char *key);
+void hashtable_print(const Hashtable *ht);
 
 
 
@@ -59,15 +57,15 @@ typedef struct {
     Hashtable *items;
 } Symboltable;
 
-extern void symboltable_init(Symboltable *s, size_t capacity, size_t table_size);
-extern void symboltable_destroy(Symboltable *s);
-extern void symboltable_append(Symboltable *s, Hashtable *parent);
-extern Hashtable *symboltable_get_last(const Symboltable *s);
+void symboltable_init(Symboltable *s, size_t capacity, size_t table_size);
+void symboltable_destroy(Symboltable *s);
+void symboltable_append(Symboltable *s, Hashtable *parent);
+Hashtable *symboltable_get_last(const Symboltable *s);
 /* does a lookup in the current and parent hashtables */
-extern Symbol *symboltable_lookup(const Hashtable *ht, const char *key);
+Symbol *symboltable_lookup(const Hashtable *ht, const char *key);
 /* addresses are filled in at code generation */
-extern Symboltable symboltable_construct(AstNode *root, size_t table_size);
-extern void symboltable_print(const Symboltable *st);
+Symboltable symboltable_construct(AstNode *root, size_t table_size);
+void symboltable_print(const Symboltable *st);
 
 
 

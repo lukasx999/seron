@@ -1,3 +1,6 @@
+
+asm("extern putchar");
+
 proc exit(status 'int) {
     asm("
     mov rax, 60
@@ -23,6 +26,12 @@ proc add(a 'int, b 'int) 'int {
 }
 
 proc _start() {
+
+    asm("mov rdi, 65");
+    asm("call putchar");
+
+    #val c 'byte = c"A";
+
     putc(add(64, 1));
 
     exit(0);

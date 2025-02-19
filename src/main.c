@@ -81,6 +81,12 @@ static void build_binary(void) {
     // Link
     run_cmd((char*[]) {
         "ld",
+
+        /* linking with libc */
+        "-dynamic-linker",
+        "/usr/lib/ld-linux-x86-64.so.2",
+        "-lc",
+
         obj,
         "-o", (char*) bin,
         NULL
@@ -165,18 +171,16 @@ static void parse_args(int argc, char *argv[]) {
 
 
 // TODO: --run argument
-// TODO: char literal
 // TODO: warn for unused symbols
 // TODO: analysis: dont allow statements in global scope
 // TODO: make blocks expressions
 // TODO: synchronizing parser
 // TODO: synchronizing typechecker
-// TODO: buffer generated assembly
-// TODO: static global variables
-// TODO: inserting func signature into symboltable + pushing func params onto stack (via sysv abi)
 // TODO: change Token in ast to Token*
 // TODO: pointers (addressof)
 // TODO: ABI: spill arguments onto stack
+// TODO: extern keyword
+// TODO: char literal
 
 /*
  TODO: semcheck
