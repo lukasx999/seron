@@ -283,7 +283,7 @@ static void ast_block(Block *block, TraversalContext *ctx) {
             Symbol sym = {
                 .kind  = SYMBOL_VARIABLE,
                 .label = param->ident,
-                .type  = *param->type, // TODO: check
+                .type  = *param->type,
             };
 
             int ret = hashtable_insert(block->symboltable, sym.label, sym);

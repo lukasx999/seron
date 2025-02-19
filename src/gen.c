@@ -13,8 +13,26 @@
 
 
 
+static const char *abi_get_register(int arg_n, TypeKind type) {
+    assert(arg_n != 0);
 
+    /* x86_64-linux ABI */
+    /* first 6 arguments are stored in registers, the rest goes onto the stack */
 
+    if (arg_n > 6)
+        return NULL;
+
+    const char *registers[] = {
+        [1] = typekind_get_register_rdi(type),
+        [2] = typekind_get_register_rsi(type),
+        [3] = typekind_get_register_rdx(type),
+        [4] = typekind_get_register_rcx(type),
+        [5] = typekind_get_register_r8(type),
+        [6] = typekind_get_register_r9(type),
+    };
+
+    return registers[arg_n];
+}
 
 
 static void gen_addinstr(CodeGenerator *gen, const char *fmt, ...) {
@@ -206,7 +224,12 @@ void gen_inlineasm(
     gen_comment(gen, "END: inline\n");
 }
 
-void gen_procedure_start(CodeGenerator *gen, const char *identifier) {
+void gen_procedure_start(
+    CodeGenerator       *gen,
+    const char          *identifier,
+    const ProcSignature *sig,
+    const Hashtable     *scope
+) {
     gen->rbp_offset = 0;
 
     gen_comment(gen, "START: proc");
@@ -218,6 +241,32 @@ void gen_procedure_start(CodeGenerator *gen, const char *identifier) {
     gen_addinstr(gen, "push rbp");
     gen_addinstr(gen, "mov rbp, rsp");
 
+
+    gen_comment(gen, "START: calling_conv");
+
+    for (size_t i=0; i < sig->params_count; ++i) {
+        const Param *param = &sig->params[i];
+        const char *reg = abi_get_register(i+1, param->type->kind);
+
+        assert(reg != NULL && "TODO");
+
+        size_t offset = typekind_get_size(param->type->kind);
+        gen->rbp_offset += offset;
+        gen_addinstr(gen, "sub rsp, %lu", offset);
+        gen_addinstr(
+            gen,
+            "mov %s [rbp-%lu], %s",
+            typekind_get_size_operand(param->type->kind),
+            gen->rbp_offset,
+            reg
+        );
+
+        Symbol *sym = symboltable_lookup(scope, param->ident);
+        assert(sym != NULL);
+        sym->stack_addr = gen->rbp_offset;
+    }
+
+    gen_comment(gen, "END: calling_conv");
     gen_comment(gen, "END: proc_prelude\n");
 }
 
@@ -255,34 +304,21 @@ Symbol gen_call(
     ProcSignature *sig = &callee.type.type_signature;
 
     gen_comment(gen, "START: call");
-    gen_comment(gen, "START: call_prelude");
+    gen_comment(gen, "START: calling_conv");
 
     for (size_t i=0; i < args_len; ++i) {
-        Symbol arg = args[i];
+        const Symbol *arg = &args[i];
         size_t argnum = i+1;
 
         // TODO: spill the rest of arguments onto stack
 
-        /* x86_64-linux ABI */
-        /* first 6 arguments are stored in registers, the rest goes onto the stack */
-        const char *registers[] = {
-            [1] = "rdi",
-            [2] = "rsi",
-            [3] = "rdx",
-            [4] = "rcx",
-            [5] = "r8",
-            [6] = "r9",
-        };
-
-        const char *reg = argnum <= 6
-            ? registers[argnum]
-            : NULL;
+        const char *reg = abi_get_register(argnum, arg->type.kind);
 
         assert(reg != NULL && "TODO");
-        gen_addinstr(gen, "mov %s, [rbp-%lu]", reg, arg.stack_addr);
+        gen_addinstr(gen, "mov %s, [rbp-%lu]", reg, arg->stack_addr);
 
     }
-    gen_comment(gen, "END: call_prelude");
+    gen_comment(gen, "END: calling_conv");
 
 
     gen_addinstr(gen, "call %s", callee.label);

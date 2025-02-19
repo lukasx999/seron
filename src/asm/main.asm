@@ -1,10 +1,17 @@
 
-
 section .data
-foo: dq 45
-
 
 section .text
+
+foo:
+push rbp
+mov rbp, rsp
+
+    mov eax, 45
+
+pop rbp
+ret
+
 
 global _start
 _start:
@@ -12,7 +19,9 @@ push rbp
 mov rbp, rsp
 
 
-    mov rax, [foo]
+    call foo
+    sub rsp, 4
+    mov [rbp-4], eax
 
 
 

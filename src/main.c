@@ -176,6 +176,7 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: inserting func signature into symboltable + pushing func params onto stack (via sysv abi)
 // TODO: change Token in ast to Token*
 // TODO: pointers (addressof)
+// TODO: ABI: spill arguments onto stack
 
 /*
  TODO: semcheck

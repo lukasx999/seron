@@ -62,6 +62,11 @@ size_t typekind_get_size(TypeKind type);
 const char *typekind_get_size_operand(TypeKind type);
 const char *typekind_get_register_rax(TypeKind type);
 const char *typekind_get_register_rdi(TypeKind type);
+const char *typekind_get_register_rsi(TypeKind type);
+const char *typekind_get_register_rdx(TypeKind type);
+const char *typekind_get_register_rcx(TypeKind type);
+const char *typekind_get_register_r8(TypeKind type);
+const char *typekind_get_register_r9(TypeKind type);
 
 void check_types(AstNode *root);
 

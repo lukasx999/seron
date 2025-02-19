@@ -1,0 +1,59 @@
+proc exit(status 'int) 'void {
+    asm("
+    mov rax, 60
+    mov rdi, 0
+    syscall
+    ");
+}
+
+proc print() {
+    val buf 'int = 65;
+
+    asm("
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, {}
+    mov rdx, 1
+    syscall
+    ", buf);
+}
+
+
+proc add(a 'int, b 'int) 'int {
+    return a + b;
+}
+
+proc puts(c 'int) {
+    val buf 'int = c;
+
+    asm("
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, {}
+    mov rdx, 1
+    syscall
+    ", buf);
+}
+
+proc _start() {
+
+    val c 'int = add(65, 1);
+    #puts(c);
+
+##
+    val foo 'int = proxy(3);
+    #val foo 'int = add(1, 2);
+    #val foo 'int = 5;
+
+    if foo {
+    } else {
+    }
+
+    while foo {
+        print();
+        foo = foo-1;
+    }
+##
+
+    exit(0);
+}

@@ -126,6 +126,92 @@ const char *typekind_get_register_rdi(TypeKind type) {
     }
 }
 
+const char *typekind_get_register_rsi(TypeKind type) {
+    switch (type) {
+        case TYPE_BYTE:
+            return "sil";
+            break;
+        case TYPE_INT:
+            return "esi";
+            break;
+        case TYPE_SIZE:
+            return "rsi";
+            break;
+        default:
+            assert(!"Unknown type");
+            break;
+    }
+}
+
+const char *typekind_get_register_rdx(TypeKind type) {
+    switch (type) {
+        case TYPE_BYTE:
+            return "dl";
+            break;
+        case TYPE_INT:
+            return "edx";
+            break;
+        case TYPE_SIZE:
+            return "rdx";
+            break;
+        default:
+            assert(!"Unknown type");
+            break;
+    }
+}
+
+const char *typekind_get_register_rcx(TypeKind type) {
+    switch (type) {
+        case TYPE_BYTE:
+            return "cl";
+            break;
+        case TYPE_INT:
+            return "ecx";
+            break;
+        case TYPE_SIZE:
+            return "rcx";
+            break;
+        default:
+            assert(!"Unknown type");
+            break;
+    }
+}
+
+const char *typekind_get_register_r8(TypeKind type) {
+    switch (type) {
+        case TYPE_BYTE:
+            return "r8b";
+            break;
+        case TYPE_INT:
+            return "r8d";
+            break;
+        case TYPE_SIZE:
+            return "r8";
+            break;
+        default:
+            assert(!"Unknown type");
+            break;
+    }
+}
+
+const char *typekind_get_register_r9(TypeKind type) {
+    switch (type) {
+        case TYPE_BYTE:
+            return "r9b";
+            break;
+        case TYPE_INT:
+            return "r9d";
+            break;
+        case TYPE_SIZE:
+            return "r9";
+            break;
+        default:
+            assert(!"Unknown type");
+            break;
+    }
+}
+
+
 
 static void compare_types(const Type *type, const Type *expected, Token tok) {
     if (type->kind != expected->kind) {

@@ -27,7 +27,9 @@ void gen_prelude(CodeGenerator *c);
 Symbol gen_binop(CodeGenerator *gen, Symbol a, Symbol b, BinOpKind kind);
 Symbol gen_store_literal(CodeGenerator *gen, int64_t value, TypeKind type);
 
-void gen_procedure_start(CodeGenerator *gen, const char *identifier);
+
+
+void gen_procedure_start(CodeGenerator *gen, const char *identifier, const ProcSignature *sig, const Hashtable *scope);
 void gen_procedure_end(CodeGenerator *c);
 
 void gen_inlineasm(CodeGenerator *c, const char *src, const Symbol *symbols, size_t symbols_len);
