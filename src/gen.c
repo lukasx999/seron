@@ -232,6 +232,19 @@ void gen_procedure_end(CodeGenerator *gen) {
     gen_comment(gen, "END: proc\n");
 }
 
+void gen_return(CodeGenerator *gen, Symbol value) {
+    gen_comment(gen, "START: return");
+
+    gen_addinstr(
+        gen,
+        "mov %s, [rbp-%lu]",
+        typekind_get_register_rax(value.type.kind),
+        value.stack_addr
+    );
+
+    gen_comment(gen, "END: return\n");
+}
+
 Symbol gen_call(
     CodeGenerator *gen,
     Symbol         callee,
@@ -250,7 +263,7 @@ Symbol gen_call(
 
         // TODO: spill the rest of arguments onto stack
 
-        /* x86_64 linux SystemV ABI */
+        /* x86_64-linux ABI */
         /* first 6 arguments are stored in registers, the rest goes onto the stack */
         const char *registers[] = {
             [1] = "rdi",
@@ -275,10 +288,8 @@ Symbol gen_call(
     gen_addinstr(gen, "call %s", callee.label);
 
     TypeKind returntype = sig->returntype->kind;
-
-    if (returntype == TYPE_VOID) {
+    if (returntype == TYPE_VOID)
         return (Symbol) { .kind = SYMBOL_NONE };
-    }
 
     gen_addinstr(gen, "sub rsp, %lu", typekind_get_size(returntype));
     gen->rbp_offset += typekind_get_size(returntype);
@@ -296,7 +307,6 @@ Symbol gen_call(
         .type       = (Type) { .kind = returntype },
         .kind       = SYMBOL_VARIABLE,
     };
-
 }
 
 void gen_assign(CodeGenerator *gen, Symbol assignee, Symbol value) {

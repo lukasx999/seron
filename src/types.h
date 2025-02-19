@@ -12,7 +12,7 @@ typedef struct AstNode AstNode;
 typedef struct Type Type;
 
 typedef struct {
-    Type *type;
+    Type *type; // heap-allocated
     const char *ident;
 } Param;
 
@@ -21,7 +21,7 @@ typedef struct {
 typedef struct {
     Param params[MAX_ARG_COUNT];
     size_t params_count;
-    Type *returntype;
+    Type *returntype; // heap-allocated
 } ProcSignature;
 
 typedef enum {
@@ -35,21 +35,16 @@ typedef enum {
     TYPE_POINTER,
 } TypeKind;
 
-// TODO:
-/*typedef struct {*/
-/*} SimpleType;*/
-
 struct Type {
     TypeKind kind;
-    /*bool pointer;*/ // TODO:
-    /*bool mutable;*/ // TODO:
+    bool mutable;
     /*
      * This union contains additional information for complex types,
      * such as functions, pointers and user-defined types
      */
     union {
         ProcSignature type_signature; // used only for procedures
-        /*Type *type_pointee; // TODO: pointers*/
+        Type *type_pointee;
     };
 };
 

@@ -113,6 +113,11 @@ typedef struct {
     AstNode *condition, *body;
 } StmtWhile;
 
+typedef struct {
+    Token op;
+    AstNode *expr;
+} StmtReturn;
+
 /* Variable Declarations */
 
 typedef struct {
@@ -133,6 +138,7 @@ typedef enum {
     ASTNODE_IF,
     ASTNODE_WHILE,
     ASTNODE_ASSIGN,
+    ASTNODE_RETURN,
 } AstNodeKind;
 
 struct AstNode {
@@ -149,6 +155,7 @@ struct AstNode {
         StmtVarDecl    stmt_vardecl;
         StmtIf         stmt_if;
         StmtWhile      stmt_while;
+        StmtReturn     stmt_return;
     };
 };
 

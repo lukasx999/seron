@@ -46,5 +46,7 @@ void gen_while_end(CodeGenerator *gen, Symbol cond, gen_ctx ctx);
 void gen_assign(CodeGenerator *gen, Symbol assignee, Symbol value);
 
 
+void gen_return(CodeGenerator *gen, Symbol value);
+
 
 #endif // _ASM_H

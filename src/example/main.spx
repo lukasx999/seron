@@ -1,5 +1,4 @@
 
-##
 proc exit(status 'int) 'void {
     asm("
     mov rax, 60
@@ -21,25 +20,30 @@ proc print() {
 }
 
 proc add(a 'int, b 'int) 'int {
+    a;
+    val foo 'int = 3;
+    return foo;
 }
 
-##
+proc proxy(a 'int) 'int {
+    return a;
+}
+
 
 proc _start() {
 
+    val foo 'int = proxy(3);
     #val foo 'int = add(1, 2);
-    val foo 'int = 5;
+    #val foo 'int = 5;
 
     if foo {
     } else {
     }
 
     while foo {
-        #print();
-        #foo = foo-1;
+        print();
+        foo = foo-1;
     }
 
-    #foo;
-
-    #exit(0);
+    exit(0);
 }

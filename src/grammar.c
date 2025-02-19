@@ -141,6 +141,14 @@ AstNode *rule_unary(Parser *p) {
 
 }
 
+AstNode *rule_addressof(Parser *p) {
+    // <addressof> ::= "&" <expression>
+    (void) p;
+    // TODO: addrof
+    assert(!"TODO");
+    return NULL;
+}
+
 AstNode *rule_factor(Parser *p) {
     // <factor> ::= <unary> (("/" | "*") <unary>)*
 
@@ -274,6 +282,28 @@ AstNode *rule_if(Parser *p) {
     return node;
 }
 
+AstNode *rule_return(Parser *p) {
+    // <return> ::= "return" <expression> ";"
+
+    assert(parser_match_tokenkinds(p, TOK_KW_RETURN, SENTINEL));
+    Token *op = parser_get_current_token(p);
+    parser_advance(p);
+
+    AstNode *expr = rule_expression(p);
+
+    AstNode *node = malloc(sizeof(AstNode));
+    node->kind = ASTNODE_RETURN;
+    node->stmt_return = (StmtReturn) {
+        .op   = *op,
+        .expr = expr,
+    };
+
+    parser_expect_token(p, TOK_SEMICOLON, ";");
+    parser_advance(p);
+
+    return node;
+}
+
 /*
  * the max size of out_params is assumed to be MAX_ARG_COUNT
  * returns paramlist param count
@@ -293,7 +323,6 @@ size_t rule_util_paramlist(Parser *p, Param *out_params) {
         const char *ident = tok->value;
         parser_advance(p);
 
-        // TODO:
         Type *type = malloc(sizeof(Type));
         type->kind = rule_util_type(p);
 
@@ -334,7 +363,6 @@ AstNode *rule_procedure(Parser *p) {
     ProcSignature sig = { 0 };
     sig.params_count = rule_util_paramlist(p, sig.params);
 
-    // TODO:
     sig.returntype = malloc(sizeof(Type));
     /* Returntype is void if not specified */
     sig.returntype->kind = parser_match_tokenkinds(p, TOK_LBRACE, SENTINEL)
@@ -435,7 +463,7 @@ AstNode *rule_exprstmt(Parser *p) {
 }
 
 AstNode *rule_stmt(Parser *p) {
-    // <statement> ::= <block> | <procedure> | <vardeclaration> | <if> | <while> | <expr> ";"
+    // <statement> ::= <block> | <procedure> | <vardeclaration> | <if> | <while> | <return> | <expr> ";"
 
     if (parser_match_tokenkinds(p, TOK_LBRACE, SENTINEL))
         return rule_block(p);
@@ -451,6 +479,9 @@ AstNode *rule_stmt(Parser *p) {
 
     else if (parser_match_tokenkinds(p, TOK_KW_WHILE, SENTINEL))
         return rule_while(p);
+
+    else if (parser_match_tokenkinds(p, TOK_KW_RETURN, SENTINEL))
+        return rule_return(p);
 
     else
         return rule_exprstmt(p);

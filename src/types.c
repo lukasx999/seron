@@ -127,6 +127,19 @@ const char *typekind_get_register_rdi(TypeKind type) {
 }
 
 
+static void compare_types(const Type *type, const Type *expected, Token tok) {
+    if (type->kind != expected->kind) {
+        throw_error(
+            tok,
+            "Invalid type %s, expected %s",
+            typekind_to_string(type->kind),
+            typekind_to_string(expected->kind)
+        );
+    }
+}
+
+
+
 static Type traverse_ast(AstNode *root, Hashtable *scope);
 
 
@@ -139,33 +152,15 @@ static Type ast_assignment(ExprAssignment *assign, Hashtable *scope) {
     if (sym == NULL)
         throw_error(assign->identifier, "Symbol `%s` does not exist", ident);
 
-
-    TypeKind sym_type = sym->type.kind;
-
-    if (sym_type != type.kind) {
-        throw_error(
-            assign->op,
-            "Invalid type %s, expected %s",
-            typekind_to_string(type.kind),
-            typekind_to_string(sym_type)
-        );
-    }
+    compare_types(&sym->type, &type, assign->op);
 
     return type;
 }
 
 static void ast_vardecl(StmtVarDecl *vardecl, Hashtable *scope) {
-    Type type = traverse_ast(vardecl->value, scope);
-    TypeKind expected = vardecl->type.kind;
-
-    if (expected != type.kind) {
-        throw_error(
-            vardecl->op,
-            "Invalid type %s, expected %s",
-            typekind_to_string(type.kind),
-            typekind_to_string(expected)
-        );
-    }
+    Type type     = traverse_ast(vardecl->value, scope);
+    Type expected = vardecl->type;
+    compare_types(&type, &expected, vardecl->op);
 }
 
 static Type ast_call(ExprCall *call, Hashtable *scope) {
@@ -194,16 +189,7 @@ static Type ast_call(ExprCall *call, Hashtable *scope) {
     for (size_t i=0; i < list.size; ++i) {
         Type *paramtype = sig->params[i].type;
         Type type = traverse_ast(list.items[i], scope);
-
-        if (type.kind != paramtype->kind) {
-            throw_error(
-                call->op,
-                "Expected argument of type %s, got %s",
-                typekind_to_string(paramtype->kind),
-                typekind_to_string(type.kind)
-            );
-        }
-
+        compare_types(&type, paramtype, call->op);
     }
 
     return *sig->returntype;
@@ -240,16 +226,7 @@ static Type ast_literal(ExprLiteral *literal, Hashtable *scope) {
 static Type ast_binop(ExprBinOp *binop, Hashtable *scope) {
     Type lhs = traverse_ast(binop->lhs, scope);
     Type rhs = traverse_ast(binop->rhs, scope);
-
-    if (lhs.kind != rhs.kind) {
-        throw_error(
-            binop->op,
-            "Types do not match (`%s` and `%s`)",
-            typekind_to_string(lhs.kind),
-            typekind_to_string(rhs.kind)
-        );
-    }
-
+    compare_types(&lhs, &rhs, binop->op);
     return lhs;
 }
 
@@ -295,6 +272,10 @@ static Type traverse_ast(AstNode *root, Hashtable *scope) {
         case ASTNODE_WHILE:
             traverse_ast(root->stmt_while.condition, scope);
             traverse_ast(root->stmt_while.body, scope);
+            break;
+
+        case ASTNODE_RETURN:
+            traverse_ast(root->stmt_return.expr, scope);
             break;
 
         case ASTNODE_IF:

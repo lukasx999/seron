@@ -272,12 +272,10 @@ static void ast_block(Block *block, TraversalContext *ctx) {
     block->symboltable = last;
 
 
-    // TODO: this
-#if 1
     /* Insert parameters as variables in the scope of the procedure */
     ProcSignature *sig = ctx->sig;
 
-    // only if parent node is a function
+    // only if parent node is a procedure
     if (sig != NULL) {
 
         for (size_t i=0; i < sig->params_count; ++i) {
@@ -294,7 +292,6 @@ static void ast_block(Block *block, TraversalContext *ctx) {
 
         ctx->sig = NULL;
     }
-#endif
 
 
     for (size_t i=0; i < list.size; ++i) {

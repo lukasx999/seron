@@ -168,6 +168,11 @@ static void ast_while(StmtWhile *while_, Hashtable *scope) {
     gen_while_end(&codegen, cond, while_ctx);
 }
 
+static void ast_return(StmtReturn *return_, Hashtable *scope) {
+    Symbol expr = traverse_ast(return_->expr, scope);
+    gen_return(&codegen, expr);
+}
+
 static Symbol ast_assign(ExprAssignment *assign, Hashtable *scope) {
     const char *ident = assign->identifier.value;
     Symbol value = traverse_ast(assign->value, scope);
@@ -206,6 +211,10 @@ static Symbol traverse_ast(AstNode *node, Hashtable *scope) {
 
         case ASTNODE_WHILE:
             ast_while(&node->stmt_while, scope);
+            break;
+
+        case ASTNODE_RETURN:
+            ast_return(&node->stmt_return, scope);
             break;
 
         case ASTNODE_VARDECL:

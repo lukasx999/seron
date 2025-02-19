@@ -175,7 +175,14 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: static global variables
 // TODO: inserting func signature into symboltable + pushing func params onto stack (via sysv abi)
 // TODO: change Token in ast to Token*
-// TODO: pointers!
+// TODO: pointers (addressof)
+
+/*
+ TODO: semcheck
+ - using return in procedure
+ - no ifs/whiles in global scope
+*/
+
 
 
 

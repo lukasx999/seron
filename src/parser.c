@@ -90,12 +90,12 @@ void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down, voi
 
         case ASTNODE_CALL: {
             depth++;
-            ExprCall call = root->expr_call;
+            ExprCall *call = &root->expr_call;
 
-            if (call.builtin == BUILTIN_NONE)
-                parser_traverse_ast(call.callee, callback, top_down, args);
+            if (call->builtin == BUILTIN_NONE)
+                parser_traverse_ast(call->callee, callback, top_down, args);
 
-            AstNodeList list = call.args;
+            AstNodeList list = call->args;
             for (size_t i=0; i < list.size; ++i)
                 parser_traverse_ast(list.items[i], callback, top_down, args);
 
@@ -104,9 +104,16 @@ void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down, voi
 
         case ASTNODE_WHILE: {
             depth++;
-            StmtWhile while_ = root->stmt_while;
-            parser_traverse_ast(while_.condition, callback, top_down, args);
-            parser_traverse_ast(while_.body, callback, top_down, args);
+            StmtWhile *while_ = &root->stmt_while;
+            parser_traverse_ast(while_->condition, callback, top_down, args);
+            parser_traverse_ast(while_->body, callback, top_down, args);
+            depth--;
+        } break;
+
+        case ASTNODE_RETURN: {
+            depth++;
+            StmtReturn *return_ = &root->stmt_return;
+            parser_traverse_ast(return_->expr, callback, top_down, args);
             depth--;
         } break;
 
@@ -140,16 +147,16 @@ void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down, voi
 
         case ASTNODE_BINOP: {
             depth++;
-            ExprBinOp binop = root->expr_binop;
-            parser_traverse_ast(binop.lhs, callback, top_down, args);
-            parser_traverse_ast(binop.rhs, callback, top_down, args);
+            ExprBinOp *binop = &root->expr_binop;
+            parser_traverse_ast(binop->lhs, callback, top_down, args);
+            parser_traverse_ast(binop->rhs, callback, top_down, args);
             depth--;
         } break;
 
         case ASTNODE_UNARYOP: {
             depth++;
-            ExprUnaryOp unaryop = root->expr_unaryop;
-            parser_traverse_ast(unaryop.node, callback, top_down, args);
+            ExprUnaryOp *unaryop = &root->expr_unaryop;
+            parser_traverse_ast(unaryop->node, callback, top_down, args);
             depth--;
         } break;
 
@@ -210,6 +217,10 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
             print_ast_value("while", COLOR_RED, NULL, NULL);
         } break;
 
+        case ASTNODE_RETURN: {
+            print_ast_value("return", COLOR_RED, NULL, NULL);
+        } break;
+
         case ASTNODE_BINOP: {
             ExprBinOp *binop = &root->expr_binop;
             print_ast_value(tokenkind_to_string(binop->op.kind), COLOR_PURPLE, NULL, NULL);
@@ -263,6 +274,12 @@ void parser_print_ast(AstNode *root, int spacing) {
     printf("\n");
 }
 
+static void free_signature(ProcSignature *sig) {
+    free(sig->returntype);
+    for (size_t i=0; i < sig->params_count; ++i)
+        free(sig->params[i].type);
+}
+
 static void parser_free_ast_callback(AstNode *node, int _depth, void *_args) {
     assert(node != NULL);
     (void) _depth;
@@ -278,10 +295,9 @@ static void parser_free_ast_callback(AstNode *node, int _depth, void *_args) {
             break;
 
         case ASTNODE_PROCEDURE: {
-            ProcSignature *sig = &node->stmt_procedure.type.type_signature;
-            free(sig->returntype);
-            for (size_t i=0; i < sig->params_count; ++i)
-                free(sig->params[i].type);
+            StmtProcedure *proc = &node->stmt_procedure;
+            assert(proc->type.kind == TYPE_FUNCTION);
+            free_signature(&proc->type.type_signature);
         } break;
 
         case ASTNODE_GROUPING:
@@ -292,6 +308,7 @@ static void parser_free_ast_callback(AstNode *node, int _depth, void *_args) {
         case ASTNODE_UNARYOP:
         case ASTNODE_IF:
         case ASTNODE_WHILE:
+        case ASTNODE_RETURN:
             break;
 
         default:
