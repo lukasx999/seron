@@ -29,7 +29,6 @@ proc proxy(a 'int) 'int {
     return a;
 }
 
-
 proc _start() {
 
     val foo 'int = proxy(3);
