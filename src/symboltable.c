@@ -295,6 +295,10 @@ static void ast_block(Block *block, TraversalContext *ctx) {
 static void ast_procedure(StmtProcedure *proc, TraversalContext *ctx) {
     const char *ident = proc->identifier.value;
 
+    /*
+     * we have to do it like that, because the symboltable of the body of
+     * this procedure is constructed AFTER this function call
+     */
     ctx->sig = &proc->type.type_signature;
 
     Symbol sym = {
