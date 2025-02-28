@@ -181,6 +181,8 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: ABI: spill arguments onto stack
 // TODO: extern keyword
 // TODO: char literal
+// TODO: id into tokenlist instead of pointer for ast
+// TODO: arena allocator for astnodes
 
 /*
  TODO: semcheck
