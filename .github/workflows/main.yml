@@ -1,1 +1,16 @@
+name: Build
 
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@main
+      - name: build
+        run: |
+          cd seronc/src
+          make
