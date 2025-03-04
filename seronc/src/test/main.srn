@@ -1,5 +1,5 @@
 
-asm("extern putchar");
+proc putchar(c 'int) 'int;
 
 proc exit(status 'int) {
     asm("
@@ -10,7 +10,7 @@ proc exit(status 'int) {
 }
 
 proc putc(c 'int) {
-    val buf 'int = c;
+    let buf 'int = c;
 
     asm("
     mov rax, 1
@@ -27,10 +27,7 @@ proc add(a 'int, b 'int) 'int {
 
 proc _start() {
 
-    asm("mov rdi, 65");
-    asm("call putchar");
-
-    #val c 'byte = c"A";
+    let x 'int = 123;
 
     putc(add(64, 1));
 

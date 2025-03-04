@@ -311,7 +311,9 @@ static void ast_procedure(StmtProcedure *proc, TraversalContext *ctx) {
     if (ret == -1)
         throw_error_simple("Procedure `%s` already exists", ident);
 
-    traverse_ast(proc->body, ctx);
+    AstNode *body = proc->body;
+    if (body != NULL)
+        traverse_ast(body, ctx);
 }
 
 static void ast_vardecl(StmtVarDecl *vardecl, TraversalContext *ctx) {

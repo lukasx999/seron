@@ -377,7 +377,9 @@ static Type traverse_ast(AstNode *root, Hashtable *scope) {
 
         case ASTNODE_PROCEDURE: {
             const StmtProcedure *func = &root->stmt_procedure;
-            traverse_ast(func->body, scope);
+            AstNode *body = func->body;
+            if (body != NULL)
+                traverse_ast(body, scope);
         } break;
 
         default:

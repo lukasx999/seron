@@ -374,7 +374,11 @@ AstNode *rule_procedure(Parser *p) {
         .type_signature = sig,
     };
 
-    AstNode *body = rule_block(p);
+
+    AstNode *body = parser_match_tokenkinds(p, TOK_SEMICOLON, SENTINEL)
+        ? parser_advance(p), NULL // bet you didn't know about this one
+        : rule_block(p);
+
 
     AstNode *proc = malloc(sizeof(AstNode));
     proc->kind = ASTNODE_PROCEDURE;

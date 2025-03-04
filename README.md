@@ -20,6 +20,7 @@ Currently, the only supported backend is x86_64 NASM.
 $ git clone https://github.com/lukasx999/seron.git
 $ cd seronc/src
 $ make
+$ ./seronc
 ```
 
 ## Language Features
@@ -30,6 +31,8 @@ $ make
 - [x] Inline Assembly
   - [x] Parameters
 - [x] Procedures
+  - [x] Parameters
+  - [x] Returnvalue
 - [x] Variables
 - [x] While Loop
-- [x] If Statement
+- [x] If/Else Statement

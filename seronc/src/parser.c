@@ -135,7 +135,9 @@ void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down, voi
 
         case ASTNODE_PROCEDURE:
             depth++;
-            parser_traverse_ast(root->stmt_procedure.body, callback, top_down, args);
+            AstNode *body = root->stmt_procedure.body;
+            if (body != NULL)
+                parser_traverse_ast(body, callback, top_down, args);
             depth--;
             break;
 

@@ -97,7 +97,6 @@ typedef struct {
     Token op, identifier;
     AstNode *body; // NULL if declaration
     Type type; // type is holding function signature
-    /*bool external;*/ // TODO:
 } StmtProcedure;
 
 

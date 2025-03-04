@@ -3,7 +3,7 @@ syn keyword srnKeyword
       \ else
       \ elsif
       \ while
-      \ val
+      \ let
       \ proc
       \ asm
       \ extern

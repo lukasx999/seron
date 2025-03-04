@@ -34,7 +34,7 @@ const char *tokenkind_to_string(TokenKind tok) {
         [TOK_LBRACE]      = "lbrace",
         [TOK_RBRACE]      = "rbrace",
         [TOK_KW_FUNCTION] = "func",
-        [TOK_KW_VARDECL]  = "val",
+        [TOK_KW_VARDECL]  = "let",
         [TOK_KW_IF]       = "if",
         [TOK_KW_ELSE]     = "else",
         [TOK_KW_ELSIF]    = "elsif",
@@ -113,35 +113,25 @@ static TokenKind match_keywords(const char *str, size_t len) {
     TokenKind tokenkinds[] = {
         TOK_KW_FUNCTION,
         TOK_KW_VARDECL,
-        TOK_KW_IF,
-        TOK_KW_ELSE,
-        TOK_KW_ELSIF,
+        TOK_KW_IF, TOK_KW_ELSE, TOK_KW_ELSIF,
         TOK_KW_WHILE,
         TOK_KW_RETURN,
 
         TOK_BUILTIN_ASM,
 
-        TOK_TYPE_VOID,
-        TOK_TYPE_BYTE,
-        TOK_TYPE_INT,
-        TOK_TYPE_SIZE,
+        TOK_TYPE_VOID, TOK_TYPE_BYTE, TOK_TYPE_INT, TOK_TYPE_SIZE,
     };
 
     const char *strings[] = {
         "proc",
-        "val",
-        "if",
-        "else",
-        "elsif",
+        "let",
+        "if", "else", "elsif",
         "while",
         "return",
 
         "asm",
 
-        "void",
-        "byte",
-        "int",
-        "size",
+        "void", "byte", "int", "size",
     };
 
     assert(ARRAY_LEN(tokenkinds) == ARRAY_LEN(strings));
@@ -170,35 +160,35 @@ TokenList tokenize(const char *src) {
         tok.length       = 1;
 
         switch (c) {
+
+            case '+':  tok.kind = TOK_PLUS;      break;
+            case '-':  tok.kind = TOK_MINUS;     break;
+            case '*':  tok.kind = TOK_ASTERISK;  break;
+            case '/':  tok.kind = TOK_SLASH;     break;
+            case '!':  tok.kind = TOK_BANG;      break;
+            case '&':  tok.kind = TOK_AMPERSAND; break;
+            case '(':  tok.kind = TOK_LPAREN;    break;
+            case ')':  tok.kind = TOK_RPAREN;    break;
+            case '{':  tok.kind = TOK_LBRACE;    break;
+            case '}':  tok.kind = TOK_RBRACE;    break;
+            case ';':  tok.kind = TOK_SEMICOLON; break;
+            case ',':  tok.kind = TOK_COMMA;     break;
+            case ':':  tok.kind = TOK_COLON;     break;
+            case '\'': tok.kind = TOK_TICK;      break;
+
             case '\n':
                 linecount++;
                 columncount = 1;
                 continue;
                 break;
+
             case '\t':
             case '\r':
             case ' ':
                 columncount++;
                 continue;
                 break;
-            case '+':
-                tok.kind = TOK_PLUS;
-                break;
-            case '-':
-                tok.kind = TOK_MINUS;
-                break;
-            case '*':
-                tok.kind = TOK_ASTERISK;
-                break;
-            case '/':
-                tok.kind = TOK_SLASH;
-                break;
-            case '!':
-                tok.kind = TOK_BANG;
-                break;
-            case '&':
-                tok.kind = TOK_AMPERSAND;
-                break;
+
             case '#':
                 if (src[i+1] == '#') { // multi line comments
                     ++i;
@@ -224,39 +214,18 @@ TokenList tokenize(const char *src) {
                 }
                 continue;
                 break;
-            case '(':
-                tok.kind = TOK_LPAREN;
-                break;
-            case ')':
-                tok.kind = TOK_RPAREN;
-                break;
-            case '{':
-                tok.kind = TOK_LBRACE;
-                break;
-            case '}':
-                tok.kind = TOK_RBRACE;
-                break;
+
             case '=':
                 if (src[i+1] == '=') {
                     tok.kind = TOK_EQUALS;
                     ++i;
                     ++columncount;
                     tok.length = 2;
-                } else
+                } else {
                     tok.kind = TOK_ASSIGN;
+                }
                 break;
-            case ';':
-                tok.kind = TOK_SEMICOLON;
-                break;
-            case ',':
-                tok.kind = TOK_COMMA;
-                break;
-            case ':':
-                tok.kind = TOK_COLON;
-                break;
-            case '\'':
-                tok.kind = TOK_TICK;
-                break;
+
             case '\"': {
                 tok.kind = TOK_STRING;
 
@@ -320,10 +289,7 @@ TokenList tokenize(const char *src) {
 
     }
 
-    Token tok_eof = {
-        .kind = TOK_EOF,
-    };
-
+    Token tok_eof = { .kind = TOK_EOF };
     tokenlist_append(&tokens, tok_eof);
 
     return tokens;
