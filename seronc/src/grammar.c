@@ -365,7 +365,7 @@ AstNode *rule_procedure(Parser *p) {
 
     sig.returntype = malloc(sizeof(Type));
     /* Returntype is void if not specified */
-    sig.returntype->kind = parser_match_tokenkinds(p, TOK_LBRACE, SENTINEL)
+    sig.returntype->kind = parser_match_tokenkinds(p, TOK_LBRACE, TOK_SEMICOLON, SENTINEL)
         ? TYPE_VOID
         : rule_util_type(p);
 
@@ -374,11 +374,9 @@ AstNode *rule_procedure(Parser *p) {
         .type_signature = sig,
     };
 
-
     AstNode *body = parser_match_tokenkinds(p, TOK_SEMICOLON, SENTINEL)
         ? parser_advance(p), NULL // bet you didn't know about this one
         : rule_block(p);
-
 
     AstNode *proc = malloc(sizeof(AstNode));
     proc->kind = ASTNODE_PROCEDURE;

@@ -224,6 +224,12 @@ void gen_inlineasm(
     gen_comment(gen, "END: inline\n");
 }
 
+void gen_procedure_extern(CodeGenerator *gen, const char *identifier) {
+    gen_comment(gen, "START: extern proc");
+    gen_addinstr(gen, "extern %s", identifier);
+    gen_comment(gen, "END: extern proc");
+}
+
 void gen_procedure_start(
     CodeGenerator       *gen,
     const char          *identifier,

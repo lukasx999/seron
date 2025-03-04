@@ -110,6 +110,11 @@ static void ast_procedure(StmtProcedure *proc, Hashtable *scope) {
     const char *ident = proc->identifier.value;
     ProcSignature *sig = &proc->type.type_signature;
 
+    if (proc->body == NULL) {
+        gen_procedure_extern(&codegen, ident);
+        return;
+    }
+
     assert(proc->body->kind == ASTNODE_BLOCK);
     Hashtable *body = proc->body->block.symboltable;
 
