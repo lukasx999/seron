@@ -1,5 +1,5 @@
-#ifndef _MAIN_H
-#define _MAIN_H
+#ifndef _SERONC_H
+#define _SERONC_H
 
 #include <stdio.h>
 #include <stddef.h>
@@ -34,4 +34,4 @@ extern struct CompilerContext compiler_context;
 
 
 
-#endif // _MAIN_H
+#endif // _SERONC_H

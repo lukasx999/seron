@@ -1,0 +1,26 @@
+# Inline comment
+
+##
+Multi-line comment
+##
+
+proc f() {} # Procedure
+
+proc g(a 'int, b 'byte) 'size {} # Parameters and Returntype
+
+proc main() 'int { # Main Procedure
+
+    # If Statement
+    if 1 { ## Then ## } else { ## Else ## }
+
+    # While Loop
+    while 1 { ## Body ## }
+
+    # Variable
+    val x 'int = 1;
+
+    # Block
+    { ## Body ## }
+
+    return 0;
+}

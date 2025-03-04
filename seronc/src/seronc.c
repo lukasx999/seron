@@ -5,9 +5,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <getopt.h>
+
 #include <sys/stat.h>
 #include <sys/wait.h>
-#include <getopt.h>
 
 #include "util.h"
 #include "lexer.h"
@@ -16,7 +17,7 @@
 #include "backend.h"
 #include "symboltable.h"
 #include "analysis.h"
-#include "main.h"
+#include "seronc.h"
 
 
 
@@ -55,7 +56,7 @@ static char *read_file(const char *filename) {
     return buf;
 }
 
-static void run_cmd(char *const argv[]) {
+static void run_cmd_sync(char *const argv[]) {
     if (fork() == 0)
         execvp(argv[0], argv);
     wait(NULL);
@@ -68,8 +69,10 @@ static void build_binary(void) {
     char *obj       = compiler_context.filename.obj;
     const char *bin = compiler_context.filename.stripped;
 
+    // BUG: child processes get messed up if nasm is not installed
+
     // Assemble
-    run_cmd((char*[]) {
+    run_cmd_sync((char*[]) {
         "nasm",
         asm,
         "-felf64",
@@ -79,19 +82,12 @@ static void build_binary(void) {
     });
 
     // Link
-    run_cmd((char*[]) {
+    run_cmd_sync((char*[]) {
         "ld",
-
-        /* linking with libc */
-        "-dynamic-linker",
-        "/usr/lib/ld-linux-x86-64.so.2",
-        "-lc",
-
         obj,
         "-o", (char*) bin,
         NULL
-    }
-    );
+    });
 
 }
 
@@ -164,8 +160,8 @@ static void parse_args(int argc, char *argv[]) {
         print_usage(argv);
 
     const char *filename = argv[optind];
-    check_fileextension(filename, "spx");
-    set_filenames(filename, "spx");
+    check_fileextension(filename, "srn");
+    set_filenames(filename, "srn");
 
 }
 
@@ -201,40 +197,43 @@ int main(int argc, char *argv[]) {
 
     char *file = read_file(compiler_context.filename.raw);
 
-    printf("Tokenizing...\n");
+    printf("[INFO] Tokenizing...\n");
     TokenList tokens = tokenize(file);
     if (compiler_context.opts.dump_tokens)
         tokenlist_print(&tokens);
     free(file);
 
 
-    printf("Parsing...\n");
+    printf("[INFO] Parsing...\n");
     AstNode *node_root = parser_parse(&tokens);
     if (compiler_context.opts.dump_ast)
         parser_print_ast(node_root, 2);
 
 
-    printf("Building Symboltable...\n");
+    printf("[INFO] Building Symboltable...\n");
     Symboltable symboltable = symboltable_construct(node_root, 5);
     if (compiler_context.opts.dump_symboltable)
         symboltable_print(&symboltable);
 
 
-    printf("Checking Types...\n");
+    printf("[INFO] Checking Types...\n");
     check_types(node_root);
 
 #if 1
-    printf("Generating Code...\n");
+    printf("[INFO] Generating Code...\n");
     generate_code(node_root);
 
-    printf("Building Binary...\n");
+    printf("[INFO] Building Binary...\n");
     build_binary();
 
-    printf("%s%sBinary `%s` has been built!%s\n", COLOR_BOLD, COLOR_BLUE, compiler_context.filename.stripped, COLOR_END);
+    printf(
+        "%s%sBinary `%s` has been built!%s\n",
+        COLOR_BOLD,
+        COLOR_BLUE,
+        compiler_context.filename.stripped,
+        COLOR_END
+    );
 #endif
-
-
-
 
     symboltable_destroy(&symboltable);
     parser_free_ast(node_root);

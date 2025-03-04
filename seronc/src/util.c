@@ -5,7 +5,7 @@
 
 #include "lexer.h"
 #include "util.h"
-#include "main.h"
+#include "seronc.h"
 
 
 
