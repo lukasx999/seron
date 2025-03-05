@@ -3,7 +3,7 @@
 ## Features
 
 - Compiled to native Assembly
-- Static/Strong Typing
+- Static & Strong Typing
 - **No** dependencies
 
 Currently, the only supported backend is x86_64 NASM.
@@ -24,7 +24,7 @@ $ ./seronc
 
 ## Language Features
 
-- [ ] Extern Procedures
+- [x] Extern Procedures
 - [x] Add / Sub / Mul / Div
 - [x] Procedure calls
 - [x] Inline Assembly
