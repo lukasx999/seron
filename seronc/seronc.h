@@ -26,6 +26,7 @@ struct CompilerContext {
         int show_warnings;
         int debug_asm;
         int dump_ast, dump_tokens, dump_symboltable;
+        int verbose;
     } opts;
 
 };

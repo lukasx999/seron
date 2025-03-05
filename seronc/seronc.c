@@ -24,6 +24,11 @@
 struct CompilerContext compiler_context = { 0 };
 
 
+void compiler_log(const char *msg) {
+    if (compiler_context.opts.verbose)
+        fprintf(stderr, "[INFO] %s\n", msg);
+}
+
 
 static void check_fileextension(const char *filename, const char *extension) {
 
@@ -128,13 +133,12 @@ static void parse_args(int argc, char *argv[]) {
         { "dump-tokens",      no_argument, &compiler_context.opts.dump_tokens,      1 },
         { "dump-symboltable", no_argument, &compiler_context.opts.dump_symboltable, 1 },
         { "debug-asm",        no_argument, &compiler_context.opts.debug_asm,        1 },
+        { "verbose",          no_argument, &compiler_context.opts.verbose,          1 },
         { NULL, 0, NULL, 0 },
-        // TODO: --pedantic
-        // TODO: link with libc
     };
 
     while (1) {
-        int c = getopt_long(argc, argv, "W", opts, &opt_index);
+        int c = getopt_long(argc, argv, "Wv", opts, &opt_index);
 
         if (c == -1)
             break;
@@ -143,6 +147,10 @@ static void parse_args(int argc, char *argv[]) {
 
             case 0:
                 /* long option */
+                break;
+
+            case 'v':
+                compiler_context.opts.verbose = true;
                 break;
 
             case 'W':
@@ -197,33 +205,33 @@ int main(int argc, char *argv[]) {
 
     char *file = read_file(compiler_context.filename.raw);
 
-    printf("[INFO] Tokenizing...\n");
+    compiler_log("Lexical Analysis");
     TokenList tokens = tokenize(file);
     if (compiler_context.opts.dump_tokens)
         tokenlist_print(&tokens);
     free(file);
 
 
-    printf("[INFO] Parsing...\n");
+    compiler_log("Parsing");
     AstNode *node_root = parser_parse(&tokens);
     if (compiler_context.opts.dump_ast)
         parser_print_ast(node_root, 2);
 
 
-    printf("[INFO] Building Symboltable...\n");
+    compiler_log("Constructing Symboltable");
     Symboltable symboltable = symboltable_construct(node_root, 5);
     if (compiler_context.opts.dump_symboltable)
         symboltable_print(&symboltable);
 
 
-    printf("[INFO] Checking Types...\n");
+    compiler_log("Typechecking");
     check_types(node_root);
 
 #if 1
-    printf("[INFO] Generating Code...\n");
+    compiler_log("Codegeneration");
     generate_code(node_root);
 
-    printf("[INFO] Building Binary...\n");
+    compiler_log("Building Binary");
     build_binary();
 
     printf(
