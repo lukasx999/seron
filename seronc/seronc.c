@@ -104,6 +104,7 @@ static void print_usage(char *argv[]) {
             "\t--dump-tokens\n"
             "\t--dump-symboltable\n"
             "\t--debug-asm\n"
+            "\t--verbose, -v\n"
             );
     exit(EXIT_FAILURE);
 }
