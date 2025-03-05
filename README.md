@@ -2,9 +2,8 @@
 
 ## Features
 
-- Compiled
-- Static Typechecking
-- Strong Typing
+- Compiled to native Assembly
+- Static/Strong Typing
 - **No** dependencies
 
 Currently, the only supported backend is x86_64 NASM.
