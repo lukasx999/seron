@@ -8,6 +8,8 @@
 - Typechecking
 - Semantic Analysis
 - Code Generation -> Assembly
+
 *(External Tools)*
+
 - Assembly (NASM) -> Object code
 - Linking (LD / CC) -> ELF64 Binary
