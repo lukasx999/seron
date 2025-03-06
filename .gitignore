@@ -1,4 +1,5 @@
 *.o
+seron
 a.out
 vgcore.*
 Session.vim

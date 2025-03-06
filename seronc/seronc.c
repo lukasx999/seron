@@ -233,6 +233,7 @@ int main(int argc, char *argv[]) {
 
     parse_args(argc, argv);
 
+    // TODO: show time
     compiler_message(MSG_INFO, "Starting compilation");
 
     const char *filename = compiler_context.filename.raw;
