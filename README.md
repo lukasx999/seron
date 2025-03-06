@@ -1,5 +1,7 @@
 # Seron Programming Language
 
+<img src="./assets/logo.svg" width="200" height="200">
+
 ## Features
 
 - Compiled to native Assembly
@@ -13,6 +15,7 @@ Currently, the only supported backend is x86_64 NASM.
 - C11 Toolchain
 - Nothing else!
 
+<<<<<<< HEAD
 ## Usage Requirements
 
 - NASM *(for assembly)*
