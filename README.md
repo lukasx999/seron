@@ -1,5 +1,7 @@
 # Seron Programming Language
 
+![logo](./seron_logo.svg)
+
 ## Features
 
 - Compiled to native Assembly
