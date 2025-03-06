@@ -218,7 +218,7 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: id into tokenlist instead of pointer for ast
 // TODO: arena allocator for astnodes
 // TODO: var declaration address
-// TODO: precompute stack frame layout
+// TODO: precompute stack frame layout + reserve stack space in bulk in prelude
 
 /*
  TODO: semcheck
