@@ -258,7 +258,7 @@ static Symbol traverse_ast(AstNode *node, Hashtable *scope) {
 }
 
 void generate_code(AstNode *root) {
-    gen_init(&codegen, compiler_context.filename.asm, compiler_context.opts.debug_asm);
+    gen_init(&codegen, compiler_context.filename.asm_, compiler_context.opts.debug_asm);
 
     gen_prelude(&codegen);
     traverse_ast(root, NULL);

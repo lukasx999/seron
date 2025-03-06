@@ -28,7 +28,7 @@ AstNodeList rule_util_arglist(Parser *p) {
             parser_advance(p);
 
             if (parser_match_tokenkinds(p, TOK_RPAREN, SENTINEL))
-                parser_throw_error(p,"Extraneous `,`");
+                parser_throw_error(p, "Extraneous `,`");
         }
 
     }
@@ -393,6 +393,7 @@ AstNode *rule_procedure(Parser *p) {
 AstNode *rule_block(Parser *p) {
     // <block> ::= "{" <statement>* "}"
 
+    Token *brace = parser_get_current_token(p);
     parser_expect_token(p, TOK_LBRACE, "{");
     parser_advance(p);
 
@@ -404,8 +405,10 @@ AstNode *rule_block(Parser *p) {
     };
 
     while (!parser_match_tokenkinds(p, TOK_RBRACE, SENTINEL)) {
-        if (parser_is_at_end(p))
-            throw_error_simple("Unmatching brace");
+
+        if (parser_is_at_end(p)) {
+            throw_error(*brace, "Unmatching brace");
+        }
 
         astnodelist_append(&node->block.stmts, rule_stmt(p));
     }

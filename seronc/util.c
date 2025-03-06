@@ -2,10 +2,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <assert.h>
 
 #include "lexer.h"
 #include "util.h"
 #include "seronc.h"
+
 
 
 
@@ -53,28 +55,37 @@ void throw_warning(
     va_end(va);
 }
 
-static void throw_thing_simle(bool is_error, const char *fmt, va_list va) {
-    const char *str = is_error ? "ERROR" : "WARNING";
-    const char *color = is_error ? COLOR_RED : COLOR_YELLOW;
+void compiler_message(MessageKind kind, const char *fmt, ...) {
+    if (kind == MSG_INFO && !compiler_context.opts.verbose)
+        return;
+
+    assert(fmt != NULL);
+
+    va_list va;
+    va_start(va, fmt);
+
+    const char *str, *color = NULL;
+    switch (kind) {
+        case MSG_INFO:
+            str = "INFO";
+            color = COLOR_BLUE;
+            break;
+        case MSG_WARNING:
+            str = "WARNING";
+            color = COLOR_YELLOW;
+            break;
+        case MSG_ERROR:
+            str = "ERROR";
+            color = COLOR_RED;
+            break;
+        default:
+            assert(!"wtf");
+            break;
+    }
 
     fprintf(stderr, "%s%s%s: %s", COLOR_BOLD, color, str, COLOR_END);
     vfprintf(stderr, fmt, va);
     fprintf(stderr, "\n");
 
-    if (is_error)
-        exit(EXIT_FAILURE);
-}
-
-void throw_error_simple(const char *fmt, ...) {
-    va_list va;
-    va_start(va, fmt);
-    throw_thing_simle(true, fmt, va);
-    va_end(va);
-}
-
-void throw_warning_simple(const char *fmt, ...) {
-    va_list va;
-    va_start(va, fmt);
-    throw_thing_simle(false, fmt, va);
     va_end(va);
 }

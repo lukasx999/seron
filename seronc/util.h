@@ -29,10 +29,16 @@
 #define COLOR_END           "\33[0m"
 
 
-extern void throw_error_simple  (const char *fmt, ...);
-extern void throw_warning_simple(const char *fmt, ...);
-extern void throw_error         (Token tok, const char *fmt, ...);
-extern void throw_warning       (Token tok, const char *fmt, ...);
+typedef enum {
+    MSG_ERROR,
+    MSG_WARNING,
+    MSG_INFO,
+} MessageKind;
+
+
+void compiler_message (MessageKind kind, const char *fmt, ...);
+void throw_error      (Token tok, const char *fmt, ...);
+void throw_warning    (Token tok, const char *fmt, ...);
 
 
 #endif // _UTIL_H

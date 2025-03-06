@@ -1,8 +1,7 @@
-compiler
 *.o
 a.out
 vgcore.*
 Session.vim
-out
 *.s
 .cache
+compile_commands.json

@@ -308,8 +308,10 @@ static void ast_procedure(StmtProcedure *proc, TraversalContext *ctx) {
     };
 
     int ret = hashtable_insert(ctx->scope, ident, sym);
-    if (ret == -1)
-        throw_error_simple("Procedure `%s` already exists", ident);
+    if (ret == -1) {
+        compiler_message(MSG_ERROR, "Procedure `%s` already exists", ident);
+        exit(1);
+    }
 
     AstNode *body = proc->body;
     if (body != NULL)
@@ -325,8 +327,10 @@ static void ast_vardecl(StmtVarDecl *vardecl, TraversalContext *ctx) {
     };
 
     int ret = hashtable_insert(ctx->scope, ident, sym);
-    if (ret == -1)
-        throw_warning_simple("Variable `%s` already exists", ident);
+    if (ret == -1) {
+        compiler_message(MSG_ERROR, "Variable `%s` already exists", ident);
+        exit(1);
+    }
 
     traverse_ast(vardecl->value, ctx);
 }

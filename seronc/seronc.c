@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <time.h>
 
 #include <sys/stat.h>
 #include <sys/wait.h>
@@ -16,7 +17,6 @@
 #include "types.h"
 #include "backend.h"
 #include "symboltable.h"
-#include "analysis.h"
 #include "seronc.h"
 
 
@@ -24,31 +24,36 @@
 struct CompilerContext compiler_context = { 0 };
 
 
-void compiler_log(const char *msg) {
-    if (compiler_context.opts.verbose)
-        fprintf(stderr, "[INFO] %s\n", msg);
-}
 
 
 static void check_fileextension(const char *filename, const char *extension) {
 
-    if (strlen(filename) <= strlen(extension) + 1) // eg: `.___`
-        throw_error_simple("Invalid filename `%s`", filename);
+    if (strlen(filename) <= strlen(extension) + 1) { // eg: `.___`
+        compiler_message(MSG_ERROR, "Invalid filename `%s`", filename);
+        exit(1);
+    }
 
     size_t dot_offset = strlen(filename) - 1 - strlen(extension);
 
-    if (filename[dot_offset] != '.')
-        throw_error_simple("File extension missing");
+    if (filename[dot_offset] != '.') {
+        compiler_message(MSG_ERROR, "File extension missing");
+        exit(1);
+    }
 
-    if (strncmp(filename + dot_offset + 1, extension, strlen(extension)))
-        throw_error_simple("File extension must be `.%s`", extension);
+    if (strncmp(filename + dot_offset + 1, extension, strlen(extension))) {
+        compiler_message(MSG_ERROR, "File extension must be `.%s`", extension);
+        exit(1);
+    }
 
 }
 
 static char *read_file(const char *filename) {
     FILE *file = fopen(filename, "rb");
-    if (file == NULL)
-        throw_error_simple("Source file `%s` does not exist", filename);
+
+    if (file == NULL) {
+        compiler_message(MSG_ERROR, "Source file `%s` does not exist", filename);
+        exit(1);
+    }
 
     struct stat statbuf = { 0 };
     stat(filename, &statbuf);
@@ -61,38 +66,57 @@ static char *read_file(const char *filename) {
     return buf;
 }
 
-static void run_cmd_sync(char *const argv[]) {
-    if (fork() == 0)
+// Returns non-zero if process failed to run
+static int run_cmd_sync(char *const argv[]) {
+    int magic = 55;
+    int status;
+
+    if (!fork()) {
         execvp(argv[0], argv);
-    wait(NULL);
+        exit(magic); // Failed to exec
+    }
+
+    wait(&status);
+    return WEXITSTATUS(status) == magic;
 }
 
-static void build_binary(void) {
-    // TODO: ensure nasm and ld are installed
-
-    char *asm       = compiler_context.filename.asm;
-    char *obj       = compiler_context.filename.obj;
-    const char *bin = compiler_context.filename.stripped;
-
-    // BUG: child processes get messed up if nasm is not installed
+static void assemble(void) {
+    char *asm_ = compiler_context.filename.asm_;
+    char *obj  = compiler_context.filename.obj;
 
     // Assemble
-    run_cmd_sync((char*[]) {
+    int ret = run_cmd_sync((char*[]) {
         "nasm",
-        asm,
+        asm_,
         "-felf64",
         "-o", obj,
         "-gdwarf",
         NULL
     });
 
+    if (ret) {
+        compiler_message(MSG_ERROR, "`nasm` not found in $PATH");
+        exit(1);
+    }
+
+}
+
+static void link_cc(void) {
+    char *obj       = compiler_context.filename.obj;
+    const char *bin = compiler_context.filename.stripped;
+
     // Link
-    run_cmd_sync((char*[]) {
-        "ld",
+    int ret = run_cmd_sync((char*[]) {
+        "cc",
         obj,
         "-o", (char*) bin,
         NULL
     });
+
+    if (ret) {
+        compiler_message(MSG_ERROR, "`cc` not found in $PATH");
+        exit(1);
+    }
 
 }
 
@@ -100,11 +124,16 @@ static void print_usage(char *argv[]) {
     fprintf(stderr, "Usage: %s [options] file...\n", argv[0]);
     fprintf(stderr, "Options:\n");
     fprintf(stderr,
+            "User Flags\n"
+            "\t--compile-only, -S\n"
+            "\t  Dont assemble/link, only produce assembly\n"
+            "Developer Flags:\n"
+            "\t--debug-asm\n"
             "\t--dump-ast\n"
             "\t--dump-tokens\n"
             "\t--dump-symboltable\n"
-            "\t--debug-asm\n"
             "\t--verbose, -v\n"
+            "\t  Show info messages\n"
             );
     exit(EXIT_FAILURE);
 }
@@ -117,7 +146,7 @@ static void set_filenames(const char *raw, const char *extension) {
     char *stripped = compiler_context.filename.stripped;
     strncpy(stripped, raw, dot_offset);
 
-    char *asm = compiler_context.filename.asm;
+    char *asm = compiler_context.filename.asm_;
     strncpy(asm, stripped, 256);
     strcat(asm, ".s");
 
@@ -134,12 +163,11 @@ static void parse_args(int argc, char *argv[]) {
         { "dump-tokens",      no_argument, &compiler_context.opts.dump_tokens,      1 },
         { "dump-symboltable", no_argument, &compiler_context.opts.dump_symboltable, 1 },
         { "debug-asm",        no_argument, &compiler_context.opts.debug_asm,        1 },
-        { "verbose",          no_argument, &compiler_context.opts.verbose,          1 },
         { NULL, 0, NULL, 0 },
     };
 
     while (1) {
-        int c = getopt_long(argc, argv, "Wv", opts, &opt_index);
+        int c = getopt_long(argc, argv, "Sv", opts, &opt_index);
 
         if (c == -1)
             break;
@@ -154,12 +182,13 @@ static void parse_args(int argc, char *argv[]) {
                 compiler_context.opts.verbose = true;
                 break;
 
-            case 'W':
-                compiler_context.opts.show_warnings = true;
+            case 'S':
+                compiler_context.opts.compile_only = true;
                 break;
 
             default:
-                throw_error_simple("Unknown option");
+                compiler_message(MSG_ERROR, "Unknown option");
+                exit(1);
                 break;
         }
 
@@ -204,45 +233,50 @@ int main(int argc, char *argv[]) {
 
     parse_args(argc, argv);
 
-    char *file = read_file(compiler_context.filename.raw);
+    compiler_message(MSG_INFO, "Starting compilation");
 
-    compiler_log("Lexical Analysis");
+    const char *filename = compiler_context.filename.raw;
+    compiler_message(MSG_INFO, "Reading source %s", filename);
+    char *file = read_file(filename);
+
+    compiler_message(MSG_INFO, "Lexical Analysis");
+
     TokenList tokens = tokenize(file);
     if (compiler_context.opts.dump_tokens)
         tokenlist_print(&tokens);
+
     free(file);
 
 
-    compiler_log("Parsing");
+    compiler_message(MSG_INFO, "Parsing");
     AstNode *node_root = parser_parse(&tokens);
     if (compiler_context.opts.dump_ast)
         parser_print_ast(node_root, 2);
 
 
-    compiler_log("Constructing Symboltable");
+    compiler_message(MSG_INFO, "Constructing Symboltable");
     Symboltable symboltable = symboltable_construct(node_root, 5);
     if (compiler_context.opts.dump_symboltable)
         symboltable_print(&symboltable);
 
 
-    compiler_log("Typechecking");
+    compiler_message(MSG_INFO, "Typechecking");
     check_types(node_root);
 
-#if 1
-    compiler_log("Codegeneration");
+    compiler_message(MSG_INFO, "Codegeneration");
     generate_code(node_root);
 
-    compiler_log("Building Binary");
-    build_binary();
+    if (!compiler_context.opts.compile_only) {
+        compiler_message(MSG_INFO, "Assembling %s via nasm", compiler_context.filename.asm_);
+        assemble();
 
-    printf(
-        "%s%sBinary `%s` has been built!%s\n",
-        COLOR_BOLD,
-        COLOR_BLUE,
-        compiler_context.filename.stripped,
-        COLOR_END
-    );
-#endif
+        compiler_message(MSG_INFO, "Linking %s via cc", compiler_context.filename.obj);
+        link_cc();
+
+        compiler_message(MSG_INFO, "Binary `%s` has been built", compiler_context.filename.stripped);
+    }
+
+    compiler_message(MSG_INFO, "Compilation finished");
 
     symboltable_destroy(&symboltable);
     parser_free_ast(node_root);

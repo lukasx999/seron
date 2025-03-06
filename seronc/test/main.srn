@@ -25,11 +25,11 @@ proc add(a 'int, b 'int) 'int {
     return a + b;
 }
 
-proc _start() 'int {
+proc main() 'int {
     let c 'int = 65;
     #putchar(c);
 
     put(add(64, 1));
 
-    exit(0);
+    return 0;
 }

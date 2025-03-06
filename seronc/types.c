@@ -289,8 +289,10 @@ static Type ast_literal(ExprLiteral *literal, Hashtable *scope) {
             const char *value = literal->op.value;
             Symbol *sym = symboltable_lookup(scope, value);
 
-            if (sym == NULL)
-                throw_error_simple("Symbol `%s` does not exist", value);
+            if (sym == NULL) {
+                compiler_message(MSG_ERROR, "Symbol `%s` does not exist", value);
+                exit(1);
+            }
 
             return sym->type;
         } break;

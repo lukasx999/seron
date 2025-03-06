@@ -194,8 +194,10 @@ TokenList tokenize(const char *src) {
                     ++i;
                     while (true) {
                         c = src[++i];
-                        if (c == '\0')
-                            throw_error_simple("Unterminated multi-line comment\n");
+                        if (c == '\0') {
+                            compiler_message(MSG_ERROR, "Unterminated multi-line comment");
+                            exit(1);
+                        }
                         if (c == '#' && src[i+1] == '#')
                             break;
 
@@ -245,8 +247,10 @@ TokenList tokenize(const char *src) {
 
                 }
 
-                if (c == '\0')
-                    throw_error_simple("Unterminated string literal");
+                if (c == '\0') {
+                    compiler_message(MSG_ERROR, "Unterminated string literal");
+                    exit(1);
+                }
 
                 size_t len = i - start;
                 tok.length = len;
@@ -265,8 +269,11 @@ TokenList tokenize(const char *src) {
                     while (isalpha(c) || c == '_' || isdigit(c))
                         c = src[++i];
 
-                } else
-                    throw_error_simple("Unknown token: `%c`\n", c);
+                } else {
+                    compiler_message(MSG_ERROR, "Unknown token: `%c`\n", c);
+                    exit(1);
+                }
+
 
                 --i; // move back, as i gets incremented by the for loop
                 size_t len = i - start + 1;
