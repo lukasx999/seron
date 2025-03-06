@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@main
       - name: build
         run: |
-          cd seronc/src
+          cd seronc
           make
           # ./seronc
           # ./seronc ./test/main.srn
