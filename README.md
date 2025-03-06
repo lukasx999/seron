@@ -1,8 +1,6 @@
 # Seron Programming Language
 
-<!--![logo](./seron_logo.svg =100x100)-->
-
-<img src="./seron_logo.svg" width="324" height="324">
+<img src="./seron_logo.svg" width="100" height="100">
 
 ## Features
 
