@@ -15,7 +15,7 @@ Currently, the only supported backend is x86_64 NASM.
 - C11 Toolchain
 - Nothing else!
 
-## Building Compiler
+## Building the Compiler
 
 ```
 $ git clone https://github.com/lukasx999/seron.git

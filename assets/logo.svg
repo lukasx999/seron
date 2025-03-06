@@ -8,7 +8,7 @@
    version="1.1"
    id="svg1"
    inkscape:version="1.4 (e7c3feb100, 2024-10-09)"
-   sodipodi:docname="seron_logo.svg"
+   sodipodi:docname="logo.svg"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -24,7 +24,7 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
      inkscape:zoom="0.45528155"
-     inkscape:cx="472.23526"
+     inkscape:cx="474.4317"
      inkscape:cy="832.45192"
      inkscape:window-width="1290"
      inkscape:window-height="761"
@@ -176,7 +176,7 @@
      style="display:inline">
     <path
        id="rect11"
-       style="display:inline;fill:#333333;stroke-width:0.160568"
+       style="display:inline;fill:#cccccc;stroke-width:0.160568"
        d="M 197.5559,47.267127 V 351.01378 h 12.37785 V 47.267127 Z m -22.31034,0.770507 V 351.78388 h 12.37782 V 48.037634 Z"
        inkscape:label="flag" />
     <path
