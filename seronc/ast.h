@@ -117,11 +117,11 @@ typedef struct {
     AstNode *expr;
 } StmtReturn;
 
-/* Variable Declarations */
+/* Variable Def/Decl */
 
 typedef struct {
     Token op, identifier;
-    AstNode *value;
+    AstNode *value; // NULL if declaration
     Type type;
 } StmtVarDecl;
 

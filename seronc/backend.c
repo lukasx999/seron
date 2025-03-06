@@ -98,6 +98,11 @@ static Symbol ast_literal(ExprLiteral *literal, Hashtable *scope) {
 
 static void ast_vardecl(StmtVarDecl *vardecl, Hashtable *scope) {
     const char *variable = vardecl->identifier.value;
+
+    // BUG: cannot assign address to declared variable
+    if (vardecl->value == NULL)
+        return;
+
     Symbol value = traverse_ast(vardecl->value, scope);
 
     /* populate address in symboltable */

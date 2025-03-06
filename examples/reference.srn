@@ -8,9 +8,9 @@ proc f() {} # Procedure
 
 proc g(a 'int, b 'byte) 'size {} # Parameters and Returntype
 
-proc h(x 'int) 'int; # External Procedure Declaration
+proc h(x 'int) 'int; # Procedure Declaration
 
-proc main() 'int { # Main Procedure
+proc main() 'int { # Entry point
 
     # If Statement
     if 1 { ## Then ## } else { ## Else ## }
@@ -18,8 +18,11 @@ proc main() 'int { # Main Procedure
     # While Loop
     while 1 { ## Body ## }
 
-    # Variable
-    let x 'int = 1;
+    # Variable declaration
+    let x 'int;
+
+    # Variable definition
+    let y 'int = 1;
 
     # Block
     { ## Body ## }

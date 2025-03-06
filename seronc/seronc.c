@@ -71,6 +71,8 @@ static int run_cmd_sync(char *const argv[]) {
     int magic = 55;
     int status;
 
+    // TODO: get exit status
+    // dont try link if assembly fails
     if (!fork()) {
         execvp(argv[0], argv);
         exit(magic); // Failed to exec
@@ -108,6 +110,8 @@ static void link_cc(void) {
     // Link
     int ret = run_cmd_sync((char*[]) {
         "cc",
+        "-no-pie", // TODO: possibly insecure?
+        "-lc",
         obj,
         "-o", (char*) bin,
         NULL
@@ -204,19 +208,17 @@ static void parse_args(int argc, char *argv[]) {
 }
 
 
-// TODO: --run argument
-// TODO: warn for unused symbols
 // TODO: analysis: dont allow statements in global scope
-// TODO: make blocks expressions
 // TODO: synchronizing parser
 // TODO: synchronizing typechecker
 // TODO: change Token in ast to Token*
 // TODO: pointers (addressof)
 // TODO: ABI: spill arguments onto stack
-// TODO: extern keyword
 // TODO: char literal
 // TODO: id into tokenlist instead of pointer for ast
 // TODO: arena allocator for astnodes
+// TODO: var declaration address
+// TODO: precompute stack frame layout
 
 /*
  TODO: semcheck

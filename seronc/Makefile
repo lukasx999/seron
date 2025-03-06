@@ -4,15 +4,15 @@ CFLAGS=-Wall -Wextra -ggdb -std=c11 -pedantic -fsanitize=address,undefined
 BIN=seronc
 
 DEPS=\
-seronc.h        \
+seronc.h      \
 util.h        \
 lexer.h       \
 parser.h      \
 gen.h 	      \
 backend.h     \
 symboltable.h \
+grammar.h	  \
 types.h       \
-grammar.h     \
 ast.h         \
 
 SOURCES=\

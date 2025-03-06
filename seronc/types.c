@@ -244,6 +244,9 @@ static Type ast_assignment(ExprAssignment *assign, Hashtable *scope) {
 }
 
 static void ast_vardecl(StmtVarDecl *vardecl, Hashtable *scope) {
+    if (vardecl->value == NULL)
+        return;
+
     Type type     = traverse_ast(vardecl->value, scope);
     Type expected = vardecl->type;
     compare_types(&type, &expected, vardecl->op);

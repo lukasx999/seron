@@ -243,11 +243,36 @@ void symboltable_print(const Symboltable *st) {
 
 
 
+/*
+Symboltable construction:
+build up st, which is an array of symboltables, that all hold a pointer
+to their parent table
+each block node gets a pointer to the corresponding symboltable
+This makes hierarchical lookup pretty simple
+
+Example:
+AST <-> Symboltable array
+
+proc                         +------+
+- ident: "main"   /------->  |  #1  |
+- block ---------/           +------+
+  - if                          ^
+    - cond: 1                   |
+    - block -----\           +------+
+      - ...       \--------> |  #2  |
+  - while                    +------+
+    - cond: 1                   ^
+    - block ----\               |
+      - ...      \           +------+
+                  \--------> |  #3  |
+                             +------+
+
+*/
 
 typedef struct {
-    Hashtable *scope;
-    Symboltable *st;
-    ProcSignature *sig; /* for adding function parameters to function body. NULL if not used */
+    Hashtable     *scope; // current parent symboltable
+    Symboltable   *st;    // array of all symboltables
+    ProcSignature *sig;   // for adding function parameters to function body. NULL if not used
 } TraversalContext;
 
 static void traverse_ast(AstNode *root, TraversalContext *ctx);
@@ -332,13 +357,10 @@ static void ast_vardecl(StmtVarDecl *vardecl, TraversalContext *ctx) {
         exit(1);
     }
 
-    traverse_ast(vardecl->value, ctx);
+    if (vardecl->value != NULL)
+        traverse_ast(vardecl->value, ctx);
 }
 
-/*
- * `parent` is the symboltable of the current scope
- * `st` is an array of all symboltables
- */
 static void traverse_ast(AstNode *root, TraversalContext *ctx) {
     assert(root != NULL);
 
@@ -354,6 +376,11 @@ static void traverse_ast(AstNode *root, TraversalContext *ctx) {
         case ASTNODE_VARDECL:
             ast_vardecl(&root->stmt_vardecl, ctx);
             break;
+
+        /*
+        All Astnodes with blocks must be traversed here, so that
+        block->symboltable is initialized, and not NULL
+        */
 
         case ASTNODE_WHILE: {
             StmtWhile *while_ = &root->stmt_while;
@@ -385,16 +412,16 @@ Symboltable symboltable_construct(AstNode *root, size_t table_size) {
     int block_count = 0;
     parser_traverse_ast(root, scope_count_callback, true, &block_count);
 
-    Symboltable symboltable = { 0 };
-    symboltable_init(&symboltable, block_count, table_size);
+    Symboltable st = { 0 };
+    symboltable_init(&st, block_count, table_size);
 
     TraversalContext ctx = {
         .scope = NULL,
-        .st    = &symboltable,
+        .st    = &st,
         .sig   = NULL,
     };
 
     traverse_ast(root, &ctx);
 
-    return symboltable;
+    return st;
 }

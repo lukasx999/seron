@@ -13,6 +13,22 @@
 
 
 
+TypeKind rule_util_type(Parser *p) {
+    // <type> ::= "'" TYPE
+
+    parser_expect_token(p, TOK_TICK, "type annotation");
+    parser_advance(p);
+
+    Token *type_tok = parser_get_current_token(p);
+    TypeKind type = typekind_from_tokenkind(type_tok->kind);
+
+    if (type == TYPE_INVALID)
+        throw_error(*type_tok, "Unknown type `%s`", type_tok->value);
+
+    parser_advance(p);
+    return type;
+}
+
 AstNodeList rule_util_arglist(Parser *p) {
     // <arglist> ::= "(" ( <expr> ("," <expr>)* )? ")"
 
@@ -39,20 +55,49 @@ AstNodeList rule_util_arglist(Parser *p) {
     return args;
 }
 
-TypeKind rule_util_type(Parser *p) {
-    // <type> ::= "'" TYPE
+/*
+ * the max size of out_params is assumed to be MAX_ARG_COUNT
+ * returns paramlist param count
+ */
+size_t rule_util_paramlist(Parser *p, Param *out_params) {
+    // <paramlist> ::= "(" (IDENTIFIER <type> ("," IDENTIFIER <type>)* )? ")"
 
-    parser_expect_token(p, TOK_TICK, "type annotation");
+    size_t i = 0;
+
+    parser_expect_token(p, TOK_LPAREN, "(");
     parser_advance(p);
 
-    Token *type_tok = parser_get_current_token(p);
-    TypeKind type = typekind_from_tokenkind(type_tok->kind);
+    while (!parser_match_tokenkinds(p, TOK_RPAREN, SENTINEL)) {
 
-    if (type == TYPE_INVALID)
-        throw_error(*type_tok, "Unknown type `%s`", type_tok->value);
+        parser_expect_token(p, TOK_IDENTIFIER, "identifier");
+        Token *tok = parser_get_current_token(p);
+        const char *ident = tok->value;
+        parser_advance(p);
 
+        Type *type = malloc(sizeof(Type));
+        type->kind = rule_util_type(p);
+
+        if (i >= MAX_ARG_COUNT)
+            throw_error(*tok, "Procedures may not have more than %lu arguments", MAX_ARG_COUNT);
+
+        out_params[i++] = (Param) {
+            .ident = ident,
+            .type  = type,
+        };
+
+        if (parser_match_tokenkinds(p, TOK_COMMA, SENTINEL)) {
+            parser_advance(p);
+
+            if (parser_match_tokenkinds(p, TOK_RPAREN, SENTINEL))
+                parser_throw_error(p, "Extraneous `,`");
+        }
+
+    }
+
+    parser_expect_token(p, TOK_RPAREN, ")");
     parser_advance(p);
-    return type;
+
+    return i;
 }
 
 AstNode *rule_primary(Parser *p) {
@@ -203,7 +248,7 @@ AstNode *rule_term(Parser *p) {
 }
 
 AstNode *rule_vardecl(Parser *p) {
-    // <vardecl> ::= "val" <identifier> <type> "=" <expression> ";"
+    // <vardecl> ::= "val" <identifier> <type> ("=" <expression>)? ";"
 
     assert(parser_match_tokenkinds(p, TOK_KW_VARDECL, SENTINEL));
     Token *op = parser_get_current_token(p);
@@ -215,7 +260,17 @@ AstNode *rule_vardecl(Parser *p) {
 
     Type type = { .kind = rule_util_type(p) };
 
-    parser_expect_token(p, TOK_ASSIGN, "=");
+
+    AstNode *value = NULL;
+
+    if (!parser_match_tokenkinds(p, TOK_SEMICOLON, SENTINEL)) {
+        parser_expect_token(p, TOK_ASSIGN, "=");
+        parser_advance(p);
+
+        value = rule_expression(p);
+    }
+
+    parser_expect_token(p, TOK_SEMICOLON, ";");
     parser_advance(p);
 
     AstNode *vardecl      = malloc(sizeof(AstNode));
@@ -224,11 +279,8 @@ AstNode *rule_vardecl(Parser *p) {
         .op         = *op,
         .identifier = *identifier,
         .type       = type,
-        .value      = rule_expression(p),
+        .value      = value,
     };
-
-    parser_expect_token(p, TOK_SEMICOLON, ";");
-    parser_advance(p);
 
     return vardecl;
 }
@@ -302,51 +354,6 @@ AstNode *rule_return(Parser *p) {
     parser_advance(p);
 
     return node;
-}
-
-/*
- * the max size of out_params is assumed to be MAX_ARG_COUNT
- * returns paramlist param count
- */
-size_t rule_util_paramlist(Parser *p, Param *out_params) {
-    // <paramlist> ::= "(" (IDENTIFIER <type> ("," IDENTIFIER <type>)* )? ")"
-
-    size_t i = 0;
-
-    parser_expect_token(p, TOK_LPAREN, "(");
-    parser_advance(p);
-
-    while (!parser_match_tokenkinds(p, TOK_RPAREN, SENTINEL)) {
-
-        parser_expect_token(p, TOK_IDENTIFIER, "identifier");
-        Token *tok = parser_get_current_token(p);
-        const char *ident = tok->value;
-        parser_advance(p);
-
-        Type *type = malloc(sizeof(Type));
-        type->kind = rule_util_type(p);
-
-        if (i >= MAX_ARG_COUNT)
-            throw_error(*tok, "Procedures may not have more than %lu arguments", MAX_ARG_COUNT);
-
-        out_params[i++] = (Param) {
-            .ident = ident,
-            .type  = type,
-        };
-
-        if (parser_match_tokenkinds(p, TOK_COMMA, SENTINEL)) {
-            parser_advance(p);
-
-            if (parser_match_tokenkinds(p, TOK_RPAREN, SENTINEL))
-                parser_throw_error(p, "Extraneous `,`");
-        }
-
-    }
-
-    parser_expect_token(p, TOK_RPAREN, ")");
-    parser_advance(p);
-
-    return i;
 }
 
 AstNode *rule_procedure(Parser *p) {

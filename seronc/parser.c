@@ -141,11 +141,13 @@ void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down, voi
             depth--;
             break;
 
-        case ASTNODE_VARDECL:
+        case ASTNODE_VARDECL: {
             depth++;
-            parser_traverse_ast(root->stmt_vardecl.value, callback, top_down, args);
+            StmtVarDecl *vardecl = &root->stmt_vardecl;
+            if (vardecl->value != NULL)
+                parser_traverse_ast(vardecl->value, callback, top_down, args);
             depth--;
-            break;
+        } break;
 
         case ASTNODE_BINOP: {
             depth++;
