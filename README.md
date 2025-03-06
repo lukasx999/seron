@@ -1,6 +1,6 @@
 # Seron Programming Language
 
-![logo](./seron_logo.svg)
+![logo](./seron_logo.svg =100x100)
 
 ## Features
 
