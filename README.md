@@ -15,7 +15,6 @@ Currently, the only supported backend is x86_64 NASM.
 - C11 Toolchain
 - Nothing else!
 
-<<<<<<< HEAD
 ## Usage Requirements
 
 - NASM *(for assembly)*
