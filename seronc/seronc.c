@@ -66,20 +66,19 @@ static char *read_file(const char *filename) {
     return buf;
 }
 
-// Returns non-zero if process failed to run
 static int run_cmd_sync(char *const argv[]) {
-    int magic = 55;
     int status;
 
-    // TODO: get exit status
-    // dont try link if assembly fails
     if (!fork()) {
         execvp(argv[0], argv);
-        exit(magic); // Failed to exec
+        exit(1); // Failed to exec
     }
 
     wait(&status);
-    return WEXITSTATUS(status) == magic;
+
+    return WIFEXITED(status)
+    ? WEXITSTATUS(status)
+    : 1;
 }
 
 static void assemble(void) {
@@ -97,7 +96,7 @@ static void assemble(void) {
     });
 
     if (ret) {
-        compiler_message(MSG_ERROR, "`nasm` not found in $PATH");
+        compiler_message(MSG_ERROR, "Failed to assemble via `nasm`");
         exit(1);
     }
 
@@ -118,7 +117,7 @@ static void link_cc(void) {
     });
 
     if (ret) {
-        compiler_message(MSG_ERROR, "`cc` not found in $PATH");
+        compiler_message(MSG_ERROR, "Failed to link via `cc`");
         exit(1);
     }
 
