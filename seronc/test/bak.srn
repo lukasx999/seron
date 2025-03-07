@@ -1,0 +1,41 @@
+proc putchar(c 'int) 'int;
+
+proc exit(status 'int) {
+    asm("
+    mov rax, 60
+    mov rdi, {}
+    syscall
+    ", status);
+}
+
+proc put(c 'int) {
+    let buf 'int = c;
+
+    asm("
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, {}
+    mov rdx, 1
+    syscall
+    ", buf);
+}
+
+
+proc add(a 'int, b 'int) 'int {
+    return a + b;
+}
+
+proc main() 'int {
+
+    if 1 {
+        let foo 'int = 65;
+        putchar(foo);
+    }
+
+    #let c 'int = 65;
+    #putchar(c);
+    #
+    #put(add(64, 1));
+
+    return 0;
+}

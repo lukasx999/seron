@@ -18,6 +18,7 @@ typedef struct {
 
 #define MAX_ARG_COUNT 255
 
+// TODO: maybe reuse for structs
 typedef struct {
     Param params[MAX_ARG_COUNT];
     size_t params_count;
@@ -43,7 +44,7 @@ struct Type {
      * such as functions, pointers and user-defined types
      */
     union {
-        ProcSignature type_signature; // used only for procedures
+        ProcSignature type_signature;
         Type *type_pointee;
     };
 };

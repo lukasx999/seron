@@ -14,10 +14,7 @@
 
 
 TypeKind rule_util_type(Parser *p) {
-    // <type> ::= "'" TYPE
-
-    parser_expect_token(p, TOK_TICK, "type annotation");
-    parser_advance(p);
+    // <type> ::= TYPE
 
     Token *type_tok = parser_get_current_token(p);
     TypeKind type = typekind_from_tokenkind(type_tok->kind);
