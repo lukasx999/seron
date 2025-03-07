@@ -23,7 +23,7 @@ size_t typekind_get_size(TypeKind type) {
     }
 }
 
-const char *typekind_get_size_operand(TypeKind type) {
+static const char *typekind_get_size_operand(TypeKind type) {
     switch (type) {
         case TYPE_BYTE: return "byte";  break;
         case TYPE_INT:  return "dword"; break;
@@ -34,7 +34,7 @@ const char *typekind_get_size_operand(TypeKind type) {
     }
 }
 
-const char *typekind_get_register_rax(TypeKind type) {
+static const char *typekind_get_register_rax(TypeKind type) {
     switch (type) {
         case TYPE_BYTE: return "al";  break;
         case TYPE_INT:  return "eax"; break;
@@ -45,7 +45,7 @@ const char *typekind_get_register_rax(TypeKind type) {
     }
 }
 
-const char *typekind_get_register_rdi(TypeKind type) {
+static const char *typekind_get_register_rdi(TypeKind type) {
     switch (type) {
         case TYPE_BYTE: return "dil"; break;
         case TYPE_INT:  return "edi"; break;
@@ -56,7 +56,7 @@ const char *typekind_get_register_rdi(TypeKind type) {
     }
 }
 
-const char *typekind_get_register_rsi(TypeKind type) {
+static const char *typekind_get_register_rsi(TypeKind type) {
     switch (type) {
         case TYPE_BYTE: return "sil"; break;
         case TYPE_INT:  return "esi"; break;
@@ -67,7 +67,7 @@ const char *typekind_get_register_rsi(TypeKind type) {
     }
 }
 
-const char *typekind_get_register_rdx(TypeKind type) {
+static const char *typekind_get_register_rdx(TypeKind type) {
     switch (type) {
         case TYPE_BYTE: return "dl";  break;
         case TYPE_INT:  return "edx"; break;
@@ -78,7 +78,7 @@ const char *typekind_get_register_rdx(TypeKind type) {
     }
 }
 
-const char *typekind_get_register_rcx(TypeKind type) {
+static const char *typekind_get_register_rcx(TypeKind type) {
     switch (type) {
         case TYPE_BYTE: return "cl";  break;
         case TYPE_INT:  return "ecx"; break;
@@ -89,7 +89,7 @@ const char *typekind_get_register_rcx(TypeKind type) {
     }
 }
 
-const char *typekind_get_register_r8(TypeKind type) {
+static const char *typekind_get_register_r8(TypeKind type) {
     switch (type) {
         case TYPE_BYTE: return "r8b"; break;
         case TYPE_INT:  return "r8d"; break;
@@ -100,7 +100,7 @@ const char *typekind_get_register_r8(TypeKind type) {
     }
 }
 
-const char *typekind_get_register_r9(TypeKind type) {
+static const char *typekind_get_register_r9(TypeKind type) {
     switch (type) {
         case TYPE_BYTE: return "r9b"; break;
         case TYPE_INT:  return "r9d"; break;
@@ -332,7 +332,7 @@ void gen_procedure_start(
     CodeGenerator       *gen,
     const char          *identifier,
     const ProcSignature *sig,
-    const Hashtable     *scope
+    const Symboltable     *scope
 ) {
     gen->rbp_offset = 0;
 
@@ -366,7 +366,7 @@ void gen_procedure_start(
         );
 
         // fill in address of params
-        Symbol *sym = symboltable_lookup(scope, param->ident);
+        Symbol *sym = symboltable_list_lookup(scope, param->ident);
         assert(sym != NULL);
         sym->stack_addr = gen->rbp_offset;
     }

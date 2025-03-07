@@ -20,13 +20,16 @@ typedef struct {
 } CodeGenerator;
 
 
+size_t typekind_get_size(TypeKind type);
+
+
 int  gen_init(CodeGenerator *gen, const char *filename_asm, bool print_comments);
 void gen_destroy(CodeGenerator *c);
 void gen_prelude(CodeGenerator *c);
 
 Symbol  gen_binop            (CodeGenerator *gen, Symbol a, Symbol b, BinOpKind kind);
 Symbol  gen_store_literal    (CodeGenerator *gen, int64_t value, TypeKind type);
-void    gen_procedure_start  (CodeGenerator *gen, const char *identifier, const ProcSignature *sig, const Hashtable *scope);
+void    gen_procedure_start  (CodeGenerator *gen, const char *identifier, const ProcSignature *sig, const Symboltable *scope);
 void    gen_procedure_end    (CodeGenerator *c);
 void    gen_procedure_extern (CodeGenerator *gen, const char *identifier);
 void    gen_inlineasm        (CodeGenerator *c, const char *src, const Symbol *symbols, size_t symbols_len);

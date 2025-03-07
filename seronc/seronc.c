@@ -18,6 +18,7 @@
 #include "backend.h"
 #include "symboltable.h"
 #include "seronc.h"
+#include "layout.h"
 
 
 
@@ -257,13 +258,15 @@ int main(int argc, char *argv[]) {
 
 
     compiler_message(MSG_INFO, "Constructing Symboltable");
-    Symboltable symboltable = symboltable_construct(node_root, 5);
+    SymboltableList symboltable = symboltable_list_construct(node_root, 5);
     if (compiler_context.opts.dump_symboltable)
-        symboltable_print(&symboltable);
+        symboltable_list_print(&symboltable);
 
 
     compiler_message(MSG_INFO, "Typechecking");
     check_types(node_root);
+
+    // set_stack_layout(node_root);
 
     compiler_message(MSG_INFO, "Codegeneration");
     generate_code(node_root);
@@ -280,7 +283,7 @@ int main(int argc, char *argv[]) {
 
     compiler_message(MSG_INFO, "Compilation finished");
 
-    symboltable_destroy(&symboltable);
+    symboltable_list_destroy(&symboltable);
     parser_free_ast(node_root);
     tokenlist_destroy(&tokens);
 

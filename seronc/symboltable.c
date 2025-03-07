@@ -35,10 +35,11 @@ static HashtableEntry *new_hashtable_entry(const char *key, Symbol value) {
     return entry;
 }
 
-void hashtable_init(Hashtable *ht, size_t size) {
-    *ht = (Hashtable) {
+void symboltable_init(Symboltable *ht, size_t size) {
+    *ht = (Symboltable) {
         .size     = size,
         .buckets  = NULL,
+        .parent   = NULL,
     };
 
     ht->buckets = malloc(ht->size * sizeof(HashtableEntry*));
@@ -47,7 +48,7 @@ void hashtable_init(Hashtable *ht, size_t size) {
         ht->buckets[i] = NULL;
 }
 
-void hashtable_destroy(Hashtable *ht) {
+void symboltable_destroy(Symboltable *ht) {
     for (size_t i=0; i < ht->size; ++i) {
         HashtableEntry *entry = ht->buckets[i];
 
@@ -63,7 +64,7 @@ void hashtable_destroy(Hashtable *ht) {
     ht->buckets = NULL;
 }
 
-int hashtable_insert(Hashtable *ht, const char *key, Symbol value) {
+int symboltable_insert(Symboltable *ht, const char *key, Symbol value) {
     assert(ht != NULL);
 
     size_t index = hash(ht->size, key);
@@ -89,7 +90,7 @@ int hashtable_insert(Hashtable *ht, const char *key, Symbol value) {
     assert(!"unreachable");
 }
 
-Symbol *hashtable_get(const Hashtable *ht, const char *key) {
+Symbol *symboltable_get(const Symboltable *ht, const char *key) {
     size_t index = hash(ht->size, key);
     HashtableEntry *current = ht->buckets[index];
 
@@ -107,12 +108,12 @@ Symbol *hashtable_get(const Hashtable *ht, const char *key) {
 
 }
 
-Symbol *symboltable_lookup(const Hashtable *ht, const char *key) {
+Symbol *symboltable_list_lookup(const Symboltable *ht, const char *key) {
     assert(ht != NULL);
-    const Hashtable *current = ht;
+    const Symboltable *current = ht;
 
     while (current != NULL) {
-        Symbol *value = hashtable_get(current, key);
+        Symbol *value = symboltable_get(current, key);
 
         if (value != NULL)
             return value;
@@ -123,7 +124,7 @@ Symbol *symboltable_lookup(const Hashtable *ht, const char *key) {
     return NULL;
 }
 
-void hashtable_print(const Hashtable *ht) {
+void symboltable_print(const Symboltable *ht) {
     for (size_t i=0; i < ht->size; ++i) {
         HashtableEntry *entry = ht->buckets[i];
 
@@ -185,44 +186,39 @@ void hashtable_print(const Hashtable *ht) {
 
 
 /* Symboltable */
-void symboltable_init(Symboltable *s, size_t capacity, size_t table_size) {
-    *s = (Symboltable) {
+void symboltable_list_init(SymboltableList *s, size_t capacity, size_t table_size) {
+    *s = (SymboltableList) {
         .capacity   = capacity,
         .size       = 0,
         .items      = NULL,
     };
 
-    s->items = malloc(s->capacity * sizeof(Hashtable));
+    s->items = malloc(s->capacity * sizeof(Symboltable));
 
     for (size_t i=0; i < s->capacity; ++i)
-        hashtable_init(&s->items[i], table_size);
+        symboltable_init(&s->items[i], table_size);
 }
 
-void symboltable_destroy(Symboltable *s) {
+void symboltable_list_destroy(SymboltableList *s) {
     for (size_t i=0; i < s->capacity; ++i)
-        hashtable_destroy(&s->items[i]);
+        symboltable_destroy(&s->items[i]);
 
     free(s->items);
     s->items = NULL;
 }
 
-void symboltable_append(Symboltable *s, Hashtable *parent) {
+Symboltable *symboltable_list_append(SymboltableList *s, Symboltable *parent) {
     assert(s->size < s->capacity);
     s->items[s->size++].parent = parent;
+    return &s->items[s->size-1];
 }
 
-Hashtable *symboltable_get_last(const Symboltable *s) {
-    return s->size == 0
-    ? NULL
-    : &s->items[s->size-1];
-}
-
-void symboltable_print(const Symboltable *st) {
+void symboltable_list_print(const SymboltableList *st) {
     printf("\n");
     const char *divider = "-----------------------";
 
     for (size_t i=0; i < st->size; ++i) {
-        Hashtable *ht = &st->items[i];
+        Symboltable *ht = &st->items[i];
         ptrdiff_t parent = ht->parent - st->items;
 
         printf("%s%s%s ", COLOR_GRAY, divider, COLOR_END);
@@ -232,7 +228,7 @@ void symboltable_print(const Symboltable *st) {
         else
             printf(" -> %ld\n", parent);
 
-        hashtable_print(ht);
+        symboltable_print(ht);
     }
 
     printf("%s%s%s\n\n", COLOR_GRAY, divider, COLOR_END);
@@ -256,12 +252,14 @@ AST <-> Symboltable array
 proc                         +------+
 - ident: "main"   /------->  |  #1  |
 - block ---------/           +------+
-  - if                          ^
-    - cond: 1                   |
-    - block -----\           +------+
-      - ...       \--------> |  #2  |
-  - while                    +------+
-    - cond: 1                   ^
+                               ^  ^
+  - if                         |  |------\
+    - cond: 1                  |         |
+    - block -----\           +------+    |
+      - ...       \--------> |  #2  |    |
+                             +------+    |
+  - while                                |
+    - cond: 1                    /-------|
     - block ----\               |
       - ...      \           +------+
                   \--------> |  #3  |
@@ -270,9 +268,9 @@ proc                         +------+
 */
 
 typedef struct {
-    Hashtable     *scope; // current parent symboltable
-    Symboltable   *st;    // array of all symboltables
-    ProcSignature *sig;   // for adding function parameters to function body. NULL if not used
+    Symboltable     *scope; // current parent symboltable
+    SymboltableList *st;    // array of all symboltables
+    ProcSignature   *sig;   // for adding function parameters to function body. NULL if not used
 } TraversalContext;
 
 static void traverse_ast(AstNode *root, TraversalContext *ctx);
@@ -282,11 +280,8 @@ static void traverse_ast(AstNode *root, TraversalContext *ctx);
 static void ast_block(Block *block, TraversalContext *ctx) {
     AstNodeList list = block->stmts;
 
-    symboltable_append(ctx->st, ctx->scope);
-    Hashtable *last = symboltable_get_last(ctx->st);
-    assert(last != NULL);
-    block->symboltable = last;
-
+    block->symboltable = symboltable_list_append(ctx->st, ctx->scope);
+    assert(block->symboltable != NULL);
 
     /* Insert parameters as variables in the scope of the procedure */
     ProcSignature *sig = ctx->sig;
@@ -302,7 +297,7 @@ static void ast_block(Block *block, TraversalContext *ctx) {
                 .type  = *param->type,
             };
 
-            int ret = hashtable_insert(block->symboltable, sym.label, sym);
+            int ret = symboltable_insert(block->symboltable, sym.label, sym);
             assert(ret == 0);
         }
 
@@ -332,7 +327,7 @@ static void ast_procedure(StmtProcedure *proc, TraversalContext *ctx) {
         .label = ident,
     };
 
-    int ret = hashtable_insert(ctx->scope, ident, sym);
+    int ret = symboltable_insert(ctx->scope, ident, sym);
     if (ret == -1) {
         compiler_message(MSG_ERROR, "Procedure `%s` already exists", ident);
         exit(1);
@@ -351,7 +346,7 @@ static void ast_vardecl(StmtVarDecl *vardecl, TraversalContext *ctx) {
         .type = vardecl->type,
     };
 
-    int ret = hashtable_insert(ctx->scope, ident, sym);
+    int ret = symboltable_insert(ctx->scope, ident, sym);
     if (ret == -1) {
         compiler_message(MSG_ERROR, "Variable `%s` already exists", ident);
         exit(1);
@@ -408,12 +403,12 @@ static void scope_count_callback(AstNode *node, int _depth, void *args) {
         ++*count;
 }
 
-Symboltable symboltable_construct(AstNode *root, size_t table_size) {
+SymboltableList symboltable_list_construct(AstNode *root, size_t table_size) {
     int block_count = 0;
     parser_traverse_ast(root, scope_count_callback, true, &block_count);
 
-    Symboltable st = { 0 };
-    symboltable_init(&st, block_count, table_size);
+    SymboltableList st = { 0 };
+    symboltable_list_init(&st, block_count, table_size);
 
     TraversalContext ctx = {
         .scope = NULL,

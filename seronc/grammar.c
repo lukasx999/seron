@@ -115,7 +115,7 @@ AstNode *rule_primary(Parser *p) {
         if (parser_match_tokenkinds(p, TOK_RPAREN, SENTINEL))
             parser_throw_error(p, "Don't write functional code!");
 
-        astnode->kind          = ASTNODE_GROUPING;
+        astnode->kind = ASTNODE_GROUPING;
         astnode->expr_grouping = (ExprGrouping) {
             .expr = rule_expression(p)
         };

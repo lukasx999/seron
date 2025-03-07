@@ -51,14 +51,14 @@ static void compare_types(const Type *type, const Type *expected, Token tok) {
 
 
 
-static Type traverse_ast(AstNode *root, Hashtable *scope);
+static Type traverse_ast(AstNode *root, Symboltable *scope);
 
 
-static Type ast_assignment(ExprAssignment *assign, Hashtable *scope) {
+static Type ast_assignment(ExprAssignment *assign, Symboltable *scope) {
     Type type = traverse_ast(assign->value, scope);
 
     const char *ident = assign->identifier.value;
-    Symbol *sym = symboltable_lookup(scope, ident);
+    Symbol *sym = symboltable_list_lookup(scope, ident);
 
     if (sym == NULL)
         throw_error(assign->identifier, "Symbol `%s` does not exist", ident);
@@ -68,7 +68,7 @@ static Type ast_assignment(ExprAssignment *assign, Hashtable *scope) {
     return type;
 }
 
-static void ast_vardecl(StmtVarDecl *vardecl, Hashtable *scope) {
+static void ast_vardecl(StmtVarDecl *vardecl, Symboltable *scope) {
     if (vardecl->value == NULL)
         return;
 
@@ -77,7 +77,7 @@ static void ast_vardecl(StmtVarDecl *vardecl, Hashtable *scope) {
     compare_types(&type, &expected, vardecl->op);
 }
 
-static Type ast_call(ExprCall *call, Hashtable *scope) {
+static Type ast_call(ExprCall *call, Symboltable *scope) {
 
     if (call->builtin != BUILTIN_NONE) {
         AstNodeList list = call->args;
@@ -109,13 +109,13 @@ static Type ast_call(ExprCall *call, Hashtable *scope) {
     return *sig->returntype;
 }
 
-static Type ast_literal(ExprLiteral *literal, Hashtable *scope) {
+static Type ast_literal(ExprLiteral *literal, Symboltable *scope) {
 
     switch (literal->op.kind) {
 
         case TOK_IDENTIFIER: {
             const char *value = literal->op.value;
-            Symbol *sym = symboltable_lookup(scope, value);
+            Symbol *sym = symboltable_list_lookup(scope, value);
 
             if (sym == NULL) {
                 compiler_message(MSG_ERROR, "Symbol `%s` does not exist", value);
@@ -139,14 +139,14 @@ static Type ast_literal(ExprLiteral *literal, Hashtable *scope) {
     }
 }
 
-static Type ast_binop(ExprBinOp *binop, Hashtable *scope) {
+static Type ast_binop(ExprBinOp *binop, Symboltable *scope) {
     Type lhs = traverse_ast(binop->lhs, scope);
     Type rhs = traverse_ast(binop->rhs, scope);
     compare_types(&lhs, &rhs, binop->op);
     return lhs;
 }
 
-static Type traverse_ast(AstNode *root, Hashtable *scope) {
+static Type traverse_ast(AstNode *root, Symboltable *scope) {
     assert(root != NULL);
 
     switch (root->kind) {

@@ -8,7 +8,7 @@
 #include "lexer.h"
 #include "types.h"
 
-typedef struct Hashtable Hashtable;
+typedef struct Symboltable Symboltable;
 
 
 typedef struct AstNode AstNode;
@@ -87,7 +87,7 @@ typedef struct {
 
 typedef struct {
     AstNodeList stmts;
-    Hashtable *symboltable;
+    Symboltable *symboltable;
 } Block;
 
 

@@ -18,10 +18,10 @@
 CodeGenerator codegen = { 0 };
 
 
-static Symbol traverse_ast(AstNode *node, Hashtable *scope);
+static Symbol traverse_ast(AstNode *node, Symboltable *scope);
 
 
-static void builtin_inlineasm(ExprCall *call, Hashtable *scope) {
+static void builtin_inlineasm(ExprCall *call, Symboltable *scope) {
 
     AstNodeList list = call->args;
     if (list.size == 0)
@@ -68,13 +68,13 @@ static void builtin_inlineasm(ExprCall *call, Hashtable *scope) {
 
 }
 
-static Symbol ast_binop(ExprBinOp *binop, Hashtable *scope) {
+static Symbol ast_binop(ExprBinOp *binop, Symboltable *scope) {
     Symbol sym_lhs  = traverse_ast(binop->lhs, scope);
     Symbol sym_rhs  = traverse_ast(binop->rhs, scope);
     return gen_binop(&codegen, sym_lhs, sym_rhs, binop->kind);
 }
 
-static Symbol ast_literal(ExprLiteral *literal, Hashtable *scope) {
+static Symbol ast_literal(ExprLiteral *literal, Symboltable *scope) {
     switch (literal->op.kind) {
 
         case TOK_NUMBER: {
@@ -85,7 +85,7 @@ static Symbol ast_literal(ExprLiteral *literal, Hashtable *scope) {
 
         case TOK_IDENTIFIER: {
             const char *variable = literal->op.value;
-            Symbol *sym = symboltable_lookup(scope, variable);
+            Symbol *sym = symboltable_list_lookup(scope, variable);
             assert(sym != NULL);
             return *sym;
         } break;
@@ -96,7 +96,7 @@ static Symbol ast_literal(ExprLiteral *literal, Hashtable *scope) {
     }
 }
 
-static void ast_vardecl(StmtVarDecl *vardecl, Hashtable *scope) {
+static void ast_vardecl(StmtVarDecl *vardecl, Symboltable *scope) {
     const char *variable = vardecl->identifier.value;
 
     // BUG: cannot assign address to declared variable
@@ -106,12 +106,12 @@ static void ast_vardecl(StmtVarDecl *vardecl, Hashtable *scope) {
     Symbol value = traverse_ast(vardecl->value, scope);
 
     /* populate address in symboltable */
-    Symbol *sym = hashtable_get(scope, variable);
+    Symbol *sym = symboltable_get(scope, variable);
     assert(sym != NULL);
     sym->stack_addr = value.stack_addr;
 }
 
-static void ast_procedure(StmtProcedure *proc, Hashtable *scope) {
+static void ast_procedure(StmtProcedure *proc, Symboltable *scope) {
     const char *ident = proc->identifier.value;
     ProcSignature *sig = &proc->type.type_signature;
 
@@ -121,7 +121,7 @@ static void ast_procedure(StmtProcedure *proc, Hashtable *scope) {
     }
 
     assert(proc->body->kind == ASTNODE_BLOCK);
-    Hashtable *body = proc->body->block.symboltable;
+    Symboltable *body = proc->body->block.symboltable;
 
     gen_procedure_start(&codegen, ident, sig, body);
     traverse_ast(proc->body, scope);
@@ -136,7 +136,7 @@ static void ast_block(Block *block) {
         traverse_ast(list.items[i], block->symboltable);
 }
 
-static Symbol ast_call(ExprCall *call, Hashtable *scope) {
+static Symbol ast_call(ExprCall *call, Symboltable *scope) {
 
     if (call->builtin == BUILTIN_ASM) {
         builtin_inlineasm(call, scope);
@@ -161,7 +161,7 @@ static Symbol ast_call(ExprCall *call, Hashtable *scope) {
     return gen_call(&codegen, callee, symbols, list.size);
 }
 
-static void ast_if(StmtIf *if_, Hashtable *scope) {
+static void ast_if(StmtIf *if_, Symboltable *scope) {
     Symbol cond = traverse_ast(if_->condition, scope);
 
     gen_ctx if_ctx = gen_if_then(&codegen, cond);
@@ -174,7 +174,7 @@ static void ast_if(StmtIf *if_, Hashtable *scope) {
     gen_if_end(&codegen, if_ctx);
 }
 
-static void ast_while(StmtWhile *while_, Hashtable *scope) {
+static void ast_while(StmtWhile *while_, Symboltable *scope) {
     Symbol cond = traverse_ast(while_->condition, scope);
 
     gen_ctx while_ctx = gen_while_start(&codegen);
@@ -182,16 +182,16 @@ static void ast_while(StmtWhile *while_, Hashtable *scope) {
     gen_while_end(&codegen, cond, while_ctx);
 }
 
-static void ast_return(StmtReturn *return_, Hashtable *scope) {
+static void ast_return(StmtReturn *return_, Symboltable *scope) {
     Symbol expr = traverse_ast(return_->expr, scope);
     gen_return(&codegen, expr);
 }
 
-static Symbol ast_assign(ExprAssignment *assign, Hashtable *scope) {
+static Symbol ast_assign(ExprAssignment *assign, Symboltable *scope) {
     const char *ident = assign->identifier.value;
     Symbol value = traverse_ast(assign->value, scope);
 
-    Symbol *assignee = symboltable_lookup(scope, ident);
+    Symbol *assignee = symboltable_list_lookup(scope, ident);
     assert(assignee != NULL);
     gen_assign(&codegen, *assignee, value);
 
@@ -199,7 +199,7 @@ static Symbol ast_assign(ExprAssignment *assign, Hashtable *scope) {
 }
 
 /* returns the location of the evaluated expression in memory */
-static Symbol traverse_ast(AstNode *node, Hashtable *scope) {
+static Symbol traverse_ast(AstNode *node, Symboltable *scope) {
     assert(node != NULL);
 
     switch (node->kind) {

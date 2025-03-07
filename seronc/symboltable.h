@@ -35,37 +35,38 @@ typedef struct HashtableEntry {
     Symbol value;
 } HashtableEntry;
 
-typedef struct Hashtable {
+// separate-chaining hashtable
+typedef struct Symboltable {
     size_t size;
     HashtableEntry **buckets;
-    struct Hashtable *parent;
-} Hashtable;
+    struct Symboltable *parent;
+} Symboltable;
 
-void hashtable_init(Hashtable *ht, size_t size);
-void hashtable_destroy(Hashtable *ht);
+void    symboltable_init    (Symboltable *ht, size_t size);
+void    symboltable_destroy (Symboltable *ht);
 /* returns -1 if key already exists, else 0 */
-int  hashtable_insert(Hashtable *ht, const char *key, Symbol value);
+int     symboltable_insert  (Symboltable *ht, const char *key, Symbol value);
 /* does a lookup in the current hashtable */
 /* returns NULL if the key does not exist */
-Symbol *hashtable_get(const Hashtable *ht, const char *key);
-void hashtable_print(const Hashtable *ht);
+Symbol *symboltable_get     (const Symboltable *ht, const char *key);
+void    symboltable_print   (const Symboltable *ht);
 
 
 
 typedef struct {
     size_t size, capacity;
-    Hashtable *items;
-} Symboltable;
+    Symboltable *items;
+} SymboltableList;
 
-void symboltable_init(Symboltable *s, size_t capacity, size_t table_size);
-void symboltable_destroy(Symboltable *s);
-void symboltable_append(Symboltable *s, Hashtable *parent);
-Hashtable *symboltable_get_last(const Symboltable *s);
+void            symboltable_list_init      (SymboltableList *s, size_t capacity, size_t table_size);
+void            symboltable_list_destroy   (SymboltableList *s);
+// Returns the just appended table
+Symboltable    *symboltable_list_append    (SymboltableList *s, Symboltable *parent);
 /* does a lookup in the current and parent hashtables */
-Symbol *symboltable_lookup(const Hashtable *ht, const char *key);
+Symbol         *symboltable_list_lookup    (const Symboltable *ht, const char *key);
 /* addresses are filled in at code generation */
-Symboltable symboltable_construct(AstNode *root, size_t table_size);
-void symboltable_print(const Symboltable *st);
+SymboltableList symboltable_list_construct (AstNode *root, size_t table_size);
+void            symboltable_list_print     (const SymboltableList *st);
 
 
 
