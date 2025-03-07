@@ -319,6 +319,7 @@ static void ast_procedure(StmtProcedure *proc, TraversalContext *ctx) {
      * we have to do it like that, because the symboltable of the body of
      * this procedure is constructed AFTER this function call
      */
+    // TODO: do this in another pass
     ctx->sig = &proc->type.type_signature;
 
     Symbol sym = {
