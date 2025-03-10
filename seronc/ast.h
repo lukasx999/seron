@@ -7,6 +7,7 @@
 
 #include "lexer.h"
 #include "types.h"
+#include "arena.h"
 
 typedef struct Symboltable Symboltable;
 
@@ -14,13 +15,13 @@ typedef struct Symboltable Symboltable;
 typedef struct AstNode AstNode;
 
 typedef struct {
-    size_t capacity, size;
+    Arena *arena;
+    size_t size, cap;
     AstNode **items;
 } AstNodeList;
 
-AstNodeList astnodelist_new(void);
-void astnodelist_append(AstNodeList *list, AstNode *node);
-void astnodelist_destroy(AstNodeList *list);
+void astnodelist_init(AstNodeList *l, Arena *arena);
+void astnodelist_append(AstNodeList *l, AstNode *node);
 
 
 

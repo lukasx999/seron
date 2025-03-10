@@ -7,30 +7,30 @@
 
 #include "ast.h"
 #include "lexer.h"
+#include "arena.h"
 
 
 
-AstNodeList astnodelist_new(void) {
-    AstNodeList list = {
-        .capacity = 5,
-        .size     = 0,
-        .items    = NULL,
+void astnodelist_init(AstNodeList *l, Arena *arena) {
+     *l = (AstNodeList) {
+        .cap   = 5,
+        .size  = 0,
+        .items = NULL,
+        .arena = arena,
     };
-    list.items = malloc(list.capacity * sizeof(AstNode*));
-    return list;
+
+    l->items = arena_alloc(arena, l->cap * sizeof(AstNode*));
 }
 
-void astnodelist_append(AstNodeList *list, AstNode *node) {
-    if (list->size == list->capacity) {
-        list->capacity *= 2;
-        list->items = realloc(list->items, list->capacity * sizeof(AstNode*));
+void astnodelist_append(AstNodeList *l, AstNode *node) {
+
+    if (l->size == l->cap) {
+        l->cap *= 2;
+        // BUG: implement realloc() for arena allocator
+        l->items = realloc(l->items, l->cap * sizeof(AstNode*));
     }
-    list->items[list->size++] = node;
-}
 
-void astnodelist_destroy(AstNodeList *list) {
-    free(list->items);
-    list->items = NULL;
+    l->items[l->size++] = node;
 }
 
 BinOpKind binopkind_from_tokenkind(TokenKind kind) {

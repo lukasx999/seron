@@ -11,6 +11,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "grammar.h"
+#include "arena.h"
 
 
 
@@ -19,6 +20,11 @@ Token *parser_get_current_token(const Parser *p) {
     Token *tok = tokenlist_get(p->tokens, p->current);
     assert(tok != NULL);
     return tok;
+}
+
+// Convenience function that allows us to change the allocator easily
+void *parser_alloc(Parser *p, size_t size) {
+    return arena_alloc(p->arena, size);
 }
 
 void parser_advance(Parser *p) {
@@ -205,25 +211,25 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
             );
         } break;
 
-        case ASTNODE_GROUPING: {
+        case ASTNODE_GROUPING:
             print_ast_value("grouping", COLOR_BLUE, NULL, NULL);
-        } break;
+            break;
 
-        case ASTNODE_ASSIGN: {
+        case ASTNODE_ASSIGN:
             print_ast_value("assign", COLOR_RED, root->expr_assign.identifier.value, NULL);
-        } break;
+            break;
 
-        case ASTNODE_IF: {
+        case ASTNODE_IF:
             print_ast_value("if", COLOR_RED, NULL, NULL);
-        } break;
+            break;
 
-        case ASTNODE_WHILE: {
+        case ASTNODE_WHILE:
             print_ast_value("while", COLOR_RED, NULL, NULL);
-        } break;
+            break;
 
-        case ASTNODE_RETURN: {
+        case ASTNODE_RETURN:
             print_ast_value("return", COLOR_RED, NULL, NULL);
-        } break;
+            break;
 
         case ASTNODE_BINOP: {
             ExprBinOp *binop = &root->expr_binop;
@@ -278,59 +284,12 @@ void parser_print_ast(AstNode *root, int spacing) {
     printf("\n");
 }
 
-static void free_signature(ProcSignature *sig) {
-    free(sig->returntype);
-    for (size_t i=0; i < sig->params_count; ++i)
-        free(sig->params[i].type);
-}
-
-static void parser_free_ast_callback(AstNode *node, int _depth, void *_args) {
-    assert(node != NULL);
-    (void) _depth;
-    (void) _args;
-
-    switch (node->kind) {
-        case ASTNODE_BLOCK:
-            astnodelist_destroy(&node->block.stmts);
-            break;
-
-        case ASTNODE_CALL:
-            astnodelist_destroy(&node->expr_call.args);
-            break;
-
-        case ASTNODE_PROCEDURE: {
-            StmtProcedure *proc = &node->stmt_procedure;
-            assert(proc->type.kind == TYPE_FUNCTION);
-            free_signature(&proc->type.type_signature);
-        } break;
-
-        case ASTNODE_GROUPING:
-        case ASTNODE_ASSIGN:
-        case ASTNODE_LITERAL:
-        case ASTNODE_VARDECL:
-        case ASTNODE_BINOP:
-        case ASTNODE_UNARYOP:
-        case ASTNODE_IF:
-        case ASTNODE_WHILE:
-        case ASTNODE_RETURN:
-            break;
-
-        default:
-            assert(!"Unexpected Node Kind");
-            break;
-    }
-    free(node);
-}
-
-void parser_free_ast(AstNode *root) {
-    parser_traverse_ast(root, parser_free_ast_callback, false, NULL);
-}
-
-AstNode *parser_parse(const TokenList *tokens) {
+AstNode *parser_parse(const TokenList *tokens, Arena *arena) {
     Parser parser = {
         .current  = 0,
         .tokens   = tokens,
+        .arena    = arena,
     };
-    AstNode *root = rule_program(&parser);
-    return root;
+
+    return rule_program(&parser);
 }

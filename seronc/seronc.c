@@ -19,6 +19,7 @@
 #include "symboltable.h"
 #include "seronc.h"
 #include "layout.h"
+#include "arena.h"
 
 
 
@@ -219,6 +220,7 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: arena allocator for astnodes
 // TODO: var declaration address
 // TODO: precompute stack frame layout + reserve stack space in bulk in prelude
+// TODO: realloc() implementation for arena allocator
 
 /*
  TODO: semcheck
@@ -245,20 +247,26 @@ int main(int argc, char *argv[]) {
     compiler_message(MSG_INFO, "Lexical Analysis");
 
     TokenList tokens = tokenize(file);
+
     if (compiler_context.opts.dump_tokens)
         tokenlist_print(&tokens);
 
     free(file);
 
 
+    Arena parser_arena = { 0 };
+    arena_init(&parser_arena);
+
     compiler_message(MSG_INFO, "Parsing");
-    AstNode *node_root = parser_parse(&tokens);
+    AstNode *node_root = parser_parse(&tokens, &parser_arena);
+
     if (compiler_context.opts.dump_ast)
         parser_print_ast(node_root, 2);
 
 
     compiler_message(MSG_INFO, "Constructing Symboltable");
     SymboltableList symboltable = symboltable_list_construct(node_root, 5);
+
     if (compiler_context.opts.dump_symboltable)
         symboltable_list_print(&symboltable);
 
@@ -284,7 +292,7 @@ int main(int argc, char *argv[]) {
     compiler_message(MSG_INFO, "Compilation finished");
 
     symboltable_list_destroy(&symboltable);
-    parser_free_ast(node_root);
+    arena_free(&parser_arena);
     tokenlist_destroy(&tokens);
 
     return EXIT_SUCCESS;

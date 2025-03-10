@@ -5,5 +5,9 @@ proc main() int {
     let x int = 65;
     putchar(x);
 
+    1;
+    2;
+    3;
+
     return 0;
 }
