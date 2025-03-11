@@ -26,6 +26,7 @@ Currently, the only supported backend is x86_64 NASM.
 $ git clone https://github.com/lukasx999/seron.git
 $ cd seronc/src
 $ make
+$ ./seronc
 ```
 
 ## Building `compile_commands.json` for clangd
