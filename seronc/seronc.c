@@ -222,6 +222,10 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: char literal
 // TODO: id into tokenlist instead of pointer for ast
 // TODO: precompute stack frame layout + reserve stack space in bulk in prelude
+// TODO: replace ast traversals with parser_query_ast
+// TODO: parser_map_ast() designated initializer array: map from enum to function pointer
+// TODO: merge parser and grammar
+// TODO: rework errors/warnings with tokens
 
 /*
  TODO: semcheck
@@ -232,7 +236,6 @@ static void parse_args(int argc, char *argv[]) {
 
 
 int main(int argc, char *argv[]) {
-
     parse_args(argc, argv);
 
     // TODO: show time

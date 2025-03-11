@@ -34,12 +34,20 @@ bool     parser_is_at_end         (const Parser *p);
 // Allocate an AST into the given arena
 AstNode *parser_parse             (const TokenList *tokens, Arena *arena);
 
-// Call the given callback function for every node in the AST
 typedef void (*AstCallback) (AstNode *node, int depth, void *args);
+
+// Call the given callback function for every node in the AST
 void     parser_traverse_ast      (AstNode *root, AstCallback callback, bool top_down, void *args);
 
 // Call the given callback function for every node of kind `kind` in the AST
 void     parser_query_ast         (AstNode *root, AstCallback callback, AstNodeKind kind, void *args);
+
+// TODO:
+// Given a map of AstNodeKind enums to function pointers, call each function
+// for the corresponding AstNode.
+// map: array of ast callbacks, where the index is the AstNodeKind enum as a
+// designated initializer. Unused indexes should hold NULL as a value.
+/*void     parser_map_ast           (AstNode *root, AstCallback callback, AstCallback *table, size_t table_len, void *args);*/
 
 void     parser_print_ast         (AstNode  *root, int spacing);
 

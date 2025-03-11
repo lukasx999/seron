@@ -16,6 +16,7 @@ typedef enum {
     SYMBOL_NONE,
 
     SYMBOL_VARIABLE,
+    SYMBOL_PARAMETER,
     /*SYMBOL_STATIC_VARIABLE,*/
     SYMBOL_PROCEDURE,
 } SymbolKind;
@@ -24,9 +25,10 @@ typedef struct {
     SymbolKind kind;
     Type type;
 
+    // TODO: union
     /* symbol-specific fields */
-    const char *label; // used for procedured and static variables
-    size_t stack_addr; // used for variables
+    const char *label; // used for procedures and static variables
+    size_t stack_addr; // used for variables/parameters
 } Symbol;
 
 typedef struct HashtableEntry {

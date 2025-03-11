@@ -14,14 +14,12 @@
 
 
 
-
-/* Hashtable */
-
 static size_t hash(size_t size, const char *key) {
+    // sum up the ascii representation of the string
     size_t sum = 0;
 
     for (size_t i=0; i < strlen(key); ++i)
-        sum += (size_t) key[i];
+        sum += (size_t) key[i] * i;
 
     return sum % size;
 }
@@ -239,7 +237,9 @@ void symboltable_list_print(const SymboltableList *st) {
 
 
 
+//
 // Symboltable construction:
+//
 // build up st, which is an array of symboltables, that all hold a pointer
 // to their parent table
 // each block node gets a pointer to the corresponding symboltable
@@ -263,11 +263,11 @@ void symboltable_list_print(const SymboltableList *st) {
 //       - ...      \           +------+
 //                   \--------> |  #3  |
 //                              +------+
+//
 
 typedef struct {
     Symboltable     *scope; // current parent symboltable
     SymboltableList *st;    // array of all symboltables
-    ProcSignature   *sig;   // for adding function parameters to function body. NULL if not used
 } TraversalContext;
 
 static void traverse_ast(AstNode *root, TraversalContext *ctx);
@@ -280,44 +280,14 @@ static void ast_block(Block *block, TraversalContext *ctx) {
     block->symboltable = symboltable_list_append(ctx->st, ctx->scope);
     assert(block->symboltable != NULL);
 
-    /* Insert parameters as variables in the scope of the procedure */
-    ProcSignature *sig = ctx->sig;
-
-    // only if parent node is a procedure
-    if (sig != NULL) {
-
-        for (size_t i=0; i < sig->params_count; ++i) {
-            Param *param = &sig->params[i];
-            Symbol sym = {
-                .kind  = SYMBOL_VARIABLE,
-                .label = param->ident,
-                .type  = *param->type,
-            };
-
-            int ret = symboltable_insert(block->symboltable, sym.label, sym);
-            assert(ret == 0);
-        }
-
-        ctx->sig = NULL;
-    }
-
-
     for (size_t i=0; i < list.size; ++i) {
         ctx->scope = block->symboltable;
         traverse_ast(list.items[i], ctx);
     }
-
 }
 
 static void ast_procedure(StmtProcedure *proc, TraversalContext *ctx) {
     const char *ident = proc->identifier.value;
-
-    /*
-     * we have to do it like that, because the symboltable of the body of
-     * this procedure is constructed AFTER this function call
-     */
-    // TODO: do this in another pass
-    ctx->sig = &proc->type.type_signature;
 
     Symbol sym = {
         .kind  = SYMBOL_PROCEDURE,
@@ -370,10 +340,8 @@ static void traverse_ast(AstNode *root, TraversalContext *ctx) {
             ast_vardecl(&root->stmt_vardecl, ctx);
             break;
 
-        /*
-        All Astnodes with blocks must be traversed here, so that
-        block->symboltable is initialized, and not NULL
-        */
+        // All Astnodes with blocks must be traversed here, so that
+        // block->symboltable is initialized, and not NULL
 
         case ASTNODE_WHILE: {
             StmtWhile *while_ = &root->stmt_while;
@@ -394,11 +362,45 @@ static void traverse_ast(AstNode *root, TraversalContext *ctx) {
 }
 
 static void scope_count_callback(AstNode *_node, int _depth, void *args) {
-    (void) _node;
-    (void) _depth;
-
+    (void) _node, (void) _depth;
     int *block_count = args;
     ++*block_count;
+}
+
+//
+// Insert procedure parameters after all symboltables have been created
+//
+// Doing this in the big recursive function above would be annoying, since
+// when reaching a proc node, the body member hasn't been initialized yet.
+//
+// Therefore, you'd have to save the signature and, when reaching the next
+// block node, insert the parameters from said signature into the
+// symboltable of the block, which results in not very nice looking code. (imo)
+//
+static void proc_insert_params_callback(AstNode *node, int _depth, void *_args) {
+    (void) _depth, (void) _args;
+
+    StmtProcedure *proc = &node->stmt_procedure;
+    ProcSignature *sig = &proc->type.type_signature;
+
+    // Declaration
+    if (proc->body == NULL)
+        return;
+
+    assert(proc->body->kind == ASTNODE_BLOCK);
+    Block *block = &proc->body->block;
+
+    for (size_t i=0; i < sig->params_count; ++i) {
+        Param *param = &sig->params[i];
+        Symbol sym = {
+            .kind  = SYMBOL_PARAMETER,
+            .type  = *param->type,
+        };
+
+        int ret = symboltable_insert(block->symboltable, param->ident, sym);
+        assert(ret == 0);
+    }
+
 }
 
 SymboltableList symboltable_list_construct(AstNode *root, size_t table_size) {
@@ -412,10 +414,11 @@ SymboltableList symboltable_list_construct(AstNode *root, size_t table_size) {
     TraversalContext ctx = {
         .scope = NULL,
         .st    = &st,
-        .sig   = NULL,
     };
 
     traverse_ast(root, &ctx);
+
+    parser_query_ast(root, proc_insert_params_callback, ASTNODE_PROCEDURE, NULL);
 
     return st;
 }
