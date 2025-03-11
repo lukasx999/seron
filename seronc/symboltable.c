@@ -239,33 +239,30 @@ void symboltable_list_print(const SymboltableList *st) {
 
 
 
-/*
-Symboltable construction:
-build up st, which is an array of symboltables, that all hold a pointer
-to their parent table
-each block node gets a pointer to the corresponding symboltable
-This makes hierarchical lookup pretty simple
-
-Example:
-AST <-> Symboltable array
-
-proc                         +------+
-- ident: "main"   /------->  |  #1  |
-- block ---------/           +------+
-                               ^  ^
-  - if                         |  |------\
-    - cond: 1                  |         |
-    - block -----\           +------+    |
-      - ...       \--------> |  #2  |    |
-                             +------+    |
-  - while                                |
-    - cond: 1                    /-------|
-    - block ----\               |
-      - ...      \           +------+
-                  \--------> |  #3  |
-                             +------+
-
-*/
+// Symboltable construction:
+// build up st, which is an array of symboltables, that all hold a pointer
+// to their parent table
+// each block node gets a pointer to the corresponding symboltable
+// This makes hierarchical lookup pretty simple
+//
+// Example:
+// [AST]             |       [Symboltable array]
+//
+// proc                         +------+
+// - ident: "main"   /------->  |  #1  |
+// - block ---------/           +------+
+//                                ^  ^
+//   - if                         |  |------|
+//     - cond: 1                  |         |
+//     - block -----\           +------+    |
+//       - ...       \--------> |  #2  |    |
+//                              +------+    |
+//   - while                                |
+//     - cond: 1                    /-------|
+//     - block ----\               |
+//       - ...      \           +------+
+//                   \--------> |  #3  |
+//                              +------+
 
 typedef struct {
     Symboltable     *scope; // current parent symboltable
@@ -396,17 +393,18 @@ static void traverse_ast(AstNode *root, TraversalContext *ctx) {
 
 }
 
-static void scope_count_callback(AstNode *node, int _depth, void *args) {
+static void scope_count_callback(AstNode *_node, int _depth, void *args) {
+    (void) _node;
     (void) _depth;
-    int *count = args;
 
-    if (node->kind == ASTNODE_BLOCK)
-        ++*count;
+    int *block_count = args;
+    ++*block_count;
 }
 
 SymboltableList symboltable_list_construct(AstNode *root, size_t table_size) {
+
     int block_count = 0;
-    parser_traverse_ast(root, scope_count_callback, true, &block_count);
+    parser_query_ast(root, scope_count_callback, ASTNODE_BLOCK, &block_count);
 
     SymboltableList st = { 0 };
     symboltable_list_init(&st, block_count, table_size);

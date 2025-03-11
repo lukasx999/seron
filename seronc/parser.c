@@ -183,9 +183,37 @@ void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down, voi
 
 }
 
+typedef struct {
+    AstCallback callback;
+    AstNodeKind kind;
+    void *args;
+} Query;
+
+static void query_callback(AstNode *node, int depth, void *args) {
+    Query *q = (Query*) args;
+
+    if (node->kind == q->kind)
+        q->callback(node, depth, q->args);
+}
+
+void parser_query_ast(AstNode *root, AstCallback callback, AstNodeKind kind, void *args) {
+    Query q = {
+        .args     = args,
+        .callback = callback,
+        .kind     = kind,
+    };
+
+    parser_traverse_ast(root, query_callback, true, (void*) &q);
+}
+
 // Prints a value in the following format: `<str>: <arg>`
 // <arg> is omitted if arg == NULL
-static void print_ast_value(const char *str, const char *color, const char *value, const char *opt) {
+static void print_ast_value(
+    const char *str,
+    const char *color,
+    const char *value,
+    const char *opt
+) {
     printf("%s%s%s", color, str, COLOR_END);
     if (value != NULL)
         printf("%s: %s%s", COLOR_GRAY, value, COLOR_END);
