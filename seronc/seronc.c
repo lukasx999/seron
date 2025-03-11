@@ -11,6 +11,9 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 
+#define ARENA_IMPL
+#include "lib/arena.h"
+
 #include "util.h"
 #include "lexer.h"
 #include "parser.h"
@@ -19,7 +22,7 @@
 #include "symboltable.h"
 #include "seronc.h"
 #include "layout.h"
-#include "arena.h"
+
 
 
 
@@ -220,7 +223,6 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: arena allocator for astnodes
 // TODO: var declaration address
 // TODO: precompute stack frame layout + reserve stack space in bulk in prelude
-// TODO: realloc() implementation for arena allocator
 
 /*
  TODO: semcheck

@@ -7,7 +7,7 @@
 
 #include "ast.h"
 #include "lexer.h"
-#include "arena.h"
+#include "lib/arena.h"
 
 
 
@@ -26,8 +26,7 @@ void astnodelist_append(AstNodeList *l, AstNode *node) {
 
     if (l->size == l->cap) {
         l->cap *= 2;
-        // BUG: implement realloc() for arena allocator
-        l->items = realloc(l->items, l->cap * sizeof(AstNode*));
+        l->items = arena_realloc(l->arena, l->items, l->cap * sizeof(AstNode*));
     }
 
     l->items[l->size++] = node;

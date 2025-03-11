@@ -15,7 +15,6 @@ grammar.h	  \
 types.h       \
 ast.h         \
 layout.h      \
-arena.h       \
 
 SOURCES=\
 lexer.o       \
@@ -28,7 +27,6 @@ symboltable.o \
 grammar.o     \
 ast.o         \
 layout.o      \
-arena.o       \
 
 
 all: compiler

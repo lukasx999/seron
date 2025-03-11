@@ -11,7 +11,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "grammar.h"
-#include "arena.h"
+#include "lib/arena.h"
 
 
 

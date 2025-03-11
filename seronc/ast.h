@@ -7,7 +7,7 @@
 
 #include "lexer.h"
 #include "types.h"
-#include "arena.h"
+#include "lib/arena.h"
 
 typedef struct Symboltable Symboltable;
 
@@ -20,16 +20,13 @@ typedef struct {
     AstNode **items;
 } AstNodeList;
 
-void astnodelist_init(AstNodeList *l, Arena *arena);
-void astnodelist_append(AstNodeList *l, AstNode *node);
+void astnodelist_init   (AstNodeList *l, Arena *arena);
+void astnodelist_append (AstNodeList *l, AstNode *node);
 
 
 
 
 // Token is included in AstNode for printing source location on error/warning
-
-
-
 
 typedef struct {
     Token op;

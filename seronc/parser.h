@@ -7,7 +7,7 @@
 
 #include "lexer.h"
 #include "ast.h"
-#include "arena.h"
+#include "lib/arena.h"
 
 
 
