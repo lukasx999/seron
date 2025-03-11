@@ -39,10 +39,8 @@ typedef enum {
 struct Type {
     TypeKind kind;
     bool mutable;
-    /*
-     * This union contains additional information for complex types,
-     * such as functions, pointers and user-defined types
-     */
+    // This union contains additional information for complex types,
+    // such as functions, pointers and user-defined types
     union {
         ProcSignature type_signature;
         Type *type_pointee;

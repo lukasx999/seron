@@ -24,6 +24,7 @@
 #include "layout.h"
 
 
+#define FILE_EXTENSION "srn"
 
 
 struct CompilerContext compiler_context = { 0 };
@@ -31,22 +32,22 @@ struct CompilerContext compiler_context = { 0 };
 
 
 
-static void check_fileextension(const char *filename, const char *extension) {
+static void check_fileextension(const char *filename) {
 
-    if (strlen(filename) <= strlen(extension) + 1) { // eg: `.___`
+    if (strlen(filename) <= strlen(FILE_EXTENSION) + 1) { // eg: `.___`
         compiler_message(MSG_ERROR, "Invalid filename `%s`", filename);
         exit(1);
     }
 
-    size_t dot_offset = strlen(filename) - 1 - strlen(extension);
+    size_t dot_offset = strlen(filename) - 1 - strlen(FILE_EXTENSION);
 
     if (filename[dot_offset] != '.') {
         compiler_message(MSG_ERROR, "File extension missing");
         exit(1);
     }
 
-    if (strncmp(filename + dot_offset + 1, extension, strlen(extension))) {
-        compiler_message(MSG_ERROR, "File extension must be `.%s`", extension);
+    if (strncmp(filename + dot_offset + 1, FILE_EXTENSION, strlen(FILE_EXTENSION))) {
+        compiler_message(MSG_ERROR, "File extension must be `.%s`", FILE_EXTENSION);
         exit(1);
     }
 
@@ -146,10 +147,10 @@ static void print_usage(char *argv[]) {
     exit(EXIT_FAILURE);
 }
 
-static void set_filenames(const char *raw, const char *extension) {
+static void set_filenames(const char *raw) {
     compiler_context.filename.raw = raw;
 
-    size_t dot_offset = strlen(raw) - 1 - strlen(extension);
+    size_t dot_offset = strlen(raw) - 1 - strlen(FILE_EXTENSION);
 
     char *stripped = compiler_context.filename.stripped;
     strncpy(stripped, raw, dot_offset);
@@ -206,8 +207,8 @@ static void parse_args(int argc, char *argv[]) {
         print_usage(argv);
 
     const char *filename = argv[optind];
-    check_fileextension(filename, "srn");
-    set_filenames(filename, "srn");
+    check_fileextension(filename);
+    set_filenames(filename);
 
 }
 
@@ -220,8 +221,6 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: ABI: spill arguments onto stack
 // TODO: char literal
 // TODO: id into tokenlist instead of pointer for ast
-// TODO: arena allocator for astnodes
-// TODO: var declaration address
 // TODO: precompute stack frame layout + reserve stack space in bulk in prelude
 
 /*
@@ -229,9 +228,6 @@ static void parse_args(int argc, char *argv[]) {
  - using return in procedure
  - no ifs/whiles in global scope
 */
-
-
-
 
 
 
