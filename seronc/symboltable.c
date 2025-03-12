@@ -139,39 +139,8 @@ void symboltable_print(const Symboltable *ht) {
             );
 
             Symbol *sym = &entry->value;
-
-            if (sym->type.kind == TYPE_FUNCTION) {
-                // TODO:
-#if 0
-                printf(" %s(%s", COLOR_GRAY, COLOR_END);
-
-                ProcSignature *sig = &sym->type.type_signature;
-
-                /*
-                 * we have to check that count is non-zero before subtracting 1,
-                 * as it will otherwise underflow
-                 */
-                size_t count = sig->params_count;
-                for (size_t i=0; i < (count ? count-1 : count); ++i) {
-                    printf(
-                        "%s%s,%s ",
-                        typekind_to_string(sig->params[i].type->kind),
-                        COLOR_GRAY,
-                        COLOR_END
-                    );
-                }
-
-                if (count)
-                    printf("%s ", typekind_to_string(sig->params[count-1].type->kind));
-                else
-                    printf("%s ", typekind_to_string(TYPE_VOID));
-
-                printf("%s->%s %s", COLOR_GRAY, COLOR_END, typekind_to_string(sig->returntype->kind));
-                printf("%s)%s", COLOR_GRAY, COLOR_END);
-#endif
-            }
-
-
+            (void) sym;
+            // TODO: show procedure signature
 
             printf("\n");
             entry = entry->next;
@@ -406,7 +375,7 @@ static void proc_insert_params_callback(AstNode *node, int _depth, void *_args) 
 SymboltableList symboltable_list_construct(AstNode *root, size_t table_size) {
 
     int block_count = 0;
-    parser_query_ast(root, scope_count_callback, ASTNODE_BLOCK, &block_count);
+    parser_query_ast(root, scope_count_callback, ASTNODE_BLOCK, (void*) &block_count);
 
     SymboltableList st = { 0 };
     symboltable_list_init(&st, block_count, table_size);

@@ -12,7 +12,7 @@
 #include "lexer.h"
 #include "gen.h"
 #include "symboltable.h"
-#include "seronc.h"
+#include "main.h"
 
 
 CodeGenerator codegen = { 0 };

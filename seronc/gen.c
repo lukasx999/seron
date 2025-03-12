@@ -332,7 +332,7 @@ void gen_procedure_start(
     CodeGenerator       *gen,
     const char          *identifier,
     const ProcSignature *sig,
-    const Symboltable     *scope
+    const Symboltable   *scope
 ) {
     gen->rbp_offset = 0;
 

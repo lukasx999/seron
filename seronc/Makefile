@@ -4,7 +4,7 @@ CFLAGS=-Wall -Wextra -ggdb -std=c11 -pedantic -fsanitize=address,undefined
 BIN=seronc
 
 DEPS=\
-seronc.h      \
+main.h      \
 util.h        \
 lexer.h       \
 parser.h      \
@@ -31,7 +31,7 @@ layout.o      \
 
 all: compiler
 
-compiler: seronc.o $(SOURCES)
+compiler: main.o $(SOURCES)
 	@$(CC) $(CFLAGS) $^ -o $(BIN)
 	@echo LINK $^
 

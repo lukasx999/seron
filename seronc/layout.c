@@ -10,7 +10,7 @@
 #include "parser.h"
 #include "types.h"
 #include "symboltable.h"
-#include "seronc.h"
+#include "main.h"
 #include "gen.h"
 
 

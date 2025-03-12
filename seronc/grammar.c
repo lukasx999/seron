@@ -467,7 +467,7 @@ AstNode *rule_exprstmt(Parser *p) {
     // <exprstmt> ::= <expr> ";"
 
     AstNode *node = rule_expression(p);
-    parser_expect_token(p, TOK_SEMICOLON,";");
+    parser_expect_token(p, TOK_SEMICOLON, ";");
 
     parser_advance(p);
     return node;

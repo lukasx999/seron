@@ -20,13 +20,13 @@ typedef struct {
 } Parser;
 
 
-Token   *parser_get_current_token (const Parser *p);
-void     parser_advance           (Parser *p);
-void    *parser_alloc             (Parser *p, size_t size);
-bool     parser_match_tokenkinds  (const Parser *p, ...);
-void     parser_expect_token      (const Parser *p, TokenKind tokenkind, const char *expected);
-void     parser_throw_error       (const Parser *p, const char *msg);
-bool     parser_is_at_end         (const Parser *p);
+Token *parser_get_current_token (const Parser *p);
+void   parser_advance           (Parser *p);
+void  *parser_alloc             (Parser *p, size_t size);
+bool   parser_match_tokenkinds  (const Parser *p, ...);
+void   parser_expect_token      (const Parser *p, TokenKind tokenkind, const char *expected);
+void   parser_throw_error       (const Parser *p, const char *msg);
+bool   parser_is_at_end         (const Parser *p);
 
 
 /* Public API */
