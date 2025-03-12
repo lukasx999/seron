@@ -10,25 +10,26 @@
 #include "types.h"
 
 
-// TODO: maybe different kind for function parameters
-
+// TODO: registers
+// TODO: static variables
 typedef enum {
     SYMBOL_NONE,
 
     SYMBOL_VARIABLE,
     SYMBOL_PARAMETER,
-    /*SYMBOL_STATIC_VARIABLE,*/
     SYMBOL_PROCEDURE,
+
+    SYMBOL_TEMPORARY,
 } SymbolKind;
 
 typedef struct {
     SymbolKind kind;
     Type type;
 
-    // TODO: union
-    /* symbol-specific fields */
-    const char *label; // used for procedures and static variables
-    size_t stack_addr; // used for variables/parameters
+    union {
+        const char *label; // procedures
+        size_t stack_addr; // variables / parameters / temporaries
+    };
 } Symbol;
 
 typedef struct HashtableEntry {

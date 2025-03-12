@@ -9,6 +9,7 @@
 #include "util.h"
 #include "lexer.h"
 #include "parser.h"
+#include "gen.h"
 #include "ast.h"
 #include "symboltable.h"
 
@@ -139,7 +140,15 @@ void symboltable_print(const Symboltable *ht) {
             );
 
             Symbol *sym = &entry->value;
-            (void) sym;
+
+            switch (sym->kind) {
+                case SYMBOL_PARAMETER:
+                case SYMBOL_VARIABLE:
+                    printf(": %lu", sym->stack_addr);
+                    break;
+                default: break;
+            }
+
             // TODO: show procedure signature
 
             printf("\n");
@@ -265,7 +274,7 @@ static void ast_procedure(StmtProcedure *proc, TraversalContext *ctx) {
     };
 
     int ret = symboltable_insert(ctx->scope, ident, sym);
-    if (ret == -1) {
+    if (ret) {
         compiler_message(MSG_ERROR, "Procedure `%s` already exists", ident);
         exit(1);
     }
@@ -284,7 +293,7 @@ static void ast_vardecl(StmtVarDecl *vardecl, TraversalContext *ctx) {
     };
 
     int ret = symboltable_insert(ctx->scope, ident, sym);
-    if (ret == -1) {
+    if (ret) {
         compiler_message(MSG_ERROR, "Variable `%s` already exists", ident);
         exit(1);
     }
@@ -372,6 +381,48 @@ static void proc_insert_params_callback(AstNode *node, int _depth, void *_args) 
 
 }
 
+static void precompute_stack_layout(AstNode *node, int _depth, void *args) {
+    (void) _depth;
+
+    size_t *stack_size = (size_t*) args;
+    *stack_size = 0;
+
+    StmtProcedure *proc = &node->stmt_procedure;
+    ProcSignature *sig = &proc->type.type_signature;
+
+    if (proc->body == NULL)
+        return;
+
+    assert(proc->body->kind == ASTNODE_BLOCK);
+    Block *body = &proc->body->block;
+
+    for (size_t i=0; i < sig->params_count; ++i) {
+        Param *param = &sig->params[i];
+        *stack_size += typekind_get_size(param->type->kind);
+
+        Symbol *sym = symboltable_get(body->symboltable, param->ident);
+        assert(sym != NULL);
+        sym->stack_addr = *stack_size;
+    }
+
+    AstNodeList *list = &body->stmts;
+
+    for (size_t i=0; i < list->size; ++i) {
+        AstNode *item = list->items[i];
+
+        if (item->kind == ASTNODE_VARDECL) {
+            StmtVarDecl *vardecl = &item->stmt_vardecl;
+            *stack_size += typekind_get_size(vardecl->type.kind);
+
+            Symbol *sym = symboltable_get(body->symboltable, vardecl->identifier.value);
+            assert(sym != NULL);
+            sym->stack_addr = *stack_size;
+        }
+
+    }
+
+}
+
 SymboltableList symboltable_list_construct(AstNode *root, size_t table_size) {
 
     int block_count = 0;
@@ -386,8 +437,10 @@ SymboltableList symboltable_list_construct(AstNode *root, size_t table_size) {
     };
 
     traverse_ast(root, &ctx);
-
     parser_query_ast(root, proc_insert_params_callback, ASTNODE_PROCEDURE, NULL);
+
+    size_t stack_size = 0;
+    parser_query_ast(root, precompute_stack_layout, ASTNODE_PROCEDURE, (void*) &stack_size);
 
     return st;
 }

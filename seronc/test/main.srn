@@ -5,6 +5,12 @@ proc add(a int, b int) int {
     return result;
 }
 
+proc f(a size, b byte) {
+    let foo int = 123;
+    let bar int = 123;
+    let baz int = 123;
+}
+
 proc main() int {
 
     let x int = add(65, 1);
