@@ -20,7 +20,7 @@
 #include "types.h"
 #include "backend.h"
 #include "symboltable.h"
-#include "seronc.h"
+#include "main.h"
 #include "layout.h"
 
 
@@ -218,13 +218,13 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: synchronizing typechecker
 // TODO: change Token in ast to Token*
 // TODO: pointers (addressof)
+// TODO: merge parser and grammar
 // TODO: ABI: spill arguments onto stack
 // TODO: char literal
 // TODO: id into tokenlist instead of pointer for ast
 // TODO: precompute stack frame layout + reserve stack space in bulk in prelude
 // TODO: replace ast traversals with parser_query_ast
 // TODO: parser_map_ast() designated initializer array: map from enum to function pointer
-// TODO: merge parser and grammar
 // TODO: rework errors/warnings with tokens
 
 /*
