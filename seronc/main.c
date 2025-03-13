@@ -72,6 +72,13 @@ static char *read_file(const char *filename) {
     return buf;
 }
 
+static char *get_time(void) {
+    time_t t = time(NULL);
+    char *t_str = ctime(&t);
+    t_str[strlen(t_str)-1] = '\0'; // strip newline
+    return t_str;
+}
+
 static int run_cmd_sync(char *const argv[]) {
     int status;
 
@@ -102,7 +109,7 @@ static void assemble(void) {
     });
 
     if (ret) {
-        compiler_message(MSG_ERROR, "Failed to assemble via `nasm`");
+        compiler_message(MSG_ERROR, "Failed to assemble via `nasm` (is nasm installed?)");
         exit(1);
     }
 
@@ -209,8 +216,8 @@ static void parse_args(int argc, char *argv[]) {
     const char *filename = argv[optind];
     check_fileextension(filename);
     set_filenames(filename);
-
 }
+
 
 
 // TODO: semcheck
@@ -219,6 +226,7 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: synchronizing parser / typechecker
 // TODO: change Token in ast to Token*
 // TODO: pointers (and addrof)
+// TODO: show compilation time diff
 // TODO: merge parser and grammar
 // TODO: ABI: spill arguments onto stack
 // TODO: char literal
@@ -235,12 +243,10 @@ static void parse_args(int argc, char *argv[]) {
 
 
 
-
 int main(int argc, char *argv[]) {
     parse_args(argc, argv);
 
-    // TODO: show time
-    compiler_message(MSG_INFO, "Starting compilation");
+    compiler_message(MSG_INFO, "Starting compilation @ %s", get_time());
 
     const char *filename = compiler_context.filename.raw;
     compiler_message(MSG_INFO, "Reading source %s", filename);
@@ -291,7 +297,7 @@ int main(int argc, char *argv[]) {
         compiler_message(MSG_INFO, "Binary `%s` has been built", compiler_context.filename.stripped);
     }
 
-    compiler_message(MSG_INFO, "Compilation finished");
+    compiler_message(MSG_INFO, "Compilation finished @ %s", get_time());
 
     symboltable_list_destroy(&symboltable);
     arena_free(&parser_arena);
