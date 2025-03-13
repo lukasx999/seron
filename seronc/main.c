@@ -72,6 +72,13 @@ static char *read_file(const char *filename) {
     return buf;
 }
 
+static char *get_time(void) {
+    time_t t = time(NULL);
+    char *t_str = ctime(&t);
+    t_str[strlen(t_str)-1] = '\0'; // strip newline
+    return t_str;
+}
+
 static int run_cmd_sync(char *const argv[]) {
     int status;
 
@@ -102,7 +109,7 @@ static void assemble(void) {
     });
 
     if (ret) {
-        compiler_message(MSG_ERROR, "Failed to assemble via `nasm`");
+        compiler_message(MSG_ERROR, "Failed to assemble via `nasm` (is nasm installed?)");
         exit(1);
     }
 
@@ -209,37 +216,37 @@ static void parse_args(int argc, char *argv[]) {
     const char *filename = argv[optind];
     check_fileextension(filename);
     set_filenames(filename);
-
 }
 
 
-// TODO: analysis: dont allow statements in global scope
-// TODO: synchronizing parser
-// TODO: synchronizing typechecker
+
+// TODO: semcheck
+//  - using return in procedure
+//  - no ifs/whiles in global scope
+// TODO: synchronizing parser / typechecker
 // TODO: change Token in ast to Token*
-// TODO: pointers (addressof)
+// TODO: pointers (and addrof)
+// TODO: show compilation time diff
 // TODO: merge parser and grammar
 // TODO: ABI: spill arguments onto stack
 // TODO: char literal
 // TODO: id into tokenlist instead of pointer for ast
-// TODO: precompute stack frame layout + reserve stack space in bulk in prelude
 // TODO: replace ast traversals with parser_query_ast
 // TODO: parser_map_ast() designated initializer array: map from enum to function pointer
 // TODO: rework errors/warnings with tokens
 
-/*
- TODO: semcheck
- - using return in procedure
- - no ifs/whiles in global scope
-*/
+// TODO: precompute stack frame layout + reserve stack space in bulk in prelude
+// TODO: only use stack for variables, use registers for temporary computations
+// - "SYMBOL_REGISTER" tag for Symbol tagged union
+// - make some function that takes a symbol, (label, stack_addr, register) and
+// just moves it into a register. that would make it generic enough to work with eg: binop.
 
 
 
 int main(int argc, char *argv[]) {
     parse_args(argc, argv);
 
-    // TODO: show time
-    compiler_message(MSG_INFO, "Starting compilation");
+    compiler_message(MSG_INFO, "Starting compilation @ %s", get_time());
 
     const char *filename = compiler_context.filename.raw;
     compiler_message(MSG_INFO, "Reading source %s", filename);
@@ -290,7 +297,7 @@ int main(int argc, char *argv[]) {
         compiler_message(MSG_INFO, "Binary `%s` has been built", compiler_context.filename.stripped);
     }
 
-    compiler_message(MSG_INFO, "Compilation finished");
+    compiler_message(MSG_INFO, "Compilation finished @ %s", get_time());
 
     symboltable_list_destroy(&symboltable);
     arena_free(&parser_arena);

@@ -94,6 +94,7 @@ typedef struct {
 typedef struct {
     Token op, identifier;
     AstNode *body; // NULL if declaration
+    // TODO: why not just use ProcSignature
     Type type; // type is holding function signature
 } StmtProcedure;
 

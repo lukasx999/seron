@@ -234,27 +234,18 @@ Symbol gen_binop(CodeGenerator *gen, Symbol a, Symbol b, BinOpKind kind) {
     gen_comment(gen, "START: binop");
 
     gen->rbp_offset += typekind_get_size(type.kind);
-    size_t rbp_offset_a = a.stack_addr;
-    size_t rbp_offset_b = b.stack_addr;
+
     const char *rax = typekind_get_register_rax(type.kind);
     const char *rdi = typekind_get_register_rdi(type.kind);
 
-    gen_addinstr(gen, "mov %s, [rbp-%lu]", rax, rbp_offset_a);
-    gen_addinstr(gen, "mov %s, [rbp-%lu]", rdi, rbp_offset_b);
+    gen_addinstr(gen, "mov %s, [rbp-%lu]", rax, a.stack_addr);
+    gen_addinstr(gen, "mov %s, [rbp-%lu]", rdi, b.stack_addr);
 
     switch (kind) {
-        case BINOP_ADD:
-            gen_addinstr(gen, "add %s, %s", rax, rdi);
-            break;
-        case BINOP_SUB:
-            gen_addinstr(gen, "sub %s, %s", rax, rdi);
-            break;
-        case BINOP_MUL:
-            gen_addinstr(gen, "imul %s", rdi);
-            break;
-        case BINOP_DIV:
-            gen_addinstr(gen, "idiv %s", rdi);
-            break;
+        case BINOP_ADD: gen_addinstr(gen, "add %s, %s", rax, rdi); break;
+        case BINOP_SUB: gen_addinstr(gen, "sub %s, %s", rax, rdi); break;
+        case BINOP_MUL: gen_addinstr(gen, "imul %s", rdi);         break;
+        case BINOP_DIV: gen_addinstr(gen, "idiv %s", rdi);         break;
         default:
             assert(!"Unimplemented");
             break;
@@ -265,9 +256,9 @@ Symbol gen_binop(CodeGenerator *gen, Symbol a, Symbol b, BinOpKind kind) {
 
     gen_comment(gen, "END: binop\n");
     return (Symbol) {
-        .stack_addr = gen->rbp_offset,
+        .kind       = SYMBOL_TEMPORARY,
         .type       = type,
-        .label      = NULL,
+        .stack_addr = gen->rbp_offset,
     };
 }
 
@@ -286,9 +277,9 @@ Symbol gen_store_literal(CodeGenerator *gen, int64_t value, TypeKind type) {
 
     gen_comment(gen, "END: store\n");
     return (Symbol) {
-        .stack_addr = gen->rbp_offset,
+        .kind       = SYMBOL_TEMPORARY,
         .type       = (Type) { .kind = type },
-        .label       = NULL,
+        .stack_addr = gen->rbp_offset,
     };
 }
 
@@ -444,9 +435,9 @@ Symbol gen_call(
     gen_comment(gen, "END: call\n");
 
     return (Symbol) {
-        .stack_addr = gen->rbp_offset,
+        .kind       = SYMBOL_TEMPORARY,
         .type       = (Type) { .kind = returntype },
-        .kind       = SYMBOL_VARIABLE,
+        .stack_addr = gen->rbp_offset,
     };
 }
 
