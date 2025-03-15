@@ -124,8 +124,9 @@ AstNode *rule_primary(Parser *p) {
         parser_expect_token(p, TOK_RPAREN, ")");
         parser_advance(p);
 
-    } else
-        assert(!"Unexpected Token");
+    } else {
+        parser_throw_error(p, "Unexpected Token");
+    }
 
     return astnode;
 }
