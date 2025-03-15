@@ -376,7 +376,11 @@ static void proc_insert_params_callback(AstNode *node, int _depth, void *_args) 
         };
 
         int ret = symboltable_insert(block->symboltable, param->ident, sym);
-        assert(ret == 0);
+        if (ret != 0) {
+            compiler_message(MSG_ERROR, "Parameter named `%s` already exists", param->ident);
+            exit(EXIT_FAILURE);
+        }
+
     }
 
 }

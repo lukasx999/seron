@@ -4,7 +4,7 @@ CFLAGS=-Wall -Wextra -ggdb -std=c11 -pedantic -fsanitize=address,undefined
 BIN=seronc
 
 DEPS=\
-main.h      \
+main.h        \
 util.h        \
 lexer.h       \
 parser.h      \
@@ -14,7 +14,6 @@ symboltable.h \
 grammar.h	  \
 types.h       \
 ast.h         \
-layout.h      \
 
 SOURCES=\
 lexer.o       \
@@ -26,7 +25,6 @@ types.o       \
 symboltable.o \
 grammar.o     \
 ast.o         \
-layout.o      \
 
 
 all: compiler

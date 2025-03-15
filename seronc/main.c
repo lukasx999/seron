@@ -21,7 +21,6 @@
 #include "backend.h"
 #include "symboltable.h"
 #include "main.h"
-#include "layout.h"
 
 
 #define FILE_EXTENSION "srn"
@@ -246,6 +245,7 @@ static void parse_args(int argc, char *argv[]) {
 int main(int argc, char *argv[]) {
     parse_args(argc, argv);
 
+    time_t time_start = time(NULL);
     compiler_message(MSG_INFO, "Starting compilation @ %s", get_time());
 
     const char *filename = compiler_context.filename.raw;
@@ -282,8 +282,6 @@ int main(int argc, char *argv[]) {
     compiler_message(MSG_INFO, "Typechecking");
     check_types(node_root);
 
-    // set_stack_layout(node_root);
-
     compiler_message(MSG_INFO, "Codegeneration");
     generate_code(node_root);
 
@@ -297,11 +295,12 @@ int main(int argc, char *argv[]) {
         compiler_message(MSG_INFO, "Binary `%s` has been built", compiler_context.filename.stripped);
     }
 
-    compiler_message(MSG_INFO, "Compilation finished @ %s", get_time());
-
     symboltable_list_destroy(&symboltable);
     arena_free(&parser_arena);
     tokenlist_destroy(&tokens);
+
+    compiler_message(MSG_INFO, "Compilation finished @ %s", get_time());
+    compiler_message(MSG_INFO, "Compliation took %lds", time(NULL) - time_start);
 
     return EXIT_SUCCESS;
 }
