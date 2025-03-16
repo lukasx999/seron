@@ -45,6 +45,6 @@ test: compiler
 
 clean:
 	rm *.o $(BIN)
-	rm ./test/*.o ./test/*.s ./test/test
+	rm test/{*.o,*.s,test}
 
 .PHONY: clean
