@@ -14,11 +14,11 @@
 
 TypeKind typekind_from_tokenkind(TokenKind kind) {
     switch (kind) {
-        case TOK_TYPE_INT:  return TYPE_INT;  break;
-        case TOK_TYPE_SIZE: return TYPE_SIZE; break;
-        case TOK_TYPE_BYTE: return TYPE_BYTE; break;
-        case TOK_TYPE_VOID: return TYPE_VOID; break;
-        default: assert(!"Unknown Token");
+        case TOK_TYPE_INT:  return TYPE_INT;
+        case TOK_TYPE_SIZE: return TYPE_SIZE;
+        case TOK_TYPE_BYTE: return TYPE_BYTE;
+        case TOK_TYPE_VOID: return TYPE_VOID;
+        default:            return TYPE_INVALID;
     }
 }
 

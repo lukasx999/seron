@@ -14,18 +14,18 @@
 
 size_t typekind_get_size(TypeKind type) {
     switch (type) {
-        case TYPE_BYTE: return 1; break;
-        case TYPE_INT:  return 4; break;
-        case TYPE_SIZE: return 8; break;
+        case TYPE_BYTE: return 1;
+        case TYPE_INT:  return 4;
+        case TYPE_SIZE: return 8;
         default: assert(!"unknown type");
     }
 }
 
 static const char *typekind_get_size_operand(TypeKind type) {
     switch (type) {
-        case TYPE_BYTE: return "byte";  break;
-        case TYPE_INT:  return "dword"; break;
-        case TYPE_SIZE: return "qword"; break;
+        case TYPE_BYTE: return "byte";
+        case TYPE_INT:  return "dword";
+        case TYPE_SIZE: return "qword";
         default: assert(!"unknown type");
     }
 }
@@ -34,51 +34,51 @@ static const char *typekind_get_subregister(Register reg, TypeKind type) {
     switch (reg) {
 
         case REG_RAX: switch (type) {
-            case TYPE_BYTE: return "al";  break;
-            case TYPE_INT:  return "eax"; break;
-            case TYPE_SIZE: return "rax"; break;
+            case TYPE_SIZE: return "rax";
+            case TYPE_INT:  return "eax";
+            case TYPE_BYTE: return "al";
             default: assert(!"unknown type");
         } break;
 
         case REG_RDI: switch (type) {
-            case TYPE_BYTE: return "dil"; break;
-            case TYPE_INT:  return "edi"; break;
-            case TYPE_SIZE: return "rdi"; break;
+            case TYPE_SIZE: return "rdi";
+            case TYPE_INT:  return "edi";
+            case TYPE_BYTE: return "dil";
             default: assert(!"unknown type");
         } break;
 
         case REG_RSI: switch (type) {
-            case TYPE_BYTE: return "sil"; break;
-            case TYPE_INT:  return "esi"; break;
-            case TYPE_SIZE: return "rsi"; break;
+            case TYPE_SIZE: return "rsi";
+            case TYPE_INT:  return "esi";
+            case TYPE_BYTE: return "sil";
             default: assert(!"unknown type");
         } break;
 
         case REG_RDX: switch (type) {
-            case TYPE_BYTE: return "dl";  break;
-            case TYPE_INT:  return "edx"; break;
-            case TYPE_SIZE: return "rdx"; break;
+            case TYPE_SIZE: return "rdx";
+            case TYPE_INT:  return "edx";
+            case TYPE_BYTE: return "dl";
             default: assert(!"unknown type");
         } break;
 
         case REG_RCX: switch (type) {
-            case TYPE_BYTE: return "cl";  break;
-            case TYPE_INT:  return "ecx"; break;
-            case TYPE_SIZE: return "rcx"; break;
+            case TYPE_SIZE: return "rcx";
+            case TYPE_INT:  return "ecx";
+            case TYPE_BYTE: return "cl";
             default: assert(!"unknown type");
         } break;
 
         case REG_R8: switch (type) {
-            case TYPE_BYTE: return "r8b"; break;
-            case TYPE_INT:  return "r8d"; break;
-            case TYPE_SIZE: return "r8";  break;
+            case TYPE_SIZE: return "r8";
+            case TYPE_INT:  return "r8d";
+            case TYPE_BYTE: return "r8b";
             default: assert(!"unknown type");
         } break;
 
         case REG_R9: switch (type) {
-            case TYPE_BYTE: return "r9b"; break;
-            case TYPE_INT:  return "r9d"; break;
-            case TYPE_SIZE: return "r9";  break;
+            case TYPE_SIZE: return "r9";
+            case TYPE_INT:  return "r9d";
+            case TYPE_BYTE: return "r9b";
             default: assert(!"unknown type");
         } break;
 

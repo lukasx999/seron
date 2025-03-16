@@ -9,3 +9,16 @@ proc square(x int) int {
 proc sum(a int, b int, c int, d int, e int, f int) int {
     return a + b + c + d + e + f;
 }
+
+proc sum_literals_21() int {
+    let result int = 1 + 2 + 3 + 4 + 5 + 6;
+    return result;
+}
+
+proc cond(condition int, then int, other int) int {
+    if condition {
+        return then;
+    } else {
+        return other;
+    }
+}
