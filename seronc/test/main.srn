@@ -5,3 +5,7 @@ proc add(lhs int, rhs int) int {
 proc square(x int) int {
     return x * x;
 }
+
+proc sum(a int, b int, c int, d int, e int, f int) int {
+    return a + b + c + d + e + f;
+}
