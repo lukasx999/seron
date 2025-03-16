@@ -13,8 +13,7 @@ typedef size_t gen_ctx;
 
 typedef struct {
     FILE       *file;
-    size_t      rbp_offset;
-    size_t      label_count;
+    uint64_t    label_count;
     bool        print_comments;
     const char *filename_src;
 } CodeGenerator;
@@ -37,7 +36,8 @@ void gen_procedure_start(
     CodeGenerator       *gen,
     const char          *identifier,
     uint64_t             stack_size,
-    const ProcSignature *sig
+    const ProcSignature *sig,
+    const Symboltable   *scope
 );
 void    gen_procedure_end    (CodeGenerator *c);
 void    gen_procedure_extern (CodeGenerator *gen, const char *identifier);
@@ -49,7 +49,8 @@ void    gen_if_end           (CodeGenerator *gen, gen_ctx ctx);
 gen_ctx gen_while_start      (CodeGenerator *gen);
 void    gen_while_end        (CodeGenerator *gen, Symbol cond,     gen_ctx ctx);
 void    gen_assign           (CodeGenerator *gen, Symbol assignee, Symbol value);
-void    gen_return           (CodeGenerator *gen, Symbol value);
+
+void gen_return(CodeGenerator *gen, const Symbol *value);
 void gen_var_init(CodeGenerator *gen, const Symbol *var, const Symbol *init);
 
 

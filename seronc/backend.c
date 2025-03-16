@@ -107,7 +107,7 @@ static void ast_vardecl(StmtVarDecl *vardecl, Symboltable *scope) {
 }
 
 static void ast_procedure(StmtProcedure *proc, Symboltable *scope) {
-    const char *ident = proc->identifier.value;
+    const char *ident  = proc->identifier.value;
     ProcSignature *sig = &proc->type.type_signature;
 
     if (proc->body == NULL) {
@@ -115,7 +115,10 @@ static void ast_procedure(StmtProcedure *proc, Symboltable *scope) {
         return;
     }
 
-    gen_procedure_start(&codegen, ident, proc->stack_size, sig);
+    assert(proc->body->kind == ASTNODE_BLOCK);
+    Symboltable *body = proc->body->block.symboltable;
+
+    gen_procedure_start(&codegen, ident, proc->stack_size, sig, body);
     traverse_ast(proc->body, scope);
     gen_procedure_end(&codegen);
 }
@@ -174,9 +177,9 @@ static void ast_while(StmtWhile *while_, Symboltable *scope) {
     gen_while_end(&codegen, cond, while_ctx);
 }
 
-static void ast_return(StmtReturn *return_, Symboltable *scope) {
-    Symbol expr = traverse_ast(return_->expr, scope);
-    gen_return(&codegen, expr);
+static void ast_return(StmtReturn *ret, Symboltable *scope) {
+    Symbol expr = traverse_ast(ret->expr, scope);
+    gen_return(&codegen, &expr);
 }
 
 static Symbol ast_assign(ExprAssignment *assign, Symboltable *scope) {

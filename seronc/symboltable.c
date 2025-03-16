@@ -34,22 +34,22 @@ static HashtableEntry *new_hashtable_entry(const char *key, Symbol value) {
     return entry;
 }
 
-void symboltable_init(Symboltable *ht, size_t size) {
-    *ht = (Symboltable) {
+void symboltable_init(Symboltable *st, size_t size) {
+    *st = (Symboltable) {
         .size     = size,
         .buckets  = NULL,
         .parent   = NULL,
     };
 
-    ht->buckets = malloc(ht->size * sizeof(HashtableEntry*));
+    st->buckets = malloc(st->size * sizeof(HashtableEntry*));
 
-    for (size_t i=0; i < ht->size; ++i)
-        ht->buckets[i] = NULL;
+    for (size_t i=0; i < st->size; ++i)
+        st->buckets[i] = NULL;
 }
 
-void symboltable_destroy(Symboltable *ht) {
-    for (size_t i=0; i < ht->size; ++i) {
-        HashtableEntry *entry = ht->buckets[i];
+void symboltable_destroy(Symboltable *st) {
+    for (size_t i=0; i < st->size; ++i) {
+        HashtableEntry *entry = st->buckets[i];
 
         while (entry != NULL) {
             HashtableEntry *next = entry->next;
@@ -59,18 +59,18 @@ void symboltable_destroy(Symboltable *ht) {
 
     }
 
-    free(ht->buckets);
-    ht->buckets = NULL;
+    free(st->buckets);
+    st->buckets = NULL;
 }
 
-int symboltable_insert(Symboltable *ht, const char *key, Symbol value) {
-    assert(ht != NULL);
+int symboltable_insert(Symboltable *st, const char *key, Symbol value) {
+    assert(st != NULL);
 
-    size_t index = hash(ht->size, key);
-    HashtableEntry *current = ht->buckets[index];
+    size_t index = hash(st->size, key);
+    HashtableEntry *current = st->buckets[index];
 
     if (current == NULL) {
-        ht->buckets[index] = new_hashtable_entry(key, value);
+        st->buckets[index] = new_hashtable_entry(key, value);
         return 0;
     }
 
@@ -89,9 +89,9 @@ int symboltable_insert(Symboltable *ht, const char *key, Symbol value) {
     assert(!"unreachable");
 }
 
-Symbol *symboltable_get(const Symboltable *ht, const char *key) {
-    size_t index = hash(ht->size, key);
-    HashtableEntry *current = ht->buckets[index];
+Symbol *symboltable_get(const Symboltable *st, const char *key) {
+    size_t index = hash(st->size, key);
+    HashtableEntry *current = st->buckets[index];
 
     if (current == NULL)
         return NULL;
@@ -107,9 +107,9 @@ Symbol *symboltable_get(const Symboltable *ht, const char *key) {
 
 }
 
-Symbol *symboltable_list_lookup(const Symboltable *ht, const char *key) {
-    assert(ht != NULL);
-    const Symboltable *current = ht;
+Symbol *symboltable_list_lookup(const Symboltable *st, const char *key) {
+    assert(st != NULL);
+    const Symboltable *current = st;
 
     while (current != NULL) {
         Symbol *value = symboltable_get(current, key);
@@ -123,9 +123,9 @@ Symbol *symboltable_list_lookup(const Symboltable *ht, const char *key) {
     return NULL;
 }
 
-void symboltable_print(const Symboltable *ht) {
-    for (size_t i=0; i < ht->size; ++i) {
-        HashtableEntry *entry = ht->buckets[i];
+void symboltable_print(const Symboltable *st) {
+    for (size_t i=0; i < st->size; ++i) {
+        HashtableEntry *entry = st->buckets[i];
 
         if (entry == NULL)
             continue;

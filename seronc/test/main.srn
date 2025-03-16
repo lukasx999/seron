@@ -1,7 +1,6 @@
-proc foo(x int, y int) {
-    let a int;
-    let b int;
-    let c int;
+proc add(a int, b int) int {
+    let result int = a + b;
+    return result;
 }
 
 proc main() int {

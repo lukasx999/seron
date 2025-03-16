@@ -121,7 +121,7 @@ static void gen_addinstr(CodeGenerator *gen, const char *fmt, ...) {
 // Moves the specified symbol `sym`, regardless of its storage location into
 // the specified register `reg`
 //
-static void gen_symbol_into_register(CodeGenerator *gen, Register reg, const Symbol *sym) {
+static void gen_move_symbol_into_register(CodeGenerator *gen, Register reg, const Symbol *sym) {
     // TODO: label
 
     const char *regnew = typekind_get_subregister(reg, sym->type.kind);
@@ -164,7 +164,6 @@ int gen_init(CodeGenerator *gen, const char *filename_asm, bool print_comments) 
 
     *gen = (CodeGenerator) {
         .file           = file,
-        .rbp_offset     = 0,
         .label_count    = 0,
         .print_comments = print_comments,
     };
@@ -191,8 +190,8 @@ Symbol gen_binop(
     assert(lhs->type.kind == lhs->type.kind);
     gen_comment(gen, "START: binop");
 
-    gen_symbol_into_register(gen, REG_RAX, lhs);
-    gen_symbol_into_register(gen, REG_RDI, rhs);
+    gen_move_symbol_into_register(gen, REG_RAX, lhs);
+    gen_move_symbol_into_register(gen, REG_RDI, rhs);
 
     const char *rax = typekind_get_subregister(REG_RAX, lhs->type.kind);
     const char *rdi = typekind_get_subregister(REG_RDI, lhs->type.kind);
@@ -231,21 +230,22 @@ void gen_procedure_start(
     CodeGenerator       *gen,
     const char          *identifier,
     uint64_t             stack_size,
-    const ProcSignature *sig
+    const ProcSignature *sig,
+    const Symboltable   *scope
 ) {
 
     gen_comment(gen, "START: proc");
-    gen_comment(gen, "START: proc_prelude");
 
+    gen_comment(gen, "START: proc_prelude");
     gen_addinstr(gen, "");
     gen_addinstr(gen, "global %s", identifier);
     gen_addinstr(gen, "%s:", identifier);
     gen_addinstr(gen, "push rbp");
     gen_addinstr(gen, "mov rbp, rsp");
     gen_addinstr(gen, "sub rsp, %lu", stack_size);
+    gen_comment(gen, "END: proc_prelude\n");
 
     gen_comment(gen, "START: abi");
-
     // Move parameters onto stack
     for (size_t i=0; i < sig->params_count; ++i) {
         const Param *param   = &sig->params[i];
@@ -254,11 +254,12 @@ void gen_procedure_start(
 
         assert(reg != NULL && "TODO");
 
-        gen_addinstr(gen, "mov %s [rbp-%lu], %s", size_op, gen->rbp_offset, reg);
-    }
+        Symbol *sym = symboltable_list_lookup(scope, param->ident);
+        assert(sym != NULL);
+        gen_addinstr(gen, "mov %s [rbp-%lu], %s", size_op, sym->stack_addr, reg);
 
+    }
     gen_comment(gen, "END: abi");
-    gen_comment(gen, "END: proc_prelude\n");
 }
 
 void gen_procedure_end(CodeGenerator *gen) {
@@ -272,6 +273,14 @@ void gen_procedure_end(CodeGenerator *gen) {
     gen_comment(gen, "END: proc\n");
 }
 
+void gen_return(CodeGenerator *gen, const Symbol *value) {
+    gen_comment(gen, "START: return");
+
+    // TODO: early return: label
+    gen_move_symbol_into_register(gen, REG_RAX, value);
+
+    gen_comment(gen, "END: return\n");
+}
 
 
 
@@ -378,30 +387,15 @@ void gen_procedure_extern(CodeGenerator *gen, const char *identifier) {
 void gen_var_init(CodeGenerator *gen, const Symbol *var, const Symbol *init) {
     gen_comment(gen, "START: var init");
 
-    gen_symbol_into_register(gen, REG_RAX, init);
+    gen_move_symbol_into_register(gen, REG_RAX, init);
     gen_addinstr(gen, "mov [rbp-%lu], rax", var->stack_addr);
 
     gen_comment(gen, "END: var init");
 }
 
-void gen_assign(CodeGenerator *gen, Symbol assignee, Symbol value) {}
-void gen_return(CodeGenerator *gen, Symbol value) {}
-Symbol gen_call(CodeGenerator *gen, Symbol callee, const Symbol *args, size_t args_len) {}
+void gen_assign(CodeGenerator *gen, Symbol assignee, Symbol value) { (void) value, (void) assignee, (void) gen; }
+Symbol gen_call(CodeGenerator *gen, Symbol callee, const Symbol *args, size_t args_len) { (void) gen, (void) callee, (void) args, (void) args_len; return (Symbol) { 0 }; }
 
-/*
-void gen_return(CodeGenerator *gen, Symbol value) {
-    gen_comment(gen, "START: return");
-
-    gen_addinstr(
-        gen,
-        "mov %s, [rbp-%lu]",
-        typekind_get_register_rax(value.type.kind),
-        value.stack_addr
-    );
-
-    gen_comment(gen, "END: return\n");
-}
-*/
 
 /*
 Symbol gen_call(
