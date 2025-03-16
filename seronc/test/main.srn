@@ -1,20 +1,3 @@
-proc putchar(c int) int;
-
-proc add(a int, b int) int {
-    let result int = a + b;
-    return result;
-}
-
-proc f(a size, b byte) {
-    let foo int = 123;
-    let bar int = 123;
-    let baz int = 123;
-}
-
 proc main() int {
-
-    let x int = add(65, 1);
-    putchar(x);
-
-    return 0;
+    let x int = 1 + 2 + 3;
 }

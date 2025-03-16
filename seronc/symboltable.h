@@ -8,9 +8,9 @@
 
 #include "ast.h"
 #include "types.h"
+#include "backend.h"
 
 
-// TODO: registers
 // TODO: static variables
 typedef enum {
     SYMBOL_NONE,
@@ -22,13 +22,15 @@ typedef enum {
     SYMBOL_TEMPORARY,
 } SymbolKind;
 
+// A symbol is just a representation of a value stored in future memory
 typedef struct {
     SymbolKind kind;
     Type type;
 
     union {
         const char *label; // procedures
-        size_t stack_addr; // variables / parameters / temporaries
+        size_t stack_addr; // variables / parameters
+        Register reg;      // temporaries
     };
 } Symbol;
 

@@ -69,8 +69,8 @@ static void builtin_inlineasm(ExprCall *call, Symboltable *scope) {
 }
 
 static Symbol ast_binop(ExprBinOp *binop, Symboltable *scope) {
-    Symbol sym_lhs  = traverse_ast(binop->lhs, scope);
-    Symbol sym_rhs  = traverse_ast(binop->rhs, scope);
+    Symbol sym_lhs = traverse_ast(binop->lhs, scope);
+    Symbol sym_rhs = traverse_ast(binop->rhs, scope);
     return gen_binop(&codegen, sym_lhs, sym_rhs, binop->kind);
 }
 

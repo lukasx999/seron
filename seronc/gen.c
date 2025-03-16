@@ -17,9 +17,7 @@ size_t typekind_get_size(TypeKind type) {
         case TYPE_BYTE: return 1; break;
         case TYPE_INT:  return 4; break;
         case TYPE_SIZE: return 8; break;
-        default:
-            assert(!"Unknown Type");
-            break;
+        default: assert(!"Unknown Type");
     }
 }
 
@@ -28,86 +26,63 @@ static const char *typekind_get_size_operand(TypeKind type) {
         case TYPE_BYTE: return "byte";  break;
         case TYPE_INT:  return "dword"; break;
         case TYPE_SIZE: return "qword"; break;
-        default:
-            assert(!"Unknown type");
-            break;
+        default: assert(!"Unknown type");
     }
 }
 
-static const char *typekind_get_register_rax(TypeKind type) {
-    switch (type) {
-        case TYPE_BYTE: return "al";  break;
-        case TYPE_INT:  return "eax"; break;
-        case TYPE_SIZE: return "rax"; break;
-        default:
-            assert(!"Unknown type");
-            break;
-    }
-}
+static const char *typekind_get_reg(Register reg, TypeKind type) {
+    switch (reg) {
 
-static const char *typekind_get_register_rdi(TypeKind type) {
-    switch (type) {
-        case TYPE_BYTE: return "dil"; break;
-        case TYPE_INT:  return "edi"; break;
-        case TYPE_SIZE: return "rdi"; break;
-        default:
-            assert(!"Unknown type");
-            break;
-    }
-}
+        case REG_RAX: switch (type) {
+            case TYPE_BYTE: return "al";  break;
+            case TYPE_INT:  return "eax"; break;
+            case TYPE_SIZE: return "rax"; break;
+            default: assert(!"Unknown type");
+        } break;
 
-static const char *typekind_get_register_rsi(TypeKind type) {
-    switch (type) {
-        case TYPE_BYTE: return "sil"; break;
-        case TYPE_INT:  return "esi"; break;
-        case TYPE_SIZE: return "rsi"; break;
-        default:
-            assert(!"Unknown type");
-            break;
-    }
-}
+        case REG_RDI: switch (type) {
+            case TYPE_BYTE: return "dil"; break;
+            case TYPE_INT:  return "edi"; break;
+            case TYPE_SIZE: return "rdi"; break;
+            default: assert(!"Unknown type");
+        } break;
 
-static const char *typekind_get_register_rdx(TypeKind type) {
-    switch (type) {
-        case TYPE_BYTE: return "dl";  break;
-        case TYPE_INT:  return "edx"; break;
-        case TYPE_SIZE: return "rdx"; break;
-        default:
-            assert(!"Unknown type");
-            break;
-    }
-}
+        case REG_RSI: switch (type) {
+            case TYPE_BYTE: return "sil"; break;
+            case TYPE_INT:  return "esi"; break;
+            case TYPE_SIZE: return "rsi"; break;
+            default: assert(!"Unknown type");
+        } break;
 
-static const char *typekind_get_register_rcx(TypeKind type) {
-    switch (type) {
-        case TYPE_BYTE: return "cl";  break;
-        case TYPE_INT:  return "ecx"; break;
-        case TYPE_SIZE: return "rcx"; break;
-        default:
-            assert(!"Unknown type");
-            break;
-    }
-}
+        case REG_RDX: switch (type) {
+            case TYPE_BYTE: return "dl";  break;
+            case TYPE_INT:  return "edx"; break;
+            case TYPE_SIZE: return "rdx"; break;
+            default: assert(!"Unknown type");
+        } break;
 
-static const char *typekind_get_register_r8(TypeKind type) {
-    switch (type) {
-        case TYPE_BYTE: return "r8b"; break;
-        case TYPE_INT:  return "r8d"; break;
-        case TYPE_SIZE: return "r8";  break;
-        default:
-            assert(!"Unknown type");
-            break;
-    }
-}
+        case REG_RCX: switch (type) {
+            case TYPE_BYTE: return "cl";  break;
+            case TYPE_INT:  return "ecx"; break;
+            case TYPE_SIZE: return "rcx"; break;
+            default: assert(!"Unknown type");
+        } break;
 
-static const char *typekind_get_register_r9(TypeKind type) {
-    switch (type) {
-        case TYPE_BYTE: return "r9b"; break;
-        case TYPE_INT:  return "r9d"; break;
-        case TYPE_SIZE: return "r9";  break;
-        default:
-            assert(!"Unknown type");
-            break;
+        case REG_R8: switch (type) {
+            case TYPE_BYTE: return "r8b"; break;
+            case TYPE_INT:  return "r8d"; break;
+            case TYPE_SIZE: return "r8";  break;
+            default: assert(!"Unknown type");
+        } break;
+
+        case REG_R9: switch (type) {
+            case TYPE_BYTE: return "r9b"; break;
+            case TYPE_INT:  return "r9d"; break;
+            case TYPE_SIZE: return "r9";  break;
+            default: assert(!"Unknown type");
+        } break;
+
+        default: assert(!"unknown register");
     }
 }
 
@@ -121,16 +96,17 @@ static const char *abi_get_register(int arg_n, TypeKind type) {
         return NULL;
 
     const char *registers[] = {
-        [1] = typekind_get_register_rdi(type),
-        [2] = typekind_get_register_rsi(type),
-        [3] = typekind_get_register_rdx(type),
-        [4] = typekind_get_register_rcx(type),
-        [5] = typekind_get_register_r8(type),
-        [6] = typekind_get_register_r9(type),
+        [1] = typekind_get_reg(REG_RDI, type),
+        [2] = typekind_get_reg(REG_RSI, type),
+        [3] = typekind_get_reg(REG_RDX, type),
+        [4] = typekind_get_reg(REG_RCX, type),
+        [5] = typekind_get_reg(REG_R8, type),
+        [6] = typekind_get_reg(REG_R9, type),
     };
 
     return registers[arg_n];
 }
+
 
 
 static void gen_addinstr(CodeGenerator *gen, const char *fmt, ...) {
@@ -139,6 +115,32 @@ static void gen_addinstr(CodeGenerator *gen, const char *fmt, ...) {
     vfprintf(gen->file, fmt, va);
     fprintf(gen->file, "\n");
     va_end(va);
+}
+
+//
+// Moves the specified symbol `sym`, regardless of its storage location into
+// the specified register `reg`
+//
+static void symbol_to_register(CodeGenerator *gen, Register reg, const Symbol *sym) {
+    // TODO: label
+
+    const char *regnew = typekind_get_reg(reg, sym->type.kind);
+
+    switch (sym->kind) {
+
+        case SYMBOL_VARIABLE:
+        case SYMBOL_PARAMETER:
+            gen_addinstr(gen, "mov %s, [rbp-%lu]", regnew, sym->stack_addr);
+            break;
+
+        case SYMBOL_TEMPORARY: {
+            const char *regold = typekind_get_reg(sym->reg, sym->type.kind);
+            gen_addinstr(gen, "mov %s, %s", regnew, regold);
+        } return;
+
+        default:
+            assert(!"unknown symbol kind");
+    }
 }
 
 static void gen_comment(CodeGenerator *gen, const char *fmt, ...) {
@@ -230,56 +232,38 @@ void gen_while_end(CodeGenerator *gen, Symbol cond, gen_ctx ctx) {
 
 Symbol gen_binop(CodeGenerator *gen, Symbol a, Symbol b, BinOpKind kind) {
     assert(a.type.kind == a.type.kind);
-    Type type = a.type;
     gen_comment(gen, "START: binop");
 
-    gen->rbp_offset += typekind_get_size(type.kind);
-
-    const char *rax = typekind_get_register_rax(type.kind);
-    const char *rdi = typekind_get_register_rdi(type.kind);
-
-    gen_addinstr(gen, "mov %s, [rbp-%lu]", rax, a.stack_addr);
-    gen_addinstr(gen, "mov %s, [rbp-%lu]", rdi, b.stack_addr);
+    symbol_to_register(gen, REG_RAX, &a);
+    symbol_to_register(gen, REG_RDI, &b);
 
     switch (kind) {
-        case BINOP_ADD: gen_addinstr(gen, "add %s, %s", rax, rdi); break;
-        case BINOP_SUB: gen_addinstr(gen, "sub %s, %s", rax, rdi); break;
-        case BINOP_MUL: gen_addinstr(gen, "imul %s", rdi);         break;
-        case BINOP_DIV: gen_addinstr(gen, "idiv %s", rdi);         break;
-        default:
-            assert(!"Unimplemented");
-            break;
+        case BINOP_ADD: gen_addinstr(gen, "add rax, rdi"); break;
+        case BINOP_SUB: gen_addinstr(gen, "sub rax, rsi"); break;
+        case BINOP_MUL: gen_addinstr(gen, "imul rdi");     break;
+        case BINOP_DIV: gen_addinstr(gen, "idiv rdi");     break;
+        default: assert(!"Unimplemented"); break;
     }
-
-    gen_addinstr(gen, "sub rsp, %lu", typekind_get_size(type.kind));
-    gen_addinstr(gen, "mov %s [rbp-%lu], %s", typekind_get_size_operand(type.kind), gen->rbp_offset, rax);
 
     gen_comment(gen, "END: binop\n");
     return (Symbol) {
-        .kind       = SYMBOL_TEMPORARY,
-        .type       = type,
-        .stack_addr = gen->rbp_offset,
+        .kind = SYMBOL_TEMPORARY,
+        .type = a.type,
+        .reg  = REG_RAX,
     };
 }
 
 Symbol gen_store_literal(CodeGenerator *gen, int64_t value, TypeKind type) {
-    gen->rbp_offset += typekind_get_size(type);
     gen_comment(gen, "START: store");
 
-    gen_addinstr(gen, "sub rsp, %lu", typekind_get_size(type));
-    gen_addinstr(
-        gen,
-        "mov %s [rbp-%lu], %lu",
-        typekind_get_size_operand(type),
-        gen->rbp_offset,
-        value
-    );
+    const char *reg = typekind_get_reg(REG_RAX, type);
+    gen_addinstr(gen, "mov %s, %lu", reg, value);
 
-    gen_comment(gen, "END: store\n");
+    gen_comment(gen, "END: store");
     return (Symbol) {
-        .kind       = SYMBOL_TEMPORARY,
-        .type       = (Type) { .kind = type },
-        .stack_addr = gen->rbp_offset,
+        .kind = SYMBOL_TEMPORARY,
+        .type = (Type) { .kind = type },
+        .reg  = REG_RAX,
     };
 }
 
@@ -377,6 +361,11 @@ void gen_procedure_end(CodeGenerator *gen) {
     gen_comment(gen, "END: proc\n");
 }
 
+void gen_assign(CodeGenerator *gen, Symbol assignee, Symbol value) {}
+void gen_return(CodeGenerator *gen, Symbol value) {}
+Symbol gen_call(CodeGenerator *gen, Symbol callee, const Symbol *args, size_t args_len) {}
+
+/*
 void gen_return(CodeGenerator *gen, Symbol value) {
     gen_comment(gen, "START: return");
 
@@ -389,7 +378,9 @@ void gen_return(CodeGenerator *gen, Symbol value) {
 
     gen_comment(gen, "END: return\n");
 }
+*/
 
+/*
 Symbol gen_call(
     CodeGenerator *gen,
     Symbol         callee,
@@ -457,3 +448,4 @@ void gen_assign(CodeGenerator *gen, Symbol assignee, Symbol value) {
     );
     gen_comment(gen, "END: assignment");
 }
+*/
