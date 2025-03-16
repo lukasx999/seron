@@ -18,9 +18,7 @@ TypeKind typekind_from_tokenkind(TokenKind kind) {
         case TOK_TYPE_SIZE: return TYPE_SIZE; break;
         case TOK_TYPE_BYTE: return TYPE_BYTE; break;
         case TOK_TYPE_VOID: return TYPE_VOID; break;
-        default:
-            assert(!"Unknown Token");
-            break;
+        default: assert(!"Unknown Token");
     }
 }
 
@@ -32,9 +30,7 @@ const char *typekind_to_string(TypeKind type) {
         case TYPE_POINTER:  return "pointer"; break;
         case TYPE_VOID:     return "void";    break;
         case TYPE_FUNCTION: return "proc";    break;
-        default:
-            assert(!"Unknown Type");
-            break;
+        default: assert(!"Unknown Type");
     }
 }
 

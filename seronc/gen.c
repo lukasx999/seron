@@ -17,7 +17,7 @@ size_t typekind_get_size(TypeKind type) {
         case TYPE_BYTE: return 1; break;
         case TYPE_INT:  return 4; break;
         case TYPE_SIZE: return 8; break;
-        default: assert(!"Unknown Type");
+        default: assert(!"unknown type");
     }
 }
 
@@ -26,7 +26,7 @@ static const char *typekind_get_size_operand(TypeKind type) {
         case TYPE_BYTE: return "byte";  break;
         case TYPE_INT:  return "dword"; break;
         case TYPE_SIZE: return "qword"; break;
-        default: assert(!"Unknown type");
+        default: assert(!"unknown type");
     }
 }
 
@@ -37,49 +37,49 @@ static const char *typekind_get_subregister(Register reg, TypeKind type) {
             case TYPE_BYTE: return "al";  break;
             case TYPE_INT:  return "eax"; break;
             case TYPE_SIZE: return "rax"; break;
-            default: assert(!"Unknown type");
+            default: assert(!"unknown type");
         } break;
 
         case REG_RDI: switch (type) {
             case TYPE_BYTE: return "dil"; break;
             case TYPE_INT:  return "edi"; break;
             case TYPE_SIZE: return "rdi"; break;
-            default: assert(!"Unknown type");
+            default: assert(!"unknown type");
         } break;
 
         case REG_RSI: switch (type) {
             case TYPE_BYTE: return "sil"; break;
             case TYPE_INT:  return "esi"; break;
             case TYPE_SIZE: return "rsi"; break;
-            default: assert(!"Unknown type");
+            default: assert(!"unknown type");
         } break;
 
         case REG_RDX: switch (type) {
             case TYPE_BYTE: return "dl";  break;
             case TYPE_INT:  return "edx"; break;
             case TYPE_SIZE: return "rdx"; break;
-            default: assert(!"Unknown type");
+            default: assert(!"unknown type");
         } break;
 
         case REG_RCX: switch (type) {
             case TYPE_BYTE: return "cl";  break;
             case TYPE_INT:  return "ecx"; break;
             case TYPE_SIZE: return "rcx"; break;
-            default: assert(!"Unknown type");
+            default: assert(!"unknown type");
         } break;
 
         case REG_R8: switch (type) {
             case TYPE_BYTE: return "r8b"; break;
             case TYPE_INT:  return "r8d"; break;
             case TYPE_SIZE: return "r8";  break;
-            default: assert(!"Unknown type");
+            default: assert(!"unknown type");
         } break;
 
         case REG_R9: switch (type) {
             case TYPE_BYTE: return "r9b"; break;
             case TYPE_INT:  return "r9d"; break;
             case TYPE_SIZE: return "r9";  break;
-            default: assert(!"Unknown type");
+            default: assert(!"unknown type");
         } break;
 
         default: assert(!"unknown register");
@@ -124,18 +124,21 @@ static void gen_addinstr(CodeGenerator *gen, const char *fmt, ...) {
 static void gen_move_symbol_into_register(CodeGenerator *gen, Register reg, const Symbol *sym) {
     // TODO: label
 
-    const char *regnew = typekind_get_subregister(reg, sym->type.kind);
+    const char *reg_new = typekind_get_subregister(reg, sym->type.kind);
 
     switch (sym->kind) {
 
         case SYMBOL_VARIABLE:
         case SYMBOL_PARAMETER:
-            gen_addinstr(gen, "mov %s, [rbp-%lu]", regnew, sym->stack_addr);
+            gen_addinstr(gen, "mov %s, [rbp-%lu]", reg_new, sym->stack_addr);
             break;
 
         case SYMBOL_TEMPORARY: {
-            const char *regold = typekind_get_subregister(sym->reg, sym->type.kind);
-            gen_addinstr(gen, "mov %s, %s", regnew, regold);
+            const char *reg_old = typekind_get_subregister(sym->reg, sym->type.kind);
+
+            if (reg != sym->reg)
+                gen_addinstr(gen, "mov %s, %s", reg_new, reg_old);
+
         } return;
 
         default:
@@ -201,7 +204,7 @@ Symbol gen_binop(
         case BINOP_SUB: gen_addinstr(gen, "sub %s, %s", rax, rdi); break;
         case BINOP_MUL: gen_addinstr(gen, "imul %s", rdi);         break;
         case BINOP_DIV: gen_addinstr(gen, "idiv %s", rdi);         break;
-        default: assert(!"Unimplemented"); break;
+        default: assert(!"unimplemented"); break;
     }
 
     gen_comment(gen, "END: binop\n");
@@ -292,7 +295,16 @@ void gen_var_init(CodeGenerator *gen, const Symbol *var, const Symbol *init) {
     gen_comment(gen, "START: var init");
 
     gen_move_symbol_into_register(gen, REG_RAX, init);
-    gen_addinstr(gen, "mov [rbp-%lu], rax", var->stack_addr);
+    const char *rax = typekind_get_subregister(REG_RAX, init->type.kind);
+    const char *size_op = typekind_get_size_operand(init->type.kind);
+
+    gen_addinstr(
+        gen,
+        "mov %s [rbp-%lu], %s",
+        size_op,
+        var->stack_addr,
+        rax
+    );
 
     gen_comment(gen, "END: var init");
 }

@@ -1,9 +1,7 @@
-proc add(a int, b int) int {
-    let result int = a + b;
-    return result;
+proc add(lhs int, rhs int) int {
+    return lhs + rhs;
 }
 
-proc main() int {
-    let x int = 1 + 2 + 3;
-    let y int;
+proc square(x int) int {
+    return x * x;
 }

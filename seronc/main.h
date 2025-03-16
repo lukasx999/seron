@@ -29,6 +29,7 @@ struct CompilerContext {
         int dump_symboltable;
         int verbose; // Show info messages
         int compile_only;
+        int compile_and_assemble;
     } opts;
 
 };

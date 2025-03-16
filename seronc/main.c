@@ -142,6 +142,8 @@ static void print_usage(char *argv[]) {
             "User Flags\n"
             "\t--compile-only, -S\n"
             "\t  Dont assemble/link, only produce assembly\n"
+            "\t--compile-and-assemble, -O\n"
+            "\t  Compile and assemble, don't link\n"
             "Developer Flags:\n"
             "\t--debug-asm\n"
             "\t--dump-ast\n"
@@ -182,7 +184,7 @@ static void parse_args(int argc, char *argv[]) {
     };
 
     while (1) {
-        int c = getopt_long(argc, argv, "Sv", opts, &opt_index);
+        int c = getopt_long(argc, argv, "SvO", opts, &opt_index);
 
         if (c == -1)
             break;
@@ -193,18 +195,13 @@ static void parse_args(int argc, char *argv[]) {
                 /* long option */
                 break;
 
-            case 'v':
-                compiler_context.opts.verbose = true;
-                break;
-
-            case 'S':
-                compiler_context.opts.compile_only = true;
-                break;
+            case 'v': compiler_context.opts.verbose              = true; break;
+            case 'S': compiler_context.opts.compile_only         = true; break;
+            case 'O': compiler_context.opts.compile_and_assemble = true; break;
 
             default:
                 compiler_message(MSG_ERROR, "Unknown option");
                 exit(1);
-                break;
         }
 
     }
@@ -284,10 +281,12 @@ int main(int argc, char *argv[]) {
         compiler_message(MSG_INFO, "Assembling %s via nasm", compiler_context.filename.asm_);
         assemble();
 
-        compiler_message(MSG_INFO, "Linking %s via cc", compiler_context.filename.obj);
-        link_cc();
+        if (!compiler_context.opts.compile_and_assemble) {
+            compiler_message(MSG_INFO, "Linking %s via cc", compiler_context.filename.obj);
+            link_cc();
 
-        compiler_message(MSG_INFO, "Binary `%s` has been built", compiler_context.filename.stripped);
+            compiler_message(MSG_INFO, "Binary `%s` has been built", compiler_context.filename.stripped);
+        }
     }
 
     symboltable_list_destroy(&symboltable);

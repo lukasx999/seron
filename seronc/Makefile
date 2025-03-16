@@ -33,11 +33,18 @@ compiler: main.o $(SOURCES)
 	@$(CC) $(CFLAGS) $^ -o $(BIN)
 	@echo LINK $^
 
+test: compiler
+	@echo TEST test/main.srn
+	@./seronc ./test/main.srn -O
+	@$(CC) $(CFLAGS) -o test/test ./test/test.c ./test/main.o
+	@./test/test
+
 %.o: %.c Makefile $(DEPS)
 	@$(CC) $(CFLAGS) -c $< -o $@
 	@echo CC $<
 
 clean:
 	rm *.o $(BIN)
+	rm ./test/*.o ./test/*.s ./test/test
 
 .PHONY: clean

@@ -17,6 +17,7 @@ TypeKind rule_util_type(Parser *p) {
     // <type> ::= TYPE
 
     Token *type_tok = parser_get_current_token(p);
+    // TODO: handle unknown types instead of crashing
     TypeKind type = typekind_from_tokenkind(type_tok->kind);
 
     if (type == TYPE_INVALID)
