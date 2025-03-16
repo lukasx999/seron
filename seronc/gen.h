@@ -27,9 +27,18 @@ int  gen_init    (CodeGenerator *gen, const char *filename_asm, bool print_comme
 void gen_destroy (CodeGenerator *c);
 void gen_prelude (CodeGenerator *c);
 
-Symbol  gen_binop            (CodeGenerator *gen, Symbol a, Symbol b, BinOpKind kind);
+
+Symbol gen_binop(CodeGenerator *gen, const Symbol  *lhs, const Symbol  *rhs, BinOpKind      kind);
+
+
 Symbol  gen_store_literal    (CodeGenerator *gen, int64_t value, TypeKind type);
-void    gen_procedure_start  (CodeGenerator *gen, const char *identifier, const ProcSignature *sig, const Symboltable *scope);
+
+void gen_procedure_start(
+    CodeGenerator       *gen,
+    const char          *identifier,
+    uint64_t             stack_size,
+    const ProcSignature *sig
+);
 void    gen_procedure_end    (CodeGenerator *c);
 void    gen_procedure_extern (CodeGenerator *gen, const char *identifier);
 void    gen_inlineasm        (CodeGenerator *c,   const char *src, const Symbol *symbols, size_t symbols_len);
@@ -41,6 +50,7 @@ gen_ctx gen_while_start      (CodeGenerator *gen);
 void    gen_while_end        (CodeGenerator *gen, Symbol cond,     gen_ctx ctx);
 void    gen_assign           (CodeGenerator *gen, Symbol assignee, Symbol value);
 void    gen_return           (CodeGenerator *gen, Symbol value);
+void gen_var_init(CodeGenerator *gen, const Symbol *var, const Symbol *init);
 
 
 #endif // _ASM_H

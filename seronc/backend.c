@@ -69,9 +69,9 @@ static void builtin_inlineasm(ExprCall *call, Symboltable *scope) {
 }
 
 static Symbol ast_binop(ExprBinOp *binop, Symboltable *scope) {
-    Symbol sym_lhs = traverse_ast(binop->lhs, scope);
-    Symbol sym_rhs = traverse_ast(binop->rhs, scope);
-    return gen_binop(&codegen, sym_lhs, sym_rhs, binop->kind);
+    Symbol lhs = traverse_ast(binop->lhs, scope);
+    Symbol rhs = traverse_ast(binop->rhs, scope);
+    return gen_binop(&codegen, &lhs, &rhs, binop->kind);
 }
 
 static Symbol ast_literal(ExprLiteral *literal, Symboltable *scope) {
@@ -79,36 +79,31 @@ static Symbol ast_literal(ExprLiteral *literal, Symboltable *scope) {
 
         case TOK_NUMBER: {
             const char *str = literal->op.value;
-            int64_t num = atoll(str);
-            return gen_store_literal(&codegen, num, INTLITERAL);
+            return gen_store_literal(&codegen, atoll(str), INTLITERAL);
         } break;
 
         case TOK_IDENTIFIER: {
-            const char *variable = literal->op.value;
-            Symbol *sym = symboltable_list_lookup(scope, variable);
+            const char *ident = literal->op.value;
+            Symbol *sym = symboltable_list_lookup(scope, ident);
             assert(sym != NULL);
             return *sym;
         } break;
 
-        default:
-            assert(!"Literal Unimplemented");
-            break;
+        default: assert(!"unimplemented");
     }
 }
 
 static void ast_vardecl(StmtVarDecl *vardecl, Symboltable *scope) {
-    const char *variable = vardecl->identifier.value;
-
-    // BUG: cannot assign address to declared variable
     if (vardecl->value == NULL)
         return;
 
     Symbol value = traverse_ast(vardecl->value, scope);
 
-    /* populate address in symboltable */
-    Symbol *sym = symboltable_get(scope, variable);
+    const char *ident = vardecl->identifier.value;
+    Symbol *sym = symboltable_get(scope, ident);
     assert(sym != NULL);
-    sym->stack_addr = value.stack_addr;
+
+    gen_var_init(&codegen, sym, &value);
 }
 
 static void ast_procedure(StmtProcedure *proc, Symboltable *scope) {
@@ -120,10 +115,7 @@ static void ast_procedure(StmtProcedure *proc, Symboltable *scope) {
         return;
     }
 
-    assert(proc->body->kind == ASTNODE_BLOCK);
-    Symboltable *body = proc->body->block.symboltable;
-
-    gen_procedure_start(&codegen, ident, sig, body);
+    gen_procedure_start(&codegen, ident, proc->stack_size, sig);
     traverse_ast(proc->body, scope);
     gen_procedure_end(&codegen);
 }

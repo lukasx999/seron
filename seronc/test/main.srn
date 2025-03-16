@@ -1,3 +1,10 @@
+proc foo(x int, y int) {
+    let a int;
+    let b int;
+    let c int;
+}
+
 proc main() int {
     let x int = 1 + 2 + 3;
+    let y int;
 }

@@ -385,29 +385,29 @@ static void proc_insert_params_callback(AstNode *node, int _depth, void *_args) 
 
 }
 
-static void precompute_stack_layout(AstNode *node, int _depth, void *args) {
-    (void) _depth;
-
-    size_t *stack_size = (size_t*) args;
-    *stack_size = 0;
+static void precompute_stack_layout(AstNode *node, int _depth, void *_args) {
+    (void) _depth, (void) _args;
 
     StmtProcedure *proc = &node->stmt_procedure;
     ProcSignature *sig = &proc->type.type_signature;
+    assert(proc->stack_size == 0);
 
     if (proc->body == NULL)
         return;
+
 
     assert(proc->body->kind == ASTNODE_BLOCK);
     Block *body = &proc->body->block;
 
     for (size_t i=0; i < sig->params_count; ++i) {
         Param *param = &sig->params[i];
-        *stack_size += typekind_get_size(param->type->kind);
+        proc->stack_size += typekind_get_size(param->type->kind);
 
         Symbol *sym = symboltable_get(body->symboltable, param->ident);
         assert(sym != NULL);
-        sym->stack_addr = *stack_size;
+        sym->stack_addr = proc->stack_size;
     }
+
 
     AstNodeList *list = &body->stmts;
 
@@ -416,11 +416,11 @@ static void precompute_stack_layout(AstNode *node, int _depth, void *args) {
 
         if (item->kind == ASTNODE_VARDECL) {
             StmtVarDecl *vardecl = &item->stmt_vardecl;
-            *stack_size += typekind_get_size(vardecl->type.kind);
+            proc->stack_size += typekind_get_size(vardecl->type.kind);
 
             Symbol *sym = symboltable_get(body->symboltable, vardecl->identifier.value);
             assert(sym != NULL);
-            sym->stack_addr = *stack_size;
+            sym->stack_addr = proc->stack_size;
         }
 
     }
@@ -442,9 +442,7 @@ SymboltableList symboltable_list_construct(AstNode *root, size_t table_size) {
 
     traverse_ast(root, &ctx);
     parser_query_ast(root, proc_insert_params_callback, ASTNODE_PROCEDURE, NULL);
-
-    size_t stack_size = 0;
-    parser_query_ast(root, precompute_stack_layout, ASTNODE_PROCEDURE, (void*) &stack_size);
+    parser_query_ast(root, precompute_stack_layout, ASTNODE_PROCEDURE, NULL);
 
     return st;
 }

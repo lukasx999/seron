@@ -30,7 +30,7 @@ static const char *typekind_get_size_operand(TypeKind type) {
     }
 }
 
-static const char *typekind_get_reg(Register reg, TypeKind type) {
+static const char *typekind_get_subregister(Register reg, TypeKind type) {
     switch (reg) {
 
         case REG_RAX: switch (type) {
@@ -96,12 +96,12 @@ static const char *abi_get_register(int arg_n, TypeKind type) {
         return NULL;
 
     const char *registers[] = {
-        [1] = typekind_get_reg(REG_RDI, type),
-        [2] = typekind_get_reg(REG_RSI, type),
-        [3] = typekind_get_reg(REG_RDX, type),
-        [4] = typekind_get_reg(REG_RCX, type),
-        [5] = typekind_get_reg(REG_R8, type),
-        [6] = typekind_get_reg(REG_R9, type),
+        [1] = typekind_get_subregister(REG_RDI, type),
+        [2] = typekind_get_subregister(REG_RSI, type),
+        [3] = typekind_get_subregister(REG_RDX, type),
+        [4] = typekind_get_subregister(REG_RCX, type),
+        [5] = typekind_get_subregister(REG_R8, type),
+        [6] = typekind_get_subregister(REG_R9, type),
     };
 
     return registers[arg_n];
@@ -121,10 +121,10 @@ static void gen_addinstr(CodeGenerator *gen, const char *fmt, ...) {
 // Moves the specified symbol `sym`, regardless of its storage location into
 // the specified register `reg`
 //
-static void symbol_to_register(CodeGenerator *gen, Register reg, const Symbol *sym) {
+static void gen_symbol_into_register(CodeGenerator *gen, Register reg, const Symbol *sym) {
     // TODO: label
 
-    const char *regnew = typekind_get_reg(reg, sym->type.kind);
+    const char *regnew = typekind_get_subregister(reg, sym->type.kind);
 
     switch (sym->kind) {
 
@@ -134,7 +134,7 @@ static void symbol_to_register(CodeGenerator *gen, Register reg, const Symbol *s
             break;
 
         case SYMBOL_TEMPORARY: {
-            const char *regold = typekind_get_reg(sym->reg, sym->type.kind);
+            const char *regold = typekind_get_subregister(sym->reg, sym->type.kind);
             gen_addinstr(gen, "mov %s, %s", regnew, regold);
         } return;
 
@@ -177,9 +177,115 @@ void gen_destroy(CodeGenerator *gen) {
 }
 
 void gen_prelude(CodeGenerator *gen) {
-    // TODO: different sections
     gen_addinstr(gen, "section .text");
 }
+
+
+Symbol gen_binop(
+    CodeGenerator *gen,
+    const Symbol  *lhs,
+    const Symbol  *rhs,
+    BinOpKind      kind
+) {
+
+    assert(lhs->type.kind == lhs->type.kind);
+    gen_comment(gen, "START: binop");
+
+    gen_symbol_into_register(gen, REG_RAX, lhs);
+    gen_symbol_into_register(gen, REG_RDI, rhs);
+
+    const char *rax = typekind_get_subregister(REG_RAX, lhs->type.kind);
+    const char *rdi = typekind_get_subregister(REG_RDI, lhs->type.kind);
+
+    switch (kind) {
+        case BINOP_ADD: gen_addinstr(gen, "add %s, %s", rax, rdi); break;
+        case BINOP_SUB: gen_addinstr(gen, "sub %s, %s", rax, rdi); break;
+        case BINOP_MUL: gen_addinstr(gen, "imul %s", rdi);         break;
+        case BINOP_DIV: gen_addinstr(gen, "idiv %s", rdi);         break;
+        default: assert(!"Unimplemented"); break;
+    }
+
+    gen_comment(gen, "END: binop\n");
+    return (Symbol) {
+        .kind = SYMBOL_TEMPORARY,
+        .type = lhs->type,
+        .reg  = REG_RAX,
+    };
+}
+
+Symbol gen_store_literal(CodeGenerator *gen, int64_t value, TypeKind type) {
+    gen_comment(gen, "START: store");
+
+    const char *subreg = typekind_get_subregister(REG_RAX, type);
+    gen_addinstr(gen, "mov %s, %lu", subreg, value);
+
+    gen_comment(gen, "END: store");
+    return (Symbol) {
+        .kind = SYMBOL_TEMPORARY,
+        .type = (Type) { .kind = type },
+        .reg  = REG_RAX,
+    };
+}
+
+void gen_procedure_start(
+    CodeGenerator       *gen,
+    const char          *identifier,
+    uint64_t             stack_size,
+    const ProcSignature *sig
+) {
+
+    gen_comment(gen, "START: proc");
+    gen_comment(gen, "START: proc_prelude");
+
+    gen_addinstr(gen, "");
+    gen_addinstr(gen, "global %s", identifier);
+    gen_addinstr(gen, "%s:", identifier);
+    gen_addinstr(gen, "push rbp");
+    gen_addinstr(gen, "mov rbp, rsp");
+    gen_addinstr(gen, "sub rsp, %lu", stack_size);
+
+    gen_comment(gen, "START: abi");
+
+    // Move parameters onto stack
+    for (size_t i=0; i < sig->params_count; ++i) {
+        const Param *param   = &sig->params[i];
+        const char  *reg     = abi_get_register(i+1, param->type->kind);
+        const char  *size_op = typekind_get_size_operand(param->type->kind);
+
+        assert(reg != NULL && "TODO");
+
+        gen_addinstr(gen, "mov %s [rbp-%lu], %s", size_op, gen->rbp_offset, reg);
+    }
+
+    gen_comment(gen, "END: abi");
+    gen_comment(gen, "END: proc_prelude\n");
+}
+
+void gen_procedure_end(CodeGenerator *gen) {
+    gen_comment(gen, "START: proc_postlude");
+
+    gen_addinstr(gen, "mov rsp, rbp");
+    gen_addinstr(gen, "pop rbp");
+    gen_addinstr(gen, "ret");
+
+    gen_comment(gen, "END: proc_postlude");
+    gen_comment(gen, "END: proc\n");
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 gen_ctx gen_if_then(CodeGenerator *gen, Symbol cond) {
     gen_ctx ctx = gen->label_count;
@@ -230,42 +336,7 @@ void gen_while_end(CodeGenerator *gen, Symbol cond, gen_ctx ctx) {
     gen_comment(gen, "END: while\n");
 }
 
-Symbol gen_binop(CodeGenerator *gen, Symbol a, Symbol b, BinOpKind kind) {
-    assert(a.type.kind == a.type.kind);
-    gen_comment(gen, "START: binop");
 
-    symbol_to_register(gen, REG_RAX, &a);
-    symbol_to_register(gen, REG_RDI, &b);
-
-    switch (kind) {
-        case BINOP_ADD: gen_addinstr(gen, "add rax, rdi"); break;
-        case BINOP_SUB: gen_addinstr(gen, "sub rax, rsi"); break;
-        case BINOP_MUL: gen_addinstr(gen, "imul rdi");     break;
-        case BINOP_DIV: gen_addinstr(gen, "idiv rdi");     break;
-        default: assert(!"Unimplemented"); break;
-    }
-
-    gen_comment(gen, "END: binop\n");
-    return (Symbol) {
-        .kind = SYMBOL_TEMPORARY,
-        .type = a.type,
-        .reg  = REG_RAX,
-    };
-}
-
-Symbol gen_store_literal(CodeGenerator *gen, int64_t value, TypeKind type) {
-    gen_comment(gen, "START: store");
-
-    const char *reg = typekind_get_reg(REG_RAX, type);
-    gen_addinstr(gen, "mov %s, %lu", reg, value);
-
-    gen_comment(gen, "END: store");
-    return (Symbol) {
-        .kind = SYMBOL_TEMPORARY,
-        .type = (Type) { .kind = type },
-        .reg  = REG_RAX,
-    };
-}
 
 // addrs is an array containing the addresses (rbp-offsets) of the arguments
 void gen_inlineasm(
@@ -303,62 +374,14 @@ void gen_procedure_extern(CodeGenerator *gen, const char *identifier) {
     gen_comment(gen, "END: extern proc");
 }
 
-void gen_procedure_start(
-    CodeGenerator       *gen,
-    const char          *identifier,
-    const ProcSignature *sig,
-    const Symboltable   *scope
-) {
-    gen->rbp_offset = 0;
 
-    gen_comment(gen, "START: proc");
-    gen_comment(gen, "START: proc_prelude");
+void gen_var_init(CodeGenerator *gen, const Symbol *var, const Symbol *init) {
+    gen_comment(gen, "START: var init");
 
-    gen_addinstr(gen, "");
-    gen_addinstr(gen, "global %s", identifier);
-    gen_addinstr(gen, "%s:", identifier);
-    gen_addinstr(gen, "push rbp");
-    gen_addinstr(gen, "mov rbp, rsp");
+    gen_symbol_into_register(gen, REG_RAX, init);
+    gen_addinstr(gen, "mov [rbp-%lu], rax", var->stack_addr);
 
-
-    gen_comment(gen, "START: abi");
-
-    for (size_t i=0; i < sig->params_count; ++i) {
-        const Param *param = &sig->params[i];
-        const char *reg = abi_get_register(i+1, param->type->kind);
-
-        assert(reg != NULL && "TODO");
-
-        size_t offset = typekind_get_size(param->type->kind);
-        gen->rbp_offset += offset;
-        gen_addinstr(gen, "sub rsp, %lu", offset);
-        gen_addinstr(
-            gen,
-            "mov %s [rbp-%lu], %s",
-            typekind_get_size_operand(param->type->kind),
-            gen->rbp_offset,
-            reg
-        );
-
-        // fill in address of params
-        Symbol *sym = symboltable_list_lookup(scope, param->ident);
-        assert(sym != NULL);
-        sym->stack_addr = gen->rbp_offset;
-    }
-
-    gen_comment(gen, "END: abi");
-    gen_comment(gen, "END: proc_prelude\n");
-}
-
-void gen_procedure_end(CodeGenerator *gen) {
-    gen_comment(gen, "START: proc_postlude");
-
-    gen_addinstr(gen, "mov rsp, rbp");
-    gen_addinstr(gen, "pop rbp");
-    gen_addinstr(gen, "ret");
-
-    gen_comment(gen, "END: proc_postlude");
-    gen_comment(gen, "END: proc\n");
+    gen_comment(gen, "END: var init");
 }
 
 void gen_assign(CodeGenerator *gen, Symbol assignee, Symbol value) {}
