@@ -15,10 +15,32 @@ proc sum_literals_21() int {
     return result;
 }
 
+proc sum_literals_3() int {
+    let result int = 1 + 2;
+    return result;
+}
+
 proc cond(condition int, then int, other int) int {
     if condition {
         return then;
     } else {
         return other;
     }
+}
+
+proc assign(initial int, new int) int {
+    let result int = initial;
+    result = new;
+    return result;
+}
+
+proc loop(i int) int {
+    let j int = 0;
+
+    while i {
+        i = i - 1;
+        j = j + 1;
+    }
+
+    return j;
 }

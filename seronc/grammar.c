@@ -438,9 +438,8 @@ AstNode *rule_assignment(Parser *p) {
         if (!(is_literal && is_ident))
             parser_throw_error(p, "Invalid assignment target");
 
-        /* AstNode is not needed anymore, since we know its an identifier */
+        // AstNode is not needed anymore, since we know its an identifier
         Token ident = expr->expr_literal.op;
-        free(expr);
 
         AstNode *value = rule_assignment(p);
 

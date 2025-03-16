@@ -230,7 +230,6 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: replace ast traversals with parser_query_ast
 // TODO: parser_map_ast() designated initializer array: map from enum to function pointer
 // TODO: rework errors/warnings with tokens
-// TODO: precomputed stack layout
 
 
 
@@ -252,7 +251,6 @@ int main(int argc, char *argv[]) {
         tokenlist_print(&tokens);
 
     free(file);
-
 
     Arena parser_arena = { 0 };
     arena_init(&parser_arena);

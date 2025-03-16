@@ -107,8 +107,6 @@ static const char *abi_get_register(int arg_n, TypeKind type) {
     return registers[arg_n];
 }
 
-
-
 static void gen_addinstr(CodeGenerator *gen, const char *fmt, ...) {
     va_list va;
     va_start(va, fmt);
@@ -204,7 +202,7 @@ Symbol gen_binop(
         case BINOP_SUB: gen_addinstr(gen, "sub %s, %s", rax, rdi); break;
         case BINOP_MUL: gen_addinstr(gen, "imul %s", rdi);         break;
         case BINOP_DIV: gen_addinstr(gen, "idiv %s", rdi);         break;
-        default: assert(!"unimplemented"); break;
+        default: assert(!"unimplemented");
     }
 
     gen_comment(gen, "END: binop\n");
@@ -216,16 +214,24 @@ Symbol gen_binop(
 }
 
 Symbol gen_store_literal(CodeGenerator *gen, int64_t value, TypeKind type) {
+    static int x = 0;
+
     gen_comment(gen, "START: store");
 
-    const char *subreg = typekind_get_subregister(REG_RAX, type);
-    gen_addinstr(gen, "mov %s, %lu", subreg, value);
+    // TODO: cycle through registers
+
+    // HACK:
+    Register reg = x % 2 == 0 ? REG_RCX : REG_RSI;
+    x++;
+
+    const char *rax = typekind_get_subregister(reg, type);
+    gen_addinstr(gen, "mov %s, %lu", rax, value);
 
     gen_comment(gen, "END: store");
     return (Symbol) {
         .kind = SYMBOL_TEMPORARY,
         .type = (Type) { .kind = type },
-        .reg  = REG_RAX,
+        .reg  = reg,
     };
 }
 
@@ -309,12 +315,12 @@ void gen_var_init(CodeGenerator *gen, const Symbol *var, const Symbol *init) {
     gen_comment(gen, "END: var init");
 }
 
-gen_ctx_t gen_if_then(CodeGenerator *gen, Symbol cond) {
+gen_ctx_t gen_if_then(CodeGenerator *gen, const Symbol *cond) {
     gen_ctx_t ctx = gen->label_count;
-    const char *size_op = typekind_get_size_operand(cond.type.kind);
+    const char *size_op = typekind_get_size_operand(cond->type.kind);
 
     gen_comment(gen, "START: if");
-    gen_addinstr(gen, "cmp %s [rbp-%lu], 0", size_op, cond.stack_addr);
+    gen_addinstr(gen, "cmp %s [rbp-%lu], 0", size_op, cond->stack_addr);
     gen_addinstr(gen, "je .else_%lu", ctx);
 
     gen->label_count++;
@@ -342,20 +348,35 @@ gen_ctx_t gen_while_start(CodeGenerator *gen) {
     return ctx;
 }
 
-void gen_while_end(CodeGenerator *gen, Symbol cond, gen_ctx_t ctx) {
-    const char *size_op = typekind_get_size_operand(cond.type.kind);
+void gen_while_end(CodeGenerator *gen, const Symbol *cond, gen_ctx_t ctx) {
+    const char *size_op = typekind_get_size_operand(cond->type.kind);
 
     gen_addinstr(gen, ".cond_%lu:", ctx);
     gen_addinstr(
         gen,
         "cmp %s [rbp-%lu], 0",
         size_op,
-        cond.stack_addr
+        cond->stack_addr
     );
     gen_addinstr(gen, "jne .while_%lu", ctx);
     gen_comment(gen, "END: while\n");
 }
 
+void gen_assign(CodeGenerator *gen, const Symbol *assignee, const Symbol *value) {
+    assert(assignee->type.kind == value->type.kind);
+
+    // TODO: support static variables at some point
+    assert(assignee->kind == SYMBOL_VARIABLE || assignee->kind == SYMBOL_PARAMETER);
+    gen_move_symbol_into_register(gen, REG_RAX, value);
+
+    const Type *type    = &assignee->type;
+    const char *size_op = typekind_get_size_operand(type->kind);
+    const char *rax     = typekind_get_subregister(REG_RAX, type->kind);
+
+    gen_comment(gen, "START: assignment");
+    gen_addinstr(gen, "mov %s [rbp-%lu], %s", size_op, assignee->stack_addr, rax);
+    gen_comment(gen, "END: assignment");
+}
 
 
 
@@ -398,7 +419,6 @@ void gen_inlineasm(
 }
 
 
-void gen_assign(CodeGenerator *gen, Symbol assignee, Symbol value) { (void) value, (void) assignee, (void) gen; }
 Symbol gen_call(CodeGenerator *gen, Symbol callee, const Symbol *args, size_t args_len) { (void) gen, (void) callee, (void) args, (void) args_len; return (Symbol) { 0 }; }
 
 
@@ -452,22 +472,5 @@ Symbol gen_call(
         .type       = (Type) { .kind = returntype },
         .stack_addr = gen->rbp_offset,
     };
-}
-
-void gen_assign(CodeGenerator *gen, Symbol assignee, Symbol value) {
-    assert(assignee.type.kind == value.type.kind);
-
-    Type type = assignee.type;
-    const char *rax = typekind_get_register_rax(type.kind);
-
-    gen_comment(gen, "START: assignment");
-    gen_addinstr(gen, "mov %s, [rbp-%lu]", rax, value.stack_addr);
-    gen_addinstr(
-        gen,
-        "mov %s [rbp-%lu], %s", typekind_get_size_operand(type.kind),
-        assignee.stack_addr,
-        rax
-    );
-    gen_comment(gen, "END: assignment");
 }
 */

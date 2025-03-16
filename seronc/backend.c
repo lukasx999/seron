@@ -159,7 +159,7 @@ static Symbol ast_call(ExprCall *call, Symboltable *scope) {
 static void ast_if(StmtIf *if_, Symboltable *scope) {
     Symbol cond = traverse_ast(if_->condition, scope);
 
-    gen_ctx_t if_ctx = gen_if_then(&codegen, cond);
+    gen_ctx_t if_ctx = gen_if_then(&codegen, &cond);
     traverse_ast(if_->then_body, scope);
     gen_if_else(&codegen, if_ctx);
 
@@ -174,11 +174,11 @@ static void ast_while(StmtWhile *while_, Symboltable *scope) {
 
     gen_ctx_t while_ctx = gen_while_start(&codegen);
     traverse_ast(while_->body, scope);
-    gen_while_end(&codegen, cond, while_ctx);
+    gen_while_end(&codegen, &cond, while_ctx);
 }
 
-static void ast_return(StmtReturn *ret, Symboltable *scope) {
-    Symbol expr = traverse_ast(ret->expr, scope);
+static void ast_return(StmtReturn *return_, Symboltable *scope) {
+    Symbol expr = traverse_ast(return_->expr, scope);
     gen_return(&codegen, &expr);
 }
 
@@ -188,7 +188,7 @@ static Symbol ast_assign(ExprAssignment *assign, Symboltable *scope) {
 
     Symbol *assignee = symboltable_list_lookup(scope, ident);
     assert(assignee != NULL);
-    gen_assign(&codegen, *assignee, value);
+    gen_assign(&codegen, assignee, &value);
 
     return value;
 }

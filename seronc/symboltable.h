@@ -12,6 +12,7 @@
 
 
 // TODO: static variables
+// TODO: add literal symbol type
 typedef enum {
     SYMBOL_NONE,
 
