@@ -159,7 +159,7 @@ static Symbol ast_call(ExprCall *call, Symboltable *scope) {
 static void ast_if(StmtIf *if_, Symboltable *scope) {
     Symbol cond = traverse_ast(if_->condition, scope);
 
-    gen_ctx if_ctx = gen_if_then(&codegen, cond);
+    gen_ctx_t if_ctx = gen_if_then(&codegen, cond);
     traverse_ast(if_->then_body, scope);
     gen_if_else(&codegen, if_ctx);
 
@@ -172,7 +172,7 @@ static void ast_if(StmtIf *if_, Symboltable *scope) {
 static void ast_while(StmtWhile *while_, Symboltable *scope) {
     Symbol cond = traverse_ast(while_->condition, scope);
 
-    gen_ctx while_ctx = gen_while_start(&codegen);
+    gen_ctx_t while_ctx = gen_while_start(&codegen);
     traverse_ast(while_->body, scope);
     gen_while_end(&codegen, cond, while_ctx);
 }
@@ -246,9 +246,7 @@ static Symbol traverse_ast(AstNode *node, Symboltable *scope) {
             return ast_assign(&node->expr_assign, scope);
             break;
 
-        default:
-            assert(!"Unexpected Node Kind");
-            break;
+        default: assert(!"unexpected node kind");
     }
 
     return (Symbol) {

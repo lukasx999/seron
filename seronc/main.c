@@ -233,12 +233,7 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: replace ast traversals with parser_query_ast
 // TODO: parser_map_ast() designated initializer array: map from enum to function pointer
 // TODO: rework errors/warnings with tokens
-
-// TODO: precompute stack frame layout + reserve stack space in bulk in prelude
-// TODO: only use stack for variables, use registers for temporary computations
-// - "SYMBOL_REGISTER" tag for Symbol tagged union
-// - make some function that takes a symbol, (label, stack_addr, register) and
-// just moves it into a register. that would make it generic enough to work with eg: binop.
+// TODO: precomputed stack layout
 
 
 

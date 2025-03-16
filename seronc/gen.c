@@ -276,54 +276,51 @@ void gen_procedure_end(CodeGenerator *gen) {
 void gen_return(CodeGenerator *gen, const Symbol *value) {
     gen_comment(gen, "START: return");
 
-    // TODO: early return: label
+    // TODO: label for early return
     gen_move_symbol_into_register(gen, REG_RAX, value);
 
     gen_comment(gen, "END: return\n");
 }
 
+void gen_procedure_extern(CodeGenerator *gen, const char *ident) {
+    gen_comment(gen, "START: extern proc");
+    gen_addinstr(gen, "extern %s", ident);
+    gen_comment(gen, "END: extern proc");
+}
 
+void gen_var_init(CodeGenerator *gen, const Symbol *var, const Symbol *init) {
+    gen_comment(gen, "START: var init");
 
+    gen_move_symbol_into_register(gen, REG_RAX, init);
+    gen_addinstr(gen, "mov [rbp-%lu], rax", var->stack_addr);
 
+    gen_comment(gen, "END: var init");
+}
 
-
-
-
-
-
-
-
-
-
-
-gen_ctx gen_if_then(CodeGenerator *gen, Symbol cond) {
-    gen_ctx ctx = gen->label_count;
+gen_ctx_t gen_if_then(CodeGenerator *gen, Symbol cond) {
+    gen_ctx_t ctx = gen->label_count;
+    const char *size_op = typekind_get_size_operand(cond.type.kind);
 
     gen_comment(gen, "START: if");
-    gen_addinstr(
-        gen,
-        "cmp %s [rbp-%lu], 0",
-        typekind_get_size_operand(cond.type.kind),
-        cond.stack_addr
-    );
+    gen_addinstr(gen, "cmp %s [rbp-%lu], 0", size_op, cond.stack_addr);
     gen_addinstr(gen, "je .else_%lu", ctx);
 
     gen->label_count++;
     return ctx;
 }
 
-void gen_if_else(CodeGenerator *gen, gen_ctx ctx) {
+void gen_if_else(CodeGenerator *gen, gen_ctx_t ctx) {
     gen_addinstr(gen, "jmp .end_%lu", ctx);
     gen_addinstr(gen, ".else_%lu:", ctx);
 }
 
-void gen_if_end(CodeGenerator *gen, gen_ctx ctx) {
+void gen_if_end(CodeGenerator *gen, gen_ctx_t ctx) {
     gen_addinstr(gen, ".end_%lu:", ctx);
     gen_comment(gen, "END: if\n");
 }
 
-gen_ctx gen_while_start(CodeGenerator *gen) {
-    gen_ctx ctx = gen->label_count;
+gen_ctx_t gen_while_start(CodeGenerator *gen) {
+    gen_ctx_t ctx = gen->label_count;
 
     gen_comment(gen, "START: while");
     gen_addinstr(gen, "jmp .cond_%lu", ctx);
@@ -333,18 +330,29 @@ gen_ctx gen_while_start(CodeGenerator *gen) {
     return ctx;
 }
 
-void gen_while_end(CodeGenerator *gen, Symbol cond, gen_ctx ctx) {
+void gen_while_end(CodeGenerator *gen, Symbol cond, gen_ctx_t ctx) {
+    const char *size_op = typekind_get_size_operand(cond.type.kind);
+
     gen_addinstr(gen, ".cond_%lu:", ctx);
     gen_addinstr(
         gen,
         "cmp %s [rbp-%lu], 0",
-        typekind_get_size_operand(cond.type.kind),
+        size_op,
         cond.stack_addr
     );
     gen_addinstr(gen, "jne .while_%lu", ctx);
     gen_comment(gen, "END: while\n");
 }
 
+
+
+
+
+
+
+
+
+// TODO: REVIEW:
 
 
 // addrs is an array containing the addresses (rbp-offsets) of the arguments
@@ -377,21 +385,6 @@ void gen_inlineasm(
     gen_comment(gen, "END: inline\n");
 }
 
-void gen_procedure_extern(CodeGenerator *gen, const char *identifier) {
-    gen_comment(gen, "START: extern proc");
-    gen_addinstr(gen, "extern %s", identifier);
-    gen_comment(gen, "END: extern proc");
-}
-
-
-void gen_var_init(CodeGenerator *gen, const Symbol *var, const Symbol *init) {
-    gen_comment(gen, "START: var init");
-
-    gen_move_symbol_into_register(gen, REG_RAX, init);
-    gen_addinstr(gen, "mov [rbp-%lu], rax", var->stack_addr);
-
-    gen_comment(gen, "END: var init");
-}
 
 void gen_assign(CodeGenerator *gen, Symbol assignee, Symbol value) { (void) value, (void) assignee, (void) gen; }
 Symbol gen_call(CodeGenerator *gen, Symbol callee, const Symbol *args, size_t args_len) { (void) gen, (void) callee, (void) args, (void) args_len; return (Symbol) { 0 }; }
