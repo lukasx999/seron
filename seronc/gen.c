@@ -197,6 +197,7 @@ Symbol gen_binop(
     const char *rax = typekind_get_subregister(REG_RAX, lhs->type.kind);
     const char *rdi = typekind_get_subregister(REG_RDI, lhs->type.kind);
 
+    // TODO: consider adding register input param
     switch (kind) {
         case BINOP_ADD: gen_addinstr(gen, "add %s, %s", rax, rdi); break;
         case BINOP_SUB: gen_addinstr(gen, "sub %s, %s", rax, rdi); break;
