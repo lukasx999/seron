@@ -187,6 +187,7 @@ Symbol gen_binop(
     const Symbol  *rhs,
     BinOpKind      kind
 ) {
+    static int i = 0;
 
     assert(lhs->type.kind == lhs->type.kind);
     gen_comment(gen, "START: binop");
@@ -197,7 +198,6 @@ Symbol gen_binop(
     const char *rax = typekind_get_subregister(REG_RAX, lhs->type.kind);
     const char *rdi = typekind_get_subregister(REG_RDI, lhs->type.kind);
 
-    // TODO: consider adding register input param
     switch (kind) {
         case BINOP_ADD: gen_addinstr(gen, "add %s, %s", rax, rdi); break;
         case BINOP_SUB: gen_addinstr(gen, "sub %s, %s", rax, rdi); break;
@@ -206,24 +206,28 @@ Symbol gen_binop(
         default: assert(!"unimplemented");
     }
 
+    // HACK:
+    Register reg = i++ % 2 == 0 ? REG_RSI : REG_RDX;
+    const char *out = typekind_get_subregister(reg, lhs->type.kind);
+    gen_addinstr(gen, "mov %s, %s", out, rax);
+
     gen_comment(gen, "END: binop\n");
     return (Symbol) {
         .kind = SYMBOL_TEMPORARY,
         .type = lhs->type,
-        .reg  = REG_RAX,
+        .reg  = reg,
     };
 }
 
 Symbol gen_store_literal(CodeGenerator *gen, int64_t value, TypeKind type) {
-    static int x = 0;
+    static int i = 0;
 
     gen_comment(gen, "START: store");
 
     // TODO: cycle through registers
 
     // HACK:
-    Register reg = x % 2 == 0 ? REG_RCX : REG_RSI;
-    x++;
+    Register reg = i++ % 2 == 0 ? REG_RSI : REG_RDX;
 
     const char *rax = typekind_get_subregister(reg, type);
     gen_addinstr(gen, "mov %s, %lu", rax, value);
@@ -301,8 +305,9 @@ void gen_procedure_extern(CodeGenerator *gen, const char *ident) {
 void gen_var_init(CodeGenerator *gen, const Symbol *var, const Symbol *init) {
     gen_comment(gen, "START: var init");
 
-    gen_move_symbol_into_register(gen, REG_RAX, init);
-    const char *rax = typekind_get_subregister(REG_RAX, init->type.kind);
+    Register reg = REG_RAX;
+    gen_move_symbol_into_register(gen, reg, init);
+    const char *rax = typekind_get_subregister(reg, init->type.kind);
     const char *size_op = typekind_get_size_operand(init->type.kind);
 
     gen_addinstr(

@@ -4,10 +4,10 @@
 #include "ast.h"
 
 typedef enum {
-    REG_RAX,
-    REG_RDI,
-    REG_RSI,
-    REG_RDX,
+    REG_RAX, // operand 1
+    REG_RDI, // operand 2
+    REG_RSI, // out 1
+    REG_RDX, // out 2
     REG_RCX,
     REG_R8,
     REG_R9,

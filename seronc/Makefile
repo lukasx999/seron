@@ -35,7 +35,7 @@ compiler: main.o $(SOURCES)
 
 test: compiler
 	@echo TEST test/main.srn
-	@./seronc ./test/main.srn -O
+	@./seronc ./test/main.srn -Ov --debug-asm
 	@$(CC) $(CFLAGS) -o test/test ./test/test.c ./test/main.o
 	@./test/test
 
