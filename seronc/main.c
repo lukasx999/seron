@@ -190,14 +190,13 @@ static void parse_args(int argc, char *argv[]) {
             break;
 
         switch (c) {
-
             case 0:
                 /* long option */
                 break;
 
-            case 'v': compiler_context.opts.verbose              = true; break;
-            case 'S': compiler_context.opts.compile_only         = true; break;
-            case 'O': compiler_context.opts.compile_and_assemble = true; break;
+            case 'v': compiler_context.opts.verbose              = 1; break;
+            case 'S': compiler_context.opts.compile_only         = 1; break;
+            case 'O': compiler_context.opts.compile_and_assemble = 1; break;
 
             default:
                 compiler_message(MSG_ERROR, "Unknown option");
@@ -256,7 +255,7 @@ int main(int argc, char *argv[]) {
     arena_init(&parser_arena);
 
     compiler_message(MSG_INFO, "Parsing");
-    AstNode *node_root = parser_parse(&tokens, &parser_arena);
+    AstNode *node_root = parse(&tokens, &parser_arena);
 
     if (compiler_context.opts.dump_ast)
         parser_print_ast(node_root, 2);
@@ -272,7 +271,7 @@ int main(int argc, char *argv[]) {
     compiler_message(MSG_INFO, "Typechecking");
     check_types(node_root);
 
-    compiler_message(MSG_INFO, "Codegeneration");
+    compiler_message(MSG_INFO, "Codegen");
     generate_code(node_root);
 
     if (!compiler_context.opts.compile_only) {

@@ -17,7 +17,7 @@ Currently, the only supported backend is x86_64 NASM.
 
 ## Usage Requirements
 
-- NASM *(for assembly)*
+- NASM *(for assembling)*
 - CC *(for linking with C runtime)*
 
 ## Building Compiler
@@ -28,23 +28,13 @@ $ cd seronc/src
 $ make
 ```
 
+## Developer Tooling
+
+Currently, only syntax highlighting is available for Vim. See `editor/`.
+
 ## Building `compile_commands.json` for clangd
 
 ```
 $ pipx install compiledb
 $ compiledb make
 ```
-
-## Language Features
-
-- [x] Extern Procedures
-- [x] Add / Sub / Mul / Div
-- [x] Procedure calls
-- [x] Inline Assembly
-  - [x] Parameters
-- [x] Procedures
-  - [x] Parameters
-  - [x] Returnvalue
-- [x] Variables
-- [x] While Loop
-- [x] If/Else Statement

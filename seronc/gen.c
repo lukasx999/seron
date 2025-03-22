@@ -187,7 +187,6 @@ Symbol gen_binop(
     const Symbol  *rhs,
     BinOpKind      kind
 ) {
-    static int i = 0;
 
     assert(lhs->type.kind == lhs->type.kind);
     gen_comment(gen, "START: binop");
@@ -206,8 +205,9 @@ Symbol gen_binop(
         default: assert(!"unimplemented");
     }
 
-    // HACK:
+    static int i = 0;
     Register reg = i++ % 2 == 0 ? REG_RSI : REG_RDX;
+
     const char *out = typekind_get_subregister(reg, lhs->type.kind);
     gen_addinstr(gen, "mov %s, %s", out, rax);
 
@@ -220,13 +220,9 @@ Symbol gen_binop(
 }
 
 Symbol gen_store_literal(CodeGenerator *gen, int64_t value, TypeKind type) {
-    static int i = 0;
-
     gen_comment(gen, "START: store");
 
-    // TODO: cycle through registers
-
-    // HACK:
+    static int i = 0;
     Register reg = i++ % 2 == 0 ? REG_RSI : REG_RDX;
 
     const char *rax = typekind_get_subregister(reg, type);

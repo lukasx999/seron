@@ -2,14 +2,14 @@
 #include <stdbool.h>
 #include <assert.h>
 
-#define test(expr, expected) do {                                             \
-testcount++;                                                                  \
-int value = (expr);                                                           \
-if (value == (expected)) {                                                    \
-    passcount++;                                                              \
-} else {                                                                      \
-    fprintf(stderr, "`" #expr " == " #expected "` failed, got %d\n", value ); \
-}                                                                             \
+#define test(expr, expected) do {                                                 \
+    testcount++;                                                                  \
+    int value = (expr);                                                           \
+    if (value == (expected)) {                                                    \
+        passcount++;                                                              \
+    } else {                                                                      \
+        fprintf(stderr, "`" #expr " == " #expected "` failed, got %d\n", value ); \
+    }                                                                             \
 } while (0)
 
 
@@ -25,6 +25,7 @@ int cond(bool, int then, int else_);
 int assign(int inital, int new);
 int loop(int iters);
 int sum_binop(void);
+int sum_binop_many(void);
 
 
 
@@ -59,6 +60,7 @@ int main(void) {
     test(sum_literals_many(), 225);
     test(loop(5), 5);
     test(sum_binop(), 10);
+    test(sum_binop_many(), 26);
 
     printf("\n%d out of %d tests passed\n", passcount, testcount);
     return passcount != testcount;

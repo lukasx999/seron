@@ -11,7 +11,6 @@ parser.h      \
 gen.h 	      \
 backend.h     \
 symboltable.h \
-grammar.h	  \
 types.h       \
 ast.h         \
 
@@ -23,7 +22,6 @@ backend.o     \
 util.o        \
 types.o       \
 symboltable.o \
-grammar.o     \
 ast.o         \
 
 
