@@ -191,6 +191,7 @@ Symbol gen_binop(
     assert(lhs->type.kind == lhs->type.kind);
     gen_comment(gen, "START: binop");
 
+    // TODO: evaluate subtree here!
     gen_move_symbol_into_register(gen, REG_RAX, lhs);
     gen_move_symbol_into_register(gen, REG_RDI, rhs);
 
