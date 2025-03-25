@@ -21,24 +21,24 @@ typedef struct {
     Arena *arena;
 } Parser;
 
-Token *parser_get_current_token(const Parser *p) {
+static Token *parser_get_current_token(const Parser *p) {
     Token *tok = tokenlist_get(p->tokens, p->current);
     assert(tok != NULL);
     return tok;
 }
 
 // Convenience function that allows us to change the allocator easily
-void *parser_alloc(Parser *p, size_t size) {
+static void *parser_alloc(Parser *p, size_t size) {
     return arena_alloc(p->arena, size);
 }
 
-void parser_advance(Parser *p) {
+static void parser_advance(Parser *p) {
     p->current++;
 }
 
 // Checks if the current token is of one of the supplied kinds
 // Last variadic argument should be `TOK_INVALID`
-bool parser_match_tokenkinds(const Parser *p, ...) {
+static bool parser_match_tokenkinds(const Parser *p, ...) {
     va_list va;
     va_start(va, p);
 
@@ -54,7 +54,7 @@ bool parser_match_tokenkinds(const Parser *p, ...) {
     assert(!"unreachable");
 }
 
-void parser_expect_token(
+static void parser_expect_token(
     const Parser *p,
     TokenKind tokenkind,
     const char *expected
@@ -65,12 +65,12 @@ void parser_expect_token(
     }
 }
 
-void parser_throw_error(const Parser *p, const char *msg) {
+static void parser_throw_error(const Parser *p, const char *msg) {
     Token *tok = parser_get_current_token(p);
     throw_error(*tok, "%s", msg);
 }
 
-bool parser_is_at_end(const Parser *p) {
+static bool parser_is_at_end(const Parser *p) {
     return parser_match_tokenkinds(p, TOK_EOF, SENTINEL);
 }
 
@@ -317,7 +317,7 @@ void parser_print_ast(AstNode *root, int spacing) {
     printf("\n");
 }
 
-AstNode *rule_program(Parser *p);
+static AstNode *rule_program(Parser *p);
 
 AstNode *parse(const TokenList *tokens, Arena *arena) {
     Parser parser = {
@@ -334,11 +334,11 @@ AstNode *parse(const TokenList *tokens, Arena *arena) {
 // Grammar rules
 
 // forward-declarations, as some rules have cyclic dependencies
-AstNode *rule_block(Parser *p);
-AstNode *rule_expression(Parser *p);
-AstNode *rule_stmt(Parser *p);
+static AstNode *rule_block(Parser *p);
+static AstNode *rule_expression(Parser *p);
+static AstNode *rule_stmt(Parser *p);
 
-TypeKind rule_util_type(Parser *p) {
+static TypeKind rule_util_type(Parser *p) {
     // <type> ::= TYPE
 
     Token *type_tok = parser_get_current_token(p);
@@ -351,7 +351,7 @@ TypeKind rule_util_type(Parser *p) {
     return type;
 }
 
-AstNodeList rule_util_arglist(Parser *p) {
+static AstNodeList rule_util_arglist(Parser *p) {
     // <arglist> ::= "(" ( <expr> ("," <expr>)* )? ")"
 
     parser_expect_token(p, TOK_LPAREN, "(");
@@ -382,7 +382,7 @@ AstNodeList rule_util_arglist(Parser *p) {
  * the max size of out_params is assumed to be MAX_ARG_COUNT
  * returns paramlist param count
  */
-size_t rule_util_paramlist(Parser *p, Param *out_params) {
+static size_t rule_util_paramlist(Parser *p, Param *out_params) {
     // <paramlist> ::= "(" (IDENTIFIER <type> ("," IDENTIFIER <type>)* )? ")"
 
     size_t i = 0;
@@ -423,7 +423,7 @@ size_t rule_util_paramlist(Parser *p, Param *out_params) {
     return i;
 }
 
-AstNode *rule_primary(Parser *p) {
+static AstNode *rule_primary(Parser *p) {
     // <primary> ::= NUMBER | IDENTIFIER | STRING | "(" <expression> ")"
 
     AstNode *astnode = parser_alloc(p, sizeof(AstNode));
@@ -456,7 +456,7 @@ AstNode *rule_primary(Parser *p) {
     return astnode;
 }
 
-AstNode *rule_call(Parser *p) {
+static AstNode *rule_call(Parser *p) {
     // <call> ::= ( <primary> | BUILTIN ) <argumentlist>
 
     Token *callee = parser_get_current_token(p);
@@ -487,7 +487,7 @@ AstNode *rule_call(Parser *p) {
     return call;
 }
 
-AstNode *rule_unary(Parser *p) {
+static AstNode *rule_unary(Parser *p) {
     // <unary> ::= ("!" | "-") <unary> | <call>
 
     if (parser_match_tokenkinds(p, TOK_MINUS, TOK_BANG, SENTINEL)) {
@@ -510,7 +510,7 @@ AstNode *rule_unary(Parser *p) {
 
 }
 
-AstNode *rule_addressof(Parser *p) {
+static AstNode *rule_addressof(Parser *p) {
     // <addressof> ::= "&" <expression>
     (void) p;
     // TODO: addrof
@@ -518,7 +518,7 @@ AstNode *rule_addressof(Parser *p) {
     return NULL;
 }
 
-AstNode *rule_factor(Parser *p) {
+static AstNode *rule_factor(Parser *p) {
     // <factor> ::= <unary> (("/" | "*") <unary>)*
 
     AstNode *lhs = rule_unary(p);
@@ -545,7 +545,7 @@ AstNode *rule_factor(Parser *p) {
 
 }
 
-AstNode *rule_term(Parser *p) {
+static AstNode *rule_term(Parser *p) {
     // <term> ::= <factor> (("+" | "-") <factor>)*
 
     AstNode *lhs = rule_factor(p);
@@ -571,7 +571,7 @@ AstNode *rule_term(Parser *p) {
     return lhs;
 }
 
-AstNode *rule_vardecl(Parser *p) {
+static AstNode *rule_vardecl(Parser *p) {
     // <vardecl> ::= "val" <identifier> <type> ("=" <expression>)? ";"
 
     assert(parser_match_tokenkinds(p, TOK_KW_VARDECL, SENTINEL));
@@ -609,7 +609,7 @@ AstNode *rule_vardecl(Parser *p) {
     return vardecl;
 }
 
-AstNode *rule_while(Parser *p) {
+static AstNode *rule_while(Parser *p) {
     // <while> ::= "while" <expression> <block>
 
     assert(parser_match_tokenkinds(p, TOK_KW_WHILE, SENTINEL));
@@ -630,7 +630,7 @@ AstNode *rule_while(Parser *p) {
     return node;
 }
 
-AstNode *rule_if(Parser *p) {
+static AstNode *rule_if(Parser *p) {
     // <if> ::= "if" <expression> <block> ("else" <block>)?
 
     assert(parser_match_tokenkinds(p, TOK_KW_IF, SENTINEL));
@@ -658,7 +658,7 @@ AstNode *rule_if(Parser *p) {
     return node;
 }
 
-AstNode *rule_return(Parser *p) {
+static AstNode *rule_return(Parser *p) {
     // <return> ::= "return" <expression> ";"
 
     assert(parser_match_tokenkinds(p, TOK_KW_RETURN, SENTINEL));
@@ -680,7 +680,7 @@ AstNode *rule_return(Parser *p) {
     return node;
 }
 
-AstNode *rule_procedure(Parser *p) {
+static AstNode *rule_procedure(Parser *p) {
     // <procedure> ::= "proc" IDENTIFIER <paramlist> <type> <block>
 
     assert(parser_match_tokenkinds(p, TOK_KW_FUNCTION, SENTINEL));
@@ -721,7 +721,7 @@ AstNode *rule_procedure(Parser *p) {
     return proc;
 }
 
-AstNode *rule_block(Parser *p) {
+static AstNode *rule_block(Parser *p) {
     // <block> ::= "{" <statement>* "}"
 
     Token *brace = parser_get_current_token(p);
@@ -749,7 +749,7 @@ AstNode *rule_block(Parser *p) {
     return node;
 }
 
-AstNode *rule_assignment(Parser *p) {
+static AstNode *rule_assignment(Parser *p) {
     // <assignment> ::= IDENTIFIER "=" <assignment> | <term>
 
     AstNode *expr = rule_term(p);
@@ -783,12 +783,12 @@ AstNode *rule_assignment(Parser *p) {
 
 }
 
-AstNode *rule_expression(Parser *p) {
+static AstNode *rule_expression(Parser *p) {
     // <expression> ::= <assignment>
     return rule_assignment(p);
 }
 
-AstNode *rule_exprstmt(Parser *p) {
+static AstNode *rule_exprstmt(Parser *p) {
     // <exprstmt> ::= <expr> ";"
 
     AstNode *node = rule_expression(p);
@@ -798,7 +798,7 @@ AstNode *rule_exprstmt(Parser *p) {
     return node;
 }
 
-AstNode *rule_stmt(Parser *p) {
+static AstNode *rule_stmt(Parser *p) {
     // <statement> ::= <block> | <procedure> | <vardeclaration> | <if> | <while> | <return> | <expr> ";"
 
     if (parser_match_tokenkinds(p, TOK_LBRACE, SENTINEL))
@@ -824,7 +824,7 @@ AstNode *rule_stmt(Parser *p) {
 
 }
 
-AstNode *rule_program(Parser *p) {
+static AstNode *rule_program(Parser *p) {
     // <program> ::= <statement>*
 
     AstNode *node = parser_alloc(p, sizeof(AstNode));

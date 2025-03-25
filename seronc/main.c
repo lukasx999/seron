@@ -234,6 +234,7 @@ static void parse_args(int argc, char *argv[]) {
 resolve register conflicts:
 - register allocator
 - backend: move subtree calls into gen
+- post-order ast traversal
 */
 
 
