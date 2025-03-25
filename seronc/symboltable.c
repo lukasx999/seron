@@ -34,22 +34,22 @@ static HashtableEntry *new_hashtable_entry(const char *key, Symbol value) {
     return entry;
 }
 
-void symboltable_init(Symboltable *ht, size_t size) {
-    *ht = (Symboltable) {
+void symboltable_init(Symboltable *st, size_t size) {
+    *st = (Symboltable) {
         .size     = size,
         .buckets  = NULL,
         .parent   = NULL,
     };
 
-    ht->buckets = malloc(ht->size * sizeof(HashtableEntry*));
+    st->buckets = malloc(st->size * sizeof(HashtableEntry*));
 
-    for (size_t i=0; i < ht->size; ++i)
-        ht->buckets[i] = NULL;
+    for (size_t i=0; i < st->size; ++i)
+        st->buckets[i] = NULL;
 }
 
-void symboltable_destroy(Symboltable *ht) {
-    for (size_t i=0; i < ht->size; ++i) {
-        HashtableEntry *entry = ht->buckets[i];
+void symboltable_destroy(Symboltable *st) {
+    for (size_t i=0; i < st->size; ++i) {
+        HashtableEntry *entry = st->buckets[i];
 
         while (entry != NULL) {
             HashtableEntry *next = entry->next;
@@ -59,18 +59,18 @@ void symboltable_destroy(Symboltable *ht) {
 
     }
 
-    free(ht->buckets);
-    ht->buckets = NULL;
+    free(st->buckets);
+    st->buckets = NULL;
 }
 
-int symboltable_insert(Symboltable *ht, const char *key, Symbol value) {
-    assert(ht != NULL);
+int symboltable_insert(Symboltable *st, const char *key, Symbol value) {
+    assert(st != NULL);
 
-    size_t index = hash(ht->size, key);
-    HashtableEntry *current = ht->buckets[index];
+    size_t index = hash(st->size, key);
+    HashtableEntry *current = st->buckets[index];
 
     if (current == NULL) {
-        ht->buckets[index] = new_hashtable_entry(key, value);
+        st->buckets[index] = new_hashtable_entry(key, value);
         return 0;
     }
 
@@ -89,9 +89,9 @@ int symboltable_insert(Symboltable *ht, const char *key, Symbol value) {
     assert(!"unreachable");
 }
 
-Symbol *symboltable_get(const Symboltable *ht, const char *key) {
-    size_t index = hash(ht->size, key);
-    HashtableEntry *current = ht->buckets[index];
+Symbol *symboltable_get(const Symboltable *st, const char *key) {
+    size_t index = hash(st->size, key);
+    HashtableEntry *current = st->buckets[index];
 
     if (current == NULL)
         return NULL;
@@ -107,9 +107,9 @@ Symbol *symboltable_get(const Symboltable *ht, const char *key) {
 
 }
 
-Symbol *symboltable_list_lookup(const Symboltable *ht, const char *key) {
-    assert(ht != NULL);
-    const Symboltable *current = ht;
+Symbol *symboltable_list_lookup(const Symboltable *st, const char *key) {
+    assert(st != NULL);
+    const Symboltable *current = st;
 
     while (current != NULL) {
         Symbol *value = symboltable_get(current, key);
@@ -123,9 +123,9 @@ Symbol *symboltable_list_lookup(const Symboltable *ht, const char *key) {
     return NULL;
 }
 
-void symboltable_print(const Symboltable *ht) {
-    for (size_t i=0; i < ht->size; ++i) {
-        HashtableEntry *entry = ht->buckets[i];
+void symboltable_print(const Symboltable *st) {
+    for (size_t i=0; i < st->size; ++i) {
+        HashtableEntry *entry = st->buckets[i];
 
         if (entry == NULL)
             continue;
@@ -385,29 +385,29 @@ static void proc_insert_params_callback(AstNode *node, int _depth, void *_args) 
 
 }
 
-static void precompute_stack_layout(AstNode *node, int _depth, void *args) {
-    (void) _depth;
-
-    size_t *stack_size = (size_t*) args;
-    *stack_size = 0;
+static void precompute_stack_layout(AstNode *node, int _depth, void *_args) {
+    (void) _depth, (void) _args;
 
     StmtProcedure *proc = &node->stmt_procedure;
     ProcSignature *sig = &proc->type.type_signature;
+    assert(proc->stack_size == 0);
 
     if (proc->body == NULL)
         return;
+
 
     assert(proc->body->kind == ASTNODE_BLOCK);
     Block *body = &proc->body->block;
 
     for (size_t i=0; i < sig->params_count; ++i) {
         Param *param = &sig->params[i];
-        *stack_size += typekind_get_size(param->type->kind);
+        proc->stack_size += typekind_get_size(param->type->kind);
 
         Symbol *sym = symboltable_get(body->symboltable, param->ident);
         assert(sym != NULL);
-        sym->stack_addr = *stack_size;
+        sym->stack_addr = proc->stack_size;
     }
+
 
     AstNodeList *list = &body->stmts;
 
@@ -416,11 +416,11 @@ static void precompute_stack_layout(AstNode *node, int _depth, void *args) {
 
         if (item->kind == ASTNODE_VARDECL) {
             StmtVarDecl *vardecl = &item->stmt_vardecl;
-            *stack_size += typekind_get_size(vardecl->type.kind);
+            proc->stack_size += typekind_get_size(vardecl->type.kind);
 
             Symbol *sym = symboltable_get(body->symboltable, vardecl->identifier.value);
             assert(sym != NULL);
-            sym->stack_addr = *stack_size;
+            sym->stack_addr = proc->stack_size;
         }
 
     }
@@ -442,9 +442,7 @@ SymboltableList symboltable_list_construct(AstNode *root, size_t table_size) {
 
     traverse_ast(root, &ctx);
     parser_query_ast(root, proc_insert_params_callback, ASTNODE_PROCEDURE, NULL);
-
-    size_t stack_size = 0;
-    parser_query_ast(root, precompute_stack_layout, ASTNODE_PROCEDURE, (void*) &stack_size);
+    parser_query_ast(root, precompute_stack_layout, ASTNODE_PROCEDURE, NULL);
 
     return st;
 }

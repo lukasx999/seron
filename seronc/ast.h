@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "lexer.h"
 #include "types.h"
@@ -96,6 +97,7 @@ typedef struct {
     AstNode *body; // NULL if declaration
     // TODO: why not just use ProcSignature
     Type type; // type is holding function signature
+    uint64_t stack_size;
 } StmtProcedure;
 
 

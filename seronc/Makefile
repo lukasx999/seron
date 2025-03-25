@@ -11,7 +11,6 @@ parser.h      \
 gen.h 	      \
 backend.h     \
 symboltable.h \
-grammar.h	  \
 types.h       \
 ast.h         \
 
@@ -23,7 +22,6 @@ backend.o     \
 util.o        \
 types.o       \
 symboltable.o \
-grammar.o     \
 ast.o         \
 
 
@@ -33,11 +31,18 @@ compiler: main.o $(SOURCES)
 	@$(CC) $(CFLAGS) $^ -o $(BIN)
 	@echo LINK $^
 
+test: compiler
+	@echo TEST test/main.srn
+	@./seronc ./test/main.srn -Ov --debug-asm
+	@$(CC) $(CFLAGS) -o test/test ./test/test.c ./test/main.o
+	@./test/test
+
 %.o: %.c Makefile $(DEPS)
 	@$(CC) $(CFLAGS) -c $< -o $@
 	@echo CC $<
 
 clean:
 	rm *.o $(BIN)
+	rm test/{*.o,*.s,test}
 
 .PHONY: clean

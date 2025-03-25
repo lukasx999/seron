@@ -142,6 +142,8 @@ static void print_usage(char *argv[]) {
             "User Flags\n"
             "\t--compile-only, -S\n"
             "\t  Dont assemble/link, only produce assembly\n"
+            "\t--compile-and-assemble, -O\n"
+            "\t  Compile and assemble, don't link\n"
             "Developer Flags:\n"
             "\t--debug-asm\n"
             "\t--dump-ast\n"
@@ -182,29 +184,23 @@ static void parse_args(int argc, char *argv[]) {
     };
 
     while (1) {
-        int c = getopt_long(argc, argv, "Sv", opts, &opt_index);
+        int c = getopt_long(argc, argv, "SvO", opts, &opt_index);
 
         if (c == -1)
             break;
 
         switch (c) {
-
             case 0:
                 /* long option */
                 break;
 
-            case 'v':
-                compiler_context.opts.verbose = true;
-                break;
-
-            case 'S':
-                compiler_context.opts.compile_only = true;
-                break;
+            case 'v': compiler_context.opts.verbose              = 1; break;
+            case 'S': compiler_context.opts.compile_only         = 1; break;
+            case 'O': compiler_context.opts.compile_and_assemble = 1; break;
 
             default:
                 compiler_message(MSG_ERROR, "Unknown option");
                 exit(1);
-                break;
         }
 
     }
@@ -234,12 +230,11 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: parser_map_ast() designated initializer array: map from enum to function pointer
 // TODO: rework errors/warnings with tokens
 
-// TODO: precompute stack frame layout + reserve stack space in bulk in prelude
-// TODO: only use stack for variables, use registers for temporary computations
-// - "SYMBOL_REGISTER" tag for Symbol tagged union
-// - make some function that takes a symbol, (label, stack_addr, register) and
-// just moves it into a register. that would make it generic enough to work with eg: binop.
-
+/*
+resolve register conflicts:
+- register allocator
+- backend: move subtree calls into gen
+*/
 
 
 int main(int argc, char *argv[]) {
@@ -261,12 +256,11 @@ int main(int argc, char *argv[]) {
 
     free(file);
 
-
     Arena parser_arena = { 0 };
     arena_init(&parser_arena);
 
     compiler_message(MSG_INFO, "Parsing");
-    AstNode *node_root = parser_parse(&tokens, &parser_arena);
+    AstNode *node_root = parse(&tokens, &parser_arena);
 
     if (compiler_context.opts.dump_ast)
         parser_print_ast(node_root, 2);
@@ -282,17 +276,19 @@ int main(int argc, char *argv[]) {
     compiler_message(MSG_INFO, "Typechecking");
     check_types(node_root);
 
-    compiler_message(MSG_INFO, "Codegeneration");
+    compiler_message(MSG_INFO, "Codegen");
     generate_code(node_root);
 
     if (!compiler_context.opts.compile_only) {
         compiler_message(MSG_INFO, "Assembling %s via nasm", compiler_context.filename.asm_);
         assemble();
 
-        compiler_message(MSG_INFO, "Linking %s via cc", compiler_context.filename.obj);
-        link_cc();
+        if (!compiler_context.opts.compile_and_assemble) {
+            compiler_message(MSG_INFO, "Linking %s via cc", compiler_context.filename.obj);
+            link_cc();
 
-        compiler_message(MSG_INFO, "Binary `%s` has been built", compiler_context.filename.stripped);
+            compiler_message(MSG_INFO, "Binary `%s` has been built", compiler_context.filename.stripped);
+        }
     }
 
     symboltable_list_destroy(&symboltable);

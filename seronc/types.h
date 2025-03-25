@@ -20,7 +20,7 @@ typedef struct {
 
 // TODO: maybe reuse for structs
 typedef struct {
-    Param params[MAX_ARG_COUNT];
+    Param params[MAX_ARG_COUNT]; // TODO: uses shit ton of memory
     size_t params_count;
     Type *returntype; // heap-allocated
 } ProcSignature;
