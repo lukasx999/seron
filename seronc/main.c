@@ -230,11 +230,6 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: parser_map_ast() designated initializer array: map from enum to function pointer
 // TODO: rework errors/warnings with tokens
 
-/*
-resolve register conflicts:
-- register allocator
-- backend: move subtree calls into gen
-*/
 
 
 int main(int argc, char *argv[]) {
