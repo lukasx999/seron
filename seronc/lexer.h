@@ -54,7 +54,7 @@ typedef enum {
     TOKENKIND_COUNT,
 } TokenKind;
 
-extern const char *tokenkind_to_string(TokenKind tok);
+const char *tokenkind_to_string(TokenKind tok);
 
 // TODO: given the source string, calculate column position lazily
 // based on start position
@@ -65,16 +65,9 @@ typedef struct {
     size_t pos_absolute, length;
 } Token;
 
-typedef struct {
-    size_t capacity, size;
-    Token *items;
-} TokenList;
-
-TokenList tokenlist_new(void);
-Token *tokenlist_get(const TokenList *tokens, size_t index);
-void tokenlist_print(const TokenList *tokens);
-void tokenlist_destroy(TokenList *tokens);
-TokenList tokenize(const char *src);
+void tokenlist_print(const Token *tok);
+// a heap-allocated list of tokens terminated by a EOF token
+Token *tokenize(const char *src);
 
 
 

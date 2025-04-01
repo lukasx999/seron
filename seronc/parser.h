@@ -11,7 +11,7 @@
 
 
 // Allocate an AST into the given arena
-AstNode *parse(const TokenList *tokens, Arena *arena);
+AstNode *parse(Token *tokens, Arena *arena);
 
 typedef void (*AstCallback) (AstNode *node, int depth, void *args);
 

@@ -26,7 +26,7 @@
 #define FILE_EXTENSION "srn"
 
 
-struct CompilerContext compiler_context = { 0 };
+struct CompilerConfig compiler_context = { 0 };
 
 
 
@@ -69,13 +69,6 @@ static char *read_file(const char *filename) {
 
     fclose(file);
     return buf;
-}
-
-static char *get_time(void) {
-    time_t t = time(NULL);
-    char *t_str = ctime(&t);
-    t_str[strlen(t_str)-1] = '\0'; // strip newline
-    return t_str;
 }
 
 static int run_cmd_sync(char *const argv[]) {
@@ -232,13 +225,9 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: resolve codegen grouping conflict with push() like chibicc
 // or post-order traversal
 
+int main(int argc, char **argv) {
 
-
-int main(int argc, char *argv[]) {
     parse_args(argc, argv);
-
-    time_t time_start = time(NULL);
-    compiler_message(MSG_INFO, "Starting compilation @ %s", get_time());
 
     const char *filename = compiler_context.filename.raw;
     compiler_message(MSG_INFO, "Reading source %s", filename);
@@ -246,18 +235,17 @@ int main(int argc, char *argv[]) {
 
     compiler_message(MSG_INFO, "Lexical Analysis");
 
-    TokenList tokens = tokenize(file);
+    Token *tokens = tokenize(file);
+    free(file);
 
     if (compiler_context.opts.dump_tokens)
-        tokenlist_print(&tokens);
-
-    free(file);
+        tokenlist_print(tokens);
 
     Arena parser_arena = { 0 };
     arena_init(&parser_arena);
 
     compiler_message(MSG_INFO, "Parsing");
-    AstNode *node_root = parse(&tokens, &parser_arena);
+    AstNode *node_root = parse(tokens, &parser_arena);
 
     if (compiler_context.opts.dump_ast)
         parser_print_ast(node_root, 2);
@@ -277,11 +265,11 @@ int main(int argc, char *argv[]) {
     generate_code(node_root);
 
     if (!compiler_context.opts.compile_only) {
-        compiler_message(MSG_INFO, "Assembling %s via nasm", compiler_context.filename.asm_);
+        compiler_message(MSG_INFO, "Assembling");
         assemble();
 
         if (!compiler_context.opts.compile_and_assemble) {
-            compiler_message(MSG_INFO, "Linking %s via cc", compiler_context.filename.obj);
+            compiler_message(MSG_INFO, "Linking");
             link_cc();
 
             compiler_message(MSG_INFO, "Binary `%s` has been built", compiler_context.filename.stripped);
@@ -290,10 +278,7 @@ int main(int argc, char *argv[]) {
 
     symboltable_list_destroy(&symboltable);
     arena_free(&parser_arena);
-    tokenlist_destroy(&tokens);
-
-    compiler_message(MSG_INFO, "Compilation finished @ %s", get_time());
-    compiler_message(MSG_INFO, "Compliation took %lds", time(NULL) - time_start);
+    free(tokens);
 
     return EXIT_SUCCESS;
 }

@@ -10,6 +10,21 @@
 
 
 
+typedef struct {
+    size_t capacity, size;
+    Token *items;
+} TokenList;
+
+static TokenList tokenlist_new(void) {
+    TokenList tokens = {
+        .capacity = 5,
+        .size     = 0,
+        .items    = NULL,
+    };
+    tokens.items = malloc(tokens.capacity * sizeof(Token));
+    return tokens;
+}
+
 static void tokenlist_append(TokenList *tokens, Token item) {
     if (tokens->size == tokens->capacity) {
         tokens->capacity *= 2;
@@ -58,33 +73,17 @@ const char *tokenkind_to_string(TokenKind tok) {
     return repr[tok];
 }
 
-TokenList tokenlist_new(void) {
-    TokenList tokens = {
-        .capacity = 5,
-        .size     = 0,
-        .items    = NULL,
-    };
-    tokens.items = malloc(tokens.capacity * sizeof(Token));
-    return tokens;
-}
-
-
-Token *tokenlist_get(const TokenList *tokens, size_t index) {
-    return index < tokens->size ? &tokens->items[index] : NULL;
-}
-
-void tokenlist_print(const TokenList *tokens) {
+void tokenlist_print(const Token *tok) {
     printf("\n");
 
-    for (size_t i=0; i < tokens->size; ++i) {
-        Token tok = tokens->items[i];
-        const char *kind = tokenkind_to_string(tok.kind);
+    while ((tok++)->kind != TOK_EOF) {
+        const char *kind = tokenkind_to_string(tok->kind);
 
-        printf("%s%d:%d%s ", COLOR_GRAY, tok.pos_line, tok.pos_column, COLOR_END);
+        printf("%s%d:%d%s ", COLOR_GRAY, tok->pos_line, tok->pos_column, COLOR_END);
 
         printf("%s", kind);
-        if (strcmp(tok.value, ""))
-            printf("%s(%s)%s", COLOR_GRAY, tok.value, COLOR_END);
+        if (strcmp(tok->value, ""))
+            printf("%s(%s)%s", COLOR_GRAY, tok->value, COLOR_END);
 
         printf("\n");
     }
@@ -92,38 +91,28 @@ void tokenlist_print(const TokenList *tokens) {
     printf("\n");
 }
 
-void tokenlist_destroy(TokenList *tokens) {
-    free(tokens->items);
-    tokens->items = NULL;
-}
-
-
 
 // TODO:
 #if 0
-// returns the tokenkind to the corresponding string
-// returns TOK_INVALID if no string was matched
-// len is needed, as str could possibly not be nullbyte terminated
-static TokenKind match_keywords(const char *str, size_t len) {
+
+static TokenKind match_keywords(const char *str) {
 
     return
-    !strncmp(str, "proc", len)   ? TOK_KW_FUNCTION :
-    !strncmp(str, "let", len)    ? TOK_KW_VARDECL  :
-    !strncmp(str, "if", len)     ? TOK_KW_IF       :
-    !strncmp(str, "else", len)   ? TOK_KW_ELSE     :
-    !strncmp(str, "elsif", len)  ? TOK_KW_ELSIF    :
-    !strncmp(str, "while", len)  ? TOK_KW_WHILE    :
-    !strncmp(str, "return", len) ? TOK_KW_RETURN   :
-    !strncmp(str, "asm", len)    ? TOK_BUILTIN_ASM :
-    !strncmp(str, "void", len)   ? TOK_TYPE_VOID   :
-    !strncmp(str, "byte", len)   ? TOK_TYPE_BYTE   :
-    !strncmp(str, "int", len)    ? TOK_TYPE_INT    :
-    !strncmp(str, "size", len)   ? TOK_TYPE_SIZE   :
+    !strcmp(str, "proc")   ? TOK_KW_FUNCTION :
+    !strcmp(str, "let")    ? TOK_KW_VARDECL  :
+    !strcmp(str, "if")     ? TOK_KW_IF       :
+    !strcmp(str, "else")   ? TOK_KW_ELSE     :
+    !strcmp(str, "elsif")  ? TOK_KW_ELSIF    :
+    !strcmp(str, "while")  ? TOK_KW_WHILE    :
+    !strcmp(str, "return") ? TOK_KW_RETURN   :
+    !strcmp(str, "asm")    ? TOK_BUILTIN_ASM :
+    !strcmp(str, "void")   ? TOK_TYPE_VOID   :
+    !strcmp(str, "byte")   ? TOK_TYPE_BYTE   :
+    !strcmp(str, "int")    ? TOK_TYPE_INT    :
+    !strcmp(str, "size")   ? TOK_TYPE_SIZE   :
     TOK_INVALID;
+
 }
-
-
-
 
 #else
 // returns the tokenkind to the corresponding string
@@ -167,7 +156,7 @@ static TokenKind match_keywords(const char *str, size_t len) {
 }
 #endif
 
-TokenList tokenize(const char *src) {
+Token *tokenize(const char *src) {
     TokenList tokens = tokenlist_new();
     int linecount   = 1;
     int columncount = 1;
@@ -321,5 +310,5 @@ TokenList tokenize(const char *src) {
     Token tok_eof = { .kind = TOK_EOF };
     tokenlist_append(&tokens, tok_eof);
 
-    return tokens;
+    return tokens.items;
 }
