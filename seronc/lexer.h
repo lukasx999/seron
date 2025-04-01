@@ -70,13 +70,11 @@ typedef struct {
     Token *items;
 } TokenList;
 
-extern TokenList   tokenlist_new    (void);
-extern void        tokenlist_append (TokenList *tokens, Token item);
-extern Token      *tokenlist_get    (const TokenList *tokens, size_t index);
-extern void        tokenlist_print  (const TokenList *tokens);
-extern void        tokenlist_destroy(TokenList *tokens);
-
-extern TokenList tokenize(const char *src);
+TokenList tokenlist_new(void);
+Token *tokenlist_get(const TokenList *tokens, size_t index);
+void tokenlist_print(const TokenList *tokens);
+void tokenlist_destroy(TokenList *tokens);
+TokenList tokenize(const char *src);
 
 
 

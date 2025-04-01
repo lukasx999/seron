@@ -10,6 +10,13 @@
 
 
 
+static void tokenlist_append(TokenList *tokens, Token item) {
+    if (tokens->size == tokens->capacity) {
+        tokens->capacity *= 2;
+        tokens->items = realloc(tokens->items, tokens->capacity * sizeof(Token));
+    }
+    tokens->items[tokens->size++] = item;
+}
 
 const char *tokenkind_to_string(TokenKind tok) {
     const char *repr[] = {
@@ -51,9 +58,6 @@ const char *tokenkind_to_string(TokenKind tok) {
     return repr[tok];
 }
 
-
-
-
 TokenList tokenlist_new(void) {
     TokenList tokens = {
         .capacity = 5,
@@ -64,13 +68,6 @@ TokenList tokenlist_new(void) {
     return tokens;
 }
 
-void tokenlist_append(TokenList *tokens, Token item) {
-    if (tokens->size == tokens->capacity) {
-        tokens->capacity *= 2;
-        tokens->items = realloc(tokens->items, tokens->capacity * sizeof(Token));
-    }
-    tokens->items[tokens->size++] = item;
-}
 
 Token *tokenlist_get(const TokenList *tokens, size_t index) {
     return index < tokens->size ? &tokens->items[index] : NULL;
@@ -102,9 +99,33 @@ void tokenlist_destroy(TokenList *tokens) {
 
 
 
+// TODO:
+#if 0
+// returns the tokenkind to the corresponding string
+// returns TOK_INVALID if no string was matched
+// len is needed, as str could possibly not be nullbyte terminated
+static TokenKind match_keywords(const char *str, size_t len) {
+
+    return
+    !strncmp(str, "proc", len)   ? TOK_KW_FUNCTION :
+    !strncmp(str, "let", len)    ? TOK_KW_VARDECL  :
+    !strncmp(str, "if", len)     ? TOK_KW_IF       :
+    !strncmp(str, "else", len)   ? TOK_KW_ELSE     :
+    !strncmp(str, "elsif", len)  ? TOK_KW_ELSIF    :
+    !strncmp(str, "while", len)  ? TOK_KW_WHILE    :
+    !strncmp(str, "return", len) ? TOK_KW_RETURN   :
+    !strncmp(str, "asm", len)    ? TOK_BUILTIN_ASM :
+    !strncmp(str, "void", len)   ? TOK_TYPE_VOID   :
+    !strncmp(str, "byte", len)   ? TOK_TYPE_BYTE   :
+    !strncmp(str, "int", len)    ? TOK_TYPE_INT    :
+    !strncmp(str, "size", len)   ? TOK_TYPE_SIZE   :
+    TOK_INVALID;
+}
 
 
 
+
+#else
 // returns the tokenkind to the corresponding string
 // returns TOK_INVALID if no string was matched
 // len is needed, as str could possibly not be nullbyte terminated
@@ -144,6 +165,7 @@ static TokenKind match_keywords(const char *str, size_t len) {
 
     return TOK_INVALID;
 }
+#endif
 
 TokenList tokenize(const char *src) {
     TokenList tokens = tokenlist_new();
