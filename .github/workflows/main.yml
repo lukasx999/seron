@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@main
       - name: build
         run: |
-          apt install nasm
+          sudo apt install nasm
           cd seronc
           make
           make test
