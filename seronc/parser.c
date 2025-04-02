@@ -17,8 +17,9 @@
 
 typedef struct {
     size_t current;
-    Token *tok;
     Arena *arena;
+    Token *tok;
+    // LexerState lexer;
 } Parser;
 
 static inline Token *parser_tok(const Parser *p) {
@@ -29,6 +30,7 @@ static inline Token *parser_tok(const Parser *p) {
 
 static inline void parser_advance(Parser *p) {
     p->tok++;
+    // p->tok = lexer_next(&p->lexer);
 }
 
 // Convenience function that allows us to change the allocator easily
@@ -521,14 +523,6 @@ static AstNode *rule_unary(Parser *p) {
 
 }
 
-__attribute((unused)) static AstNode *rule_addressof(Parser *p) {
-    // <addressof> ::= "&" <expression>
-    (void) p;
-    // TODO: addrof
-    assert(!"TODO");
-    return NULL;
-}
-
 static AstNode *rule_factor(Parser *p) {
     // <factor> ::= <unary> (("/" | "*") <unary>)*
 
@@ -823,6 +817,7 @@ static AstNode *rule_stmt(Parser *p) {
 }
 
 static AstNode *rule_program(Parser *p) {
+    // TODO: change statements to declarations
     // <program> ::= <statement>*
 
     AstNode *node = parser_alloc(p, sizeof(AstNode));
