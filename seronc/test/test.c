@@ -13,7 +13,6 @@
 } while (0)
 
 
-
 // Exported functions from ./main.srn
 int add(int, int);
 int square(int);
@@ -27,11 +26,9 @@ int loop(int iters);
 int sum_binop(void);
 int sum_binop_many(void);
 
-
-
 int main(void) {
     int passcount = 0, testcount = 0;
-    printf("Running tests\n\n");
+    printf("Testing Compiler\n\n");
 
     test(add(0, 0), 0);
     test(add(1, 2), 3);

@@ -21,7 +21,6 @@ typedef struct {
     Arena *arena;
 } Parser;
 
-// returns current token
 static inline Token *parser_tok(const Parser *p) {
     Token *tok = p->tok;
     assert(tok != NULL);
@@ -56,11 +55,12 @@ static bool parser_match_tokenkinds(const Parser *p, ...) {
 }
 
 // checks if the current token is of the supplied kind
-static bool parser_match_tokenkind(const Parser *p, TokenKind kind) {
+static inline bool parser_match_tokenkind(const Parser *p, TokenKind kind) {
     return parser_match_tokenkinds(p, kind, SENTINEL);
 }
 
-static void parser_expect_token(
+// TODO: refactor
+static inline void parser_expect_token(
     const Parser *p,
     TokenKind tokenkind,
     const char *expected
@@ -71,16 +71,21 @@ static void parser_expect_token(
     }
 }
 
-static void parser_throw_error(const Parser *p, const char *msg) {
+static inline void parser_throw_error(const Parser *p, const char *msg) {
     Token *tok = parser_tok(p);
     throw_error(*tok, "%s", msg);
 }
 
-static bool parser_is_at_end(const Parser *p) {
+static inline bool parser_is_at_end(const Parser *p) {
     return parser_match_tokenkind(p, TOK_EOF);
 }
 
-void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down, void *args) {
+void parser_traverse_ast(
+    AstNode *root,
+    AstCallback callback,
+    bool top_down,
+    void *args
+) {
     assert(root != NULL);
 
     static int depth = 0;
@@ -219,7 +224,7 @@ void parser_query_ast(AstNode *root, AstCallback callback, AstNodeKind kind, voi
 
 // Prints a value in the following format: `<str>: <arg>`
 // <arg> is omitted if arg == NULL
-static void print_ast_value(
+static inline void print_ast_value(
     const char *str,
     const char *color,
     const char *value,
@@ -516,7 +521,7 @@ static AstNode *rule_unary(Parser *p) {
 
 }
 
-static AstNode *rule_addressof(Parser *p) {
+__attribute((unused)) static AstNode *rule_addressof(Parser *p) {
     // <addressof> ::= "&" <expression>
     (void) p;
     // TODO: addrof

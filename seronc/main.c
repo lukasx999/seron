@@ -225,7 +225,31 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: resolve codegen grouping conflict with push() like chibicc
 // or post-order traversal
 
+void test(void) {
+    Token *tok = tokenize("1+2;");
+    Token *tmp = tok;
+
+    Token *cmp = (Token[]) {
+        (Token) { .kind = TOK_NUMBER, .value = "1" },
+        (Token) { .kind = TOK_PLUS },
+        (Token) { .kind = TOK_NUMBER, .value = "2" },
+        (Token) { .kind = TOK_SEMICOLON},
+    };
+
+    while (tmp->kind != TOK_EOF) {
+        // TODO: only compares first two struct fields
+        // compare all fields, after refactoring token positions
+        assert(!memcmp(tmp, cmp, offsetof(Token, value)));
+        cmp++;
+        tmp++;
+    }
+
+
+    free(tok);
+}
+
 int main(int argc, char **argv) {
+    // test();
 
     parse_args(argc, argv);
 

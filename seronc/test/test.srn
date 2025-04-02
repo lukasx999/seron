@@ -1,1 +1,65 @@
-(1+2+3);
+proc add(lhs int, rhs int) int {
+    return lhs + rhs;
+}
+
+proc square(x int) int {
+    return x * x;
+}
+
+proc sum(a int, b int, c int, d int, e int, f int) int {
+    return a + b + c + d + e + f;
+}
+
+proc sum_literals_21() int {
+    let result int = 1 + 2 + 3 + 4 + 5 + 6;
+    return result;
+}
+
+proc sum_literals_3() int {
+    let result int = 1 + 2;
+    return result;
+}
+
+proc sum_literals_many() int {
+    let result int =
+        1+2+3+4+5+6+7+8+9
+        + 1+2+3+4+5+6+7+8+9
+        + 1+2+3+4+5+6+7+8+9
+        + 1+2+3+4+5+6+7+8+9
+        + 1+2+3+4+5+6+7+8+9;
+    return result;
+}
+
+proc sum_binop() int {
+    return (1+2) + (3+4);
+}
+
+proc sum_binop_many() int {
+    #return 5 + ((1+2) + (3+4) + (5+6));
+    return 5 + (1 + 2);
+}
+
+proc cond(condition int, then int, other int) int {
+    if condition {
+        return then;
+    } else {
+        return other;
+    }
+}
+
+proc assign(initial int, new int) int {
+    let result int = initial;
+    result = new;
+    return result;
+}
+
+proc loop(i int) int {
+    let j int = 0;
+
+    while i {
+        i = i - 1;
+        j = j + 1;
+    }
+
+    return j;
+}

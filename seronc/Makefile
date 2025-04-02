@@ -24,7 +24,6 @@ types.o       \
 symboltable.o \
 ast.o         \
 
-
 all: compiler
 
 compiler: main.o $(SOURCES)
@@ -33,8 +32,9 @@ compiler: main.o $(SOURCES)
 
 test: compiler
 	@echo TEST test/main.srn
-	@./seronc ./test/main.srn -Ov --debug-asm
-	@$(CC) $(CFLAGS) -o test/test ./test/test.c ./test/main.o
+	@./seronc ./test/test.srn -Ov --debug-asm
+
+	@$(CC) $(CFLAGS) -o test/test test/test.c test/test.o
 	@./test/test
 
 %.o: %.c Makefile $(DEPS)
@@ -45,4 +45,4 @@ clean:
 	rm *.o $(BIN)
 	rm test/{*.o,*.s,test}
 
-.PHONY: clean
+.PHONY: clean test

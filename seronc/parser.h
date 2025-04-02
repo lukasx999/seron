@@ -13,7 +13,7 @@
 // Allocate an AST into the given arena
 AstNode *parse(Token *tokens, Arena *arena);
 
-typedef void (*AstCallback) (AstNode *node, int depth, void *args);
+typedef void (*AstCallback)(AstNode *node, int depth, void *args);
 
 // Call the given callback function for every node in the AST
 void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down, void *args);
