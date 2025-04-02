@@ -226,14 +226,20 @@ static void parse_args(int argc, char *argv[]) {
 // or post-order traversal
 
 void test(void) {
-    Token *tok = tokenize("1+2;");
+    Token *tok = tokenize("return 1+2+_foo123 \"str\" = ==");
+    tokenlist_print(tok);
     Token *tmp = tok;
 
     Token *cmp = (Token[]) {
+        (Token) { .kind = TOK_KW_RETURN },
         (Token) { .kind = TOK_NUMBER, .value = "1" },
         (Token) { .kind = TOK_PLUS },
         (Token) { .kind = TOK_NUMBER, .value = "2" },
-        (Token) { .kind = TOK_SEMICOLON},
+        (Token) { .kind = TOK_PLUS },
+        (Token) { .kind = TOK_IDENTIFIER, .value = "_foo123" },
+        (Token) { .kind = TOK_STRING, .value = "str" },
+        (Token) { .kind = TOK_ASSIGN },
+        (Token) { .kind = TOK_EQUALS },
     };
 
     while (tmp->kind != TOK_EOF) {
@@ -250,14 +256,12 @@ void test(void) {
 
 int main(int argc, char **argv) {
     // test();
+    // exit(0);
 
     parse_args(argc, argv);
 
     const char *filename = compiler_context.filename.raw;
-    compiler_message(MSG_INFO, "Reading source %s", filename);
     char *file = read_file(filename);
-
-    compiler_message(MSG_INFO, "Lexical Analysis");
 
     Token *tokens = tokenize(file);
     free(file);
@@ -268,36 +272,28 @@ int main(int argc, char **argv) {
     Arena parser_arena = { 0 };
     arena_init(&parser_arena);
 
-    compiler_message(MSG_INFO, "Parsing");
     AstNode *node_root = parse(tokens, &parser_arena);
 
     if (compiler_context.opts.dump_ast)
         parser_print_ast(node_root, 2);
 
 
-    compiler_message(MSG_INFO, "Constructing Symboltable");
     SymboltableList symboltable = symboltable_list_construct(node_root, 5);
 
     if (compiler_context.opts.dump_symboltable)
         symboltable_list_print(&symboltable);
 
 
-    compiler_message(MSG_INFO, "Typechecking");
     check_types(node_root);
 
-    compiler_message(MSG_INFO, "Codegen");
     generate_code(node_root);
 
     if (!compiler_context.opts.compile_only) {
-        compiler_message(MSG_INFO, "Assembling");
         assemble();
 
-        if (!compiler_context.opts.compile_and_assemble) {
-            compiler_message(MSG_INFO, "Linking");
+        if (!compiler_context.opts.compile_and_assemble)
             link_cc();
 
-            compiler_message(MSG_INFO, "Binary `%s` has been built", compiler_context.filename.stripped);
-        }
     }
 
     symboltable_list_destroy(&symboltable);

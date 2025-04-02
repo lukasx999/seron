@@ -24,7 +24,6 @@ typedef enum {
     TOK_SEMICOLON,
     TOK_COMMA,
     TOK_COLON,
-    TOK_TICK,
     TOK_ASSIGN,
     TOK_EQUALS,
     TOK_AMPERSAND,
@@ -66,7 +65,14 @@ typedef struct {
 
 void tokenlist_print(const Token *tok);
 // a heap-allocated list of tokens terminated by a EOF token
+
 Token *tokenize(const char *src);
+
+typedef struct {
+    const char *src;
+} LexerState;
+
+Token lexer_next(LexerState *s);
 
 
 
