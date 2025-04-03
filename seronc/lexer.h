@@ -63,16 +63,17 @@ typedef struct {
     size_t pos_absolute, length;
 } Token;
 
-void tokenlist_print(const Token *tok);
-// a heap-allocated list of tokens terminated by a EOF token
-
-Token *tokenize(const char *src);
-
 typedef struct {
     const char *src;
 } LexerState;
 
 Token lexer_next(LexerState *s);
+
+// these functions are very performance heavy, and are only used for
+// debugging and testing purposes, the actual parser should be streaming
+// the tokens from lexer_next()
+Token *lexer_collect_tokens(const char *src); // lexer unit tests
+void lexer_print_tokens(const char *src);     // lexer debugging
 
 
 

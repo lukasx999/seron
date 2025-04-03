@@ -10,29 +10,6 @@
 
 
 
-typedef struct {
-    size_t capacity, size;
-    Token *items;
-} TokenList;
-
-static TokenList tokenlist_new(void) {
-    TokenList tokens = {
-        .capacity = 5,
-        .size     = 0,
-        .items    = NULL,
-    };
-    tokens.items = malloc(tokens.capacity * sizeof(Token));
-    return tokens;
-}
-
-static void tokenlist_append(TokenList *tokens, Token item) {
-    if (tokens->size == tokens->capacity) {
-        tokens->capacity *= 2;
-        tokens->items = realloc(tokens->items, tokens->capacity * sizeof(Token));
-    }
-    tokens->items[tokens->size++] = item;
-}
-
 const char *tokenkind_to_string(TokenKind tok) {
     const char *repr[] = {
         [TOK_INVALID]     = "invalid",
@@ -72,25 +49,6 @@ const char *tokenkind_to_string(TokenKind tok) {
     return repr[tok];
 }
 
-void tokenlist_print(const Token *tok) {
-    printf("\n");
-
-    while (1) {
-        const char *kind = tokenkind_to_string(tok->kind);
-
-        printf("%s%d:%d%s ", COLOR_GRAY, tok->pos_line, tok->pos_column, COLOR_END);
-
-        printf("%s", kind);
-        if (strcmp(tok->value, ""))
-            printf("%s(%s)%s", COLOR_GRAY, tok->value, COLOR_END);
-
-        printf("\n");
-        if ((tok++)->kind == TOK_EOF) break;
-    }
-
-    printf("\n");
-}
-
 static inline int match_kw(const char *str, const char *kw) {
     return !strncmp(str, kw, strlen(kw));
 }
@@ -128,6 +86,8 @@ Token lexer_next(LexerState *s) {
         tok.kind = TOK_EOF;
         return tok;
     }
+
+    // TODO: comments
 
     switch (*s->src) {
 
@@ -226,7 +186,6 @@ Token lexer_next(LexerState *s) {
             s->src++; // make src point to the next char, instead of `"`
             break;
 
-
         default: {
 
             if (isdigit(*s->src)) {
@@ -247,7 +206,8 @@ Token lexer_next(LexerState *s) {
 
 
             } else {
-                assert(!"unknown token");
+                compiler_message(MSG_ERROR, "unknown token `%c`", *s->src);
+                exit(EXIT_FAILURE);
             }
 
 
@@ -255,20 +215,64 @@ Token lexer_next(LexerState *s) {
 
     }
 
-    // assert(tok.kind != TOK_INVALID);
+    assert(tok.kind != TOK_INVALID);
     return tok;
 
 }
 
-Token *tokenize(const char *src) {
-    LexerState state = { .src = src };
-    TokenList tokens = tokenlist_new();
+void lexer_print_tokens(const char *src) {
 
-    Token tok = { 0 };
-    while (tok.kind != TOK_EOF) {
-        tok = lexer_next(&state);
-        tokenlist_append(&tokens, tok);
+    Token *tokens = lexer_collect_tokens(src);
+    Token *tok = tokens;
+
+    printf("\n");
+
+    while (1) {
+        const char *kind = tokenkind_to_string(tok->kind);
+
+        printf("%s%d:%d%s ", COLOR_GRAY, tok->pos_line, tok->pos_column, COLOR_END);
+
+        printf("%s", kind);
+        if (strcmp(tok->value, ""))
+            printf("%s(%s)%s", COLOR_GRAY, tok->value, COLOR_END);
+
+        printf("\n");
+        if (tok++->kind == TOK_EOF) break;
     }
 
-    return tokens.items;
+    printf("\n");
+    free(tokens);
+}
+
+static size_t get_tokencount(const char *src) {
+    LexerState s = { .src = src };
+    size_t tokencount = 0;
+
+    Token tok;
+    while (tok.kind != TOK_EOF) {
+        tok = lexer_next(&s);
+        tokencount++;
+    }
+
+    return tokencount;
+}
+
+Token *lexer_collect_tokens(const char *src) {
+
+    // precompute the amount of tokens there are, so we don't have to bother
+    // with dynamic arrays (this is for debugging/testing purposes so perf
+    // doesn't matter
+    size_t count = get_tokencount(src);
+    Token *tokens = malloc(count * sizeof(Token));
+    size_t i = 0;
+
+    LexerState s = { .src = src };
+    Token tok;
+    while (tok.kind != TOK_EOF) {
+        tok = lexer_next(&s);
+        tokens[i++] = tok;
+    }
+
+    return tokens;
+
 }

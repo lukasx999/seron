@@ -646,6 +646,7 @@ static AstNode *rule_expression(Parser *p) {
 }
 
 static AstNode *rule_exprstmt(Parser *p) {
+    // TODO: allow for empty statements, make expr optional
     // <exprstmt> ::= <expr> ";"
 
     AstNode *node = rule_expression(p);

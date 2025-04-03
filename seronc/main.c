@@ -26,7 +26,7 @@
 #define FILE_EXTENSION "srn"
 
 
-struct CompilerConfig compiler_context = { 0 };
+struct CompilerConfig compiler_config = { 0 };
 
 
 
@@ -87,8 +87,8 @@ static int run_cmd_sync(char *const argv[]) {
 }
 
 static void assemble(void) {
-    char *asm_ = compiler_context.filename.asm_;
-    char *obj  = compiler_context.filename.obj;
+    char *asm_ = compiler_config.filename.asm_;
+    char *obj  = compiler_config.filename.obj;
 
     // Assemble
     int ret = run_cmd_sync((char*[]) {
@@ -108,8 +108,8 @@ static void assemble(void) {
 }
 
 static void link_cc(void) {
-    char *obj       = compiler_context.filename.obj;
-    const char *bin = compiler_context.filename.stripped;
+    char *obj       = compiler_config.filename.obj;
+    const char *bin = compiler_config.filename.stripped;
 
     // Link
     int ret = run_cmd_sync((char*[]) {
@@ -144,18 +144,18 @@ static void print_usage(char *argv[]) {
 }
 
 static void set_filenames(const char *raw) {
-    compiler_context.filename.raw = raw;
+    compiler_config.filename.raw = raw;
 
     size_t dot_offset = strlen(raw) - 1 - strlen(FILE_EXTENSION);
 
-    char *stripped = compiler_context.filename.stripped;
+    char *stripped = compiler_config.filename.stripped;
     strncpy(stripped, raw, dot_offset);
 
-    char *asm = compiler_context.filename.asm_;
+    char *asm = compiler_config.filename.asm_;
     strncpy(asm, stripped, NAME_MAX);
     strcat(asm, ".s");
 
-    char *obj = compiler_context.filename.obj;
+    char *obj = compiler_config.filename.obj;
     strncpy(obj, stripped, NAME_MAX);
     strcat(obj, ".o");
 }
@@ -164,11 +164,11 @@ static void parse_args(int argc, char *argv[]) {
 
     int opt_index = 0;
     struct option opts[] = {
-        { "dump-ast",         no_argument, &compiler_context.opts.dump_ast,         1 },
-        { "dump-tokens",      no_argument, &compiler_context.opts.dump_tokens,      1 },
-        { "dump-symboltable", no_argument, &compiler_context.opts.dump_symboltable, 1 },
-        { "asmdoc",           no_argument, &compiler_context.opts.debug_asm,        1 },
-        { "verbose",          no_argument, &compiler_context.opts.verbose,          1 },
+        { "dump-ast",         no_argument, &compiler_config.opts.dump_ast,         1 },
+        { "dump-tokens",      no_argument, &compiler_config.opts.dump_tokens,      1 },
+        { "dump-symboltable", no_argument, &compiler_config.opts.dump_symboltable, 1 },
+        { "asmdoc",           no_argument, &compiler_config.opts.debug_asm,        1 },
+        { "verbose",          no_argument, &compiler_config.opts.verbose,          1 },
         { NULL, 0, NULL, 0 },
     };
 
@@ -183,9 +183,9 @@ static void parse_args(int argc, char *argv[]) {
                 /* long option */
                 break;
 
-            case 'v': compiler_context.opts.verbose              = 1; break;
-            case 'S': compiler_context.opts.compile_only         = 1; break;
-            case 'c': compiler_context.opts.compile_and_assemble = 1; break;
+            case 'v': compiler_config.opts.verbose              = 1; break;
+            case 'S': compiler_config.opts.compile_only         = 1; break;
+            case 'c': compiler_config.opts.compile_and_assemble = 1; break;
 
             default:
                 compiler_message(MSG_ERROR, "Unknown option");
@@ -219,11 +219,14 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: parser_map_ast() designated initializer array: map from enum to function pointer
 // TODO: rework errors/warnings with tokens
 // TODO: resolve codegen grouping conflict with push() like chibicc
-// or post-order traversal
+// TODO: resolve variables in identifier primary rule, so no symboltable is needed for codegen
+// TODO: linked list as symboltable
+
 
 void test(void) {
-    Token *tok = tokenize("return 1+2+_foo123 \"str\" = ==");
-    tokenlist_print(tok);
+    const char *src = "return 1+2+_foo123 \"str\" = ==";
+    Token *tok = lexer_collect_tokens(src);
+    lexer_print_tokens(src);
     Token *tmp = tok;
 
     Token *cmp = (Token[]) {
@@ -255,41 +258,36 @@ int main(int argc, char **argv) {
 
     parse_args(argc, argv);
 
-    const char *filename = compiler_context.filename.raw;
+    const char *filename = compiler_config.filename.raw;
     char *file = read_file(filename);
 
-    // TODO:
-    // if (compiler_context.opts.dump_tokens)
-    //     tokenlist_print(tokens);
+    if (compiler_config.opts.dump_tokens)
+        lexer_print_tokens(file);
 
     Arena parser_arena = { 0 };
     arena_init(&parser_arena);
 
     AstNode *node_root = parse(file, &parser_arena);
 
-    if (compiler_context.opts.dump_ast)
+    if (compiler_config.opts.dump_ast)
         parser_print_ast(node_root, 2);
 
-    exit(0);
+    // SymboltableList symboltable = symboltable_list_construct(node_root, 5);
+    // if (compiler_config.opts.dump_symboltable)
+    //     symboltable_list_print(&symboltable);
 
-    SymboltableList symboltable = symboltable_list_construct(node_root, 5);
-
-    if (compiler_context.opts.dump_symboltable)
-        symboltable_list_print(&symboltable);
-
-
-    check_types(node_root);
+    // check_types(node_root);
     generate_code(node_root);
 
-    if (!compiler_context.opts.compile_only) {
+    if (!compiler_config.opts.compile_only) {
         assemble();
 
-        if (!compiler_context.opts.compile_and_assemble)
+        if (!compiler_config.opts.compile_and_assemble)
             link_cc();
 
     }
 
-    symboltable_list_destroy(&symboltable);
+    // symboltable_list_destroy(&symboltable);
     arena_free(&parser_arena);
     free(file);
 

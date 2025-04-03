@@ -24,7 +24,7 @@ static void throw_thing(
     fprintf(
         stderr,
         "%s:%d:%d: %s%s%s%s: ",
-        compiler_context.filename.raw, tok.pos_line, tok.pos_column,
+        compiler_config.filename.raw, tok.pos_line, tok.pos_column,
         COLOR_BOLD, color, str, COLOR_END
     );
 
@@ -56,7 +56,7 @@ void throw_warning(
 }
 
 void compiler_message(MessageKind kind, const char *fmt, ...) {
-    if (kind == MSG_INFO && !compiler_context.opts.verbose)
+    if (kind == MSG_INFO && !compiler_config.opts.verbose)
         return;
 
     assert(fmt != NULL);

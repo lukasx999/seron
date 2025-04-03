@@ -35,7 +35,7 @@ struct CompilerConfig {
 
 };
 
-extern struct CompilerConfig compiler_context;
+extern struct CompilerConfig compiler_config;
 
 
 

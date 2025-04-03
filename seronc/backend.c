@@ -259,8 +259,8 @@ void generate_code(AstNode *root) {
 
     gen_init(
         &codegen,
-        compiler_context.filename.asm_,
-        compiler_context.opts.debug_asm
+        compiler_config.filename.asm_,
+        compiler_config.opts.debug_asm
     );
 
     gen_prelude(&codegen);
