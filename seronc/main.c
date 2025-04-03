@@ -223,6 +223,7 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: linked list as symboltable
 
 
+
 void test(void) {
     const char *src = "return 1+2+_foo123 \"str\" = ==";
     Token *tok = lexer_collect_tokens(src);
