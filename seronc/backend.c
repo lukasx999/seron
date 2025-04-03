@@ -6,7 +6,6 @@
 #include <stdbool.h>
 #include <alloca.h>
 
-#include "ast.h"
 #include "types.h"
 #include "util.h"
 #include "lexer.h"

@@ -12,7 +12,6 @@ gen.h 	      \
 backend.h     \
 symboltable.h \
 types.h       \
-ast.h         \
 
 SOURCES=\
 lexer.o       \
@@ -22,7 +21,6 @@ backend.o     \
 util.o        \
 types.o       \
 symboltable.o \
-ast.o         \
 
 all: compiler
 
@@ -32,7 +30,7 @@ compiler: main.o $(SOURCES)
 
 test: compiler
 	@echo TEST test/main.srn
-	@./seronc ./test/test.srn -Ov --debug-asm
+	@./seronc ./test/test.srn -cv --asmdoc
 
 	@$(CC) $(CFLAGS) -o test/test test/test.c test/test.o
 	@./test/test

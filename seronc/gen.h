@@ -6,6 +6,7 @@
 #include <stdbool.h>
 
 #include "symboltable.h"
+#include "parser.h"
 
 /* context needed for if/while */
 /* remembers the current label count, to make nested if/while work */

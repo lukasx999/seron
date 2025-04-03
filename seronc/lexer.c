@@ -97,7 +97,7 @@ static inline int match_kw(const char *str, const char *kw) {
 
 // str is a slice into the source string, and is therefore not NUL-terminated
 // therefore must not compare more chars than the length of the keyword
-static inline TokenKind get_kw(const char *str) {
+static TokenKind get_kw(const char *str) {
     return
 
     match_kw(str, "proc")   ? TOK_KW_FUNCTION :

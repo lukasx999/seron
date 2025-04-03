@@ -10,7 +10,6 @@
 #include "lexer.h"
 #include "parser.h"
 #include "gen.h"
-#include "ast.h"
 #include "symboltable.h"
 
 

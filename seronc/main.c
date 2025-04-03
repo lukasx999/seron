@@ -132,18 +132,13 @@ static void print_usage(char *argv[]) {
     fprintf(stderr, "Usage: %s [options] file...\n", argv[0]);
     fprintf(stderr, "Options:\n");
     fprintf(stderr,
-            "User Flags\n"
-            "\t--compile-only, -S\n"
-            "\t  Dont assemble/link, only produce assembly\n"
-            "\t--compile-and-assemble, -O\n"
-            "\t  Compile and assemble, don't link\n"
-            "Developer Flags:\n"
-            "\t--debug-asm\n"
+            "\t-S                               generate assembly, don't assemble/link\n"
+            "\t-c                               compile and assemble, don't link\n"
+            "\t-v, --verbose                    show info messages\n"
+            "\t--asmdoc                         add debug comments into the generated assembly\n"
             "\t--dump-ast\n"
             "\t--dump-tokens\n"
             "\t--dump-symboltable\n"
-            "\t--verbose, -v\n"
-            "\t  Show info messages\n"
             );
     exit(EXIT_FAILURE);
 }
@@ -157,11 +152,11 @@ static void set_filenames(const char *raw) {
     strncpy(stripped, raw, dot_offset);
 
     char *asm = compiler_context.filename.asm_;
-    strncpy(asm, stripped, 256);
+    strncpy(asm, stripped, NAME_MAX);
     strcat(asm, ".s");
 
     char *obj = compiler_context.filename.obj;
-    strncpy(obj, stripped, 256);
+    strncpy(obj, stripped, NAME_MAX);
     strcat(obj, ".o");
 }
 
@@ -172,12 +167,13 @@ static void parse_args(int argc, char *argv[]) {
         { "dump-ast",         no_argument, &compiler_context.opts.dump_ast,         1 },
         { "dump-tokens",      no_argument, &compiler_context.opts.dump_tokens,      1 },
         { "dump-symboltable", no_argument, &compiler_context.opts.dump_symboltable, 1 },
-        { "debug-asm",        no_argument, &compiler_context.opts.debug_asm,        1 },
+        { "asmdoc",           no_argument, &compiler_context.opts.debug_asm,        1 },
+        { "verbose",          no_argument, &compiler_context.opts.verbose,          1 },
         { NULL, 0, NULL, 0 },
     };
 
     while (1) {
-        int c = getopt_long(argc, argv, "SvO", opts, &opt_index);
+        int c = getopt_long(argc, argv, "Scv", opts, &opt_index);
 
         if (c == -1)
             break;
@@ -189,7 +185,7 @@ static void parse_args(int argc, char *argv[]) {
 
             case 'v': compiler_context.opts.verbose              = 1; break;
             case 'S': compiler_context.opts.compile_only         = 1; break;
-            case 'O': compiler_context.opts.compile_and_assemble = 1; break;
+            case 'c': compiler_context.opts.compile_and_assemble = 1; break;
 
             default:
                 compiler_message(MSG_ERROR, "Unknown option");
@@ -250,7 +246,6 @@ void test(void) {
         tmp++;
     }
 
-
     free(tok);
 }
 
@@ -263,20 +258,19 @@ int main(int argc, char **argv) {
     const char *filename = compiler_context.filename.raw;
     char *file = read_file(filename);
 
-    Token *tokens = tokenize(file);
-    free(file);
-
-    if (compiler_context.opts.dump_tokens)
-        tokenlist_print(tokens);
+    // TODO:
+    // if (compiler_context.opts.dump_tokens)
+    //     tokenlist_print(tokens);
 
     Arena parser_arena = { 0 };
     arena_init(&parser_arena);
 
-    AstNode *node_root = parse(tokens, &parser_arena);
+    AstNode *node_root = parse(file, &parser_arena);
 
     if (compiler_context.opts.dump_ast)
         parser_print_ast(node_root, 2);
 
+    exit(0);
 
     SymboltableList symboltable = symboltable_list_construct(node_root, 5);
 
@@ -285,7 +279,6 @@ int main(int argc, char **argv) {
 
 
     check_types(node_root);
-
     generate_code(node_root);
 
     if (!compiler_context.opts.compile_only) {
@@ -298,7 +291,7 @@ int main(int argc, char **argv) {
 
     symboltable_list_destroy(&symboltable);
     arena_free(&parser_arena);
-    free(tokens);
+    free(file);
 
     return EXIT_SUCCESS;
 }

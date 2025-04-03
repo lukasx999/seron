@@ -3,9 +3,10 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include <limits.h>
+#include <linux/limits.h>
 
 
-#define MAX_FILENAME_SIZE 256
 
 /*
 This structure is global as it would be very annoying to pass
@@ -15,19 +16,19 @@ hence using a global variable makes code cleaner (imo)
 struct CompilerConfig {
 
     struct {
-        const char *raw; // filename with extension
-        char stripped[MAX_FILENAME_SIZE]; // stripped of suffix
-        char asm_[MAX_FILENAME_SIZE];
-        char obj[MAX_FILENAME_SIZE];
+        const char *raw;         // main.srn
+        char stripped[NAME_MAX]; // main
+        char asm_[NAME_MAX];     // main.s
+        char obj[NAME_MAX];      // main.o
     } filename;
 
     // options are ints, because `struct option` only accept int pointers
     struct {
+        int verbose;
         int debug_asm;
         int dump_ast;
         int dump_tokens;
         int dump_symboltable;
-        int verbose; // Show info messages
         int compile_only;
         int compile_and_assemble;
     } opts;

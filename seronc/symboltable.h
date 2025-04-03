@@ -6,9 +6,17 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#include "ast.h"
 #include "types.h"
-#include "backend.h"
+
+typedef enum {
+    REG_RAX,
+    REG_RDI,
+    REG_RSI,
+    REG_RDX,
+    REG_RCX,
+    REG_R8,
+    REG_R9,
+} Register;
 
 
 // TODO: static variables
