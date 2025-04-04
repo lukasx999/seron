@@ -646,7 +646,7 @@ static AstNode *rule_expression(Parser *p) {
 }
 
 static AstNode *rule_exprstmt(Parser *p) {
-    // TODO: allow for empty statements, make expr optional
+    // TODO: make expr optional to allow empty statements
     // <exprstmt> ::= <expr> ";"
 
     AstNode *node = rule_expression(p);
@@ -656,7 +656,7 @@ static AstNode *rule_exprstmt(Parser *p) {
 }
 
 static AstNode *rule_vardecl(Parser *p) {
-    // <vardecl> ::= "val" <identifier> <type> ("=" <expression>)? ";"
+    // <vardecl> ::= "let" <identifier> <type> ("=" <expression>)? ";"
 
     assert(parser_match_tokenkind(p, TOK_KW_VARDECL));
     Token op = parser_advance(p);

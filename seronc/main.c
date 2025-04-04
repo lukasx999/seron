@@ -288,8 +288,8 @@ void test(void) {
 }
 
 int main(int argc, char **argv) {
-    test();
-    exit(0);
+    // test();
+    // exit(0);
 
     parse_args(argc, argv);
 
@@ -307,12 +307,14 @@ int main(int argc, char **argv) {
     if (compiler_config.opts.dump_ast)
         parser_print_ast(node_root, 2);
 
+
     // SymboltableList symboltable = symboltable_list_construct(node_root, 5);
     // if (compiler_config.opts.dump_symboltable)
     //     symboltable_list_print(&symboltable);
 
     // check_types(node_root);
     generate_code(node_root);
+    exit(0);
 
     if (!compiler_config.opts.compile_only) {
         assemble();

@@ -28,9 +28,11 @@ void gen_destroy (CodeGenerator *c);
 void gen_prelude (CodeGenerator *c);
 
 
+
+void gen_addinstr(CodeGenerator *gen, const char *fmt, ...);
 Symbol    gen_binop            (CodeGenerator *gen, const Symbol  *lhs, const Symbol  *rhs, BinOpKind      kind);
 
-Symbol gen_store_literal(CodeGenerator *gen, int64_t value, TypeKind type);
+void gen_store_literal(CodeGenerator *gen, int64_t value, TypeKind type);
 void      gen_procedure_start  (CodeGenerator *gen, const char *identifier, uint64_t stack_size, const ProcSignature *sig, const Symboltable *scope);
 void      gen_procedure_end    (CodeGenerator *gen);
 void      gen_procedure_extern (CodeGenerator *gen, const char *identifier);

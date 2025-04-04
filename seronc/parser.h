@@ -26,6 +26,7 @@ void astnodelist_append(AstNodeList *list, AstNode *node);
 
 // Token is included in AstNode for printing source location on error/warning
 
+// TODO: literal kind
 typedef struct {
     Token op;
 } ExprLiteral;

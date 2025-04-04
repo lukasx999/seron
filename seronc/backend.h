@@ -4,6 +4,7 @@
 #include "parser.h"
 
 
-extern void generate_code(AstNode *root);
+void generate_code(AstNode *root);
+void emit(AstNode *root);
 
 #endif // _CODEGEN_H

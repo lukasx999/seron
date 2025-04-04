@@ -107,7 +107,7 @@ static const char *abi_get_register(int arg_n, TypeKind type) {
     return registers[arg_n];
 }
 
-static void gen_addinstr(CodeGenerator *gen, const char *fmt, ...) {
+void gen_addinstr(CodeGenerator *gen, const char *fmt, ...) {
     va_list va;
     va_start(va, fmt);
     vfprintf(gen->file, fmt, va);
@@ -191,7 +191,6 @@ Symbol gen_binop(
     assert(lhs->type.kind == lhs->type.kind);
     gen_comment(gen, "START: binop");
 
-    // TODO: evaluate subtree here!
     gen_move_symbol_into_register(gen, REG_RAX, lhs);
     gen_move_symbol_into_register(gen, REG_RDI, rhs);
 
@@ -220,21 +219,13 @@ Symbol gen_binop(
     };
 }
 
-Symbol gen_store_literal(CodeGenerator *gen, int64_t value, TypeKind type) {
+void gen_store_literal(CodeGenerator *gen, int64_t value, TypeKind type) {
     gen_comment(gen, "START: store");
 
-    static int i = 0;
-    Register reg = i++ % 2 == 0 ? REG_RSI : REG_RDX;
+    const char *rax = typekind_get_subregister(REG_RAX, type);
 
-    const char *rax = typekind_get_subregister(reg, type);
     gen_addinstr(gen, "mov %s, %lu", rax, value);
-
     gen_comment(gen, "END: store");
-    return (Symbol) {
-        .kind = SYMBOL_TEMPORARY,
-        .type = (Type) { .kind = type },
-        .reg  = reg,
-    };
 }
 
 void gen_procedure_start(
