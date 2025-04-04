@@ -223,9 +223,9 @@ static void parse_args(int argc, char *argv[]) {
 // TODO: linked list as symboltable
 
 
+void test_lexer(void) {
 
-void test(void) {
-    const char *src = "return 1+2+_foo123 \"str\" = ==";
+    const char *src = "return 1+2+_foo123*/ \"str\" = == proc if else while";
     Token *tok = lexer_collect_tokens(src);
     lexer_print_tokens(src);
     Token *tmp = tok;
@@ -237,9 +237,15 @@ void test(void) {
         (Token) { .kind = TOK_NUMBER, .value = "2" },
         (Token) { .kind = TOK_PLUS },
         (Token) { .kind = TOK_IDENTIFIER, .value = "_foo123" },
+        (Token) { .kind = TOK_ASTERISK },
+        (Token) { .kind = TOK_SLASH },
         (Token) { .kind = TOK_STRING, .value = "str" },
         (Token) { .kind = TOK_ASSIGN },
         (Token) { .kind = TOK_EQUALS },
+        (Token) { .kind = TOK_KW_FUNCTION },
+        (Token) { .kind = TOK_KW_IF },
+        (Token) { .kind = TOK_KW_ELSE },
+        (Token) { .kind = TOK_KW_WHILE },
     };
 
     while (tmp->kind != TOK_EOF) {
@@ -253,9 +259,37 @@ void test(void) {
     free(tok);
 }
 
+void test_parser(void) {
+    Arena arena = { 0 };
+    arena_init(&arena);
+
+    AstNode *root = parse("proc main() { 1+2; }", &arena);
+    parser_print_ast(root, 2);
+
+    assert(root->kind == ASTNODE_BLOCK);
+    AstNode *func = *root->block.stmts.items;
+    assert(func->kind == ASTNODE_PROCEDURE);
+
+    AstNode *plus = *func->stmt_procedure.body->block.stmts.items;
+    assert(plus->kind == ASTNODE_BINOP);
+
+    AstNode *lhs = plus->expr_binop.lhs;
+    AstNode *rhs = plus->expr_binop.rhs;
+
+    assert(lhs->kind == ASTNODE_LITERAL);
+    assert(rhs->kind == ASTNODE_LITERAL);
+
+    arena_free(&arena);
+}
+
+void test(void) {
+    test_lexer();
+    test_parser();
+}
+
 int main(int argc, char **argv) {
-    // test();
-    // exit(0);
+    test();
+    exit(0);
 
     parse_args(argc, argv);
 
