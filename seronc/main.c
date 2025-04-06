@@ -18,7 +18,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "types.h"
-#include "backend.h"
+#include "codegen.h"
 #include "symboltable.h"
 #include "main.h"
 
@@ -293,8 +293,7 @@ int main(int argc, char **argv) {
 
     parse_args(argc, argv);
 
-    const char *filename = compiler_config.filename.raw;
-    char *file = read_file(filename);
+    char *file = read_file(compiler_config.filename.raw);
 
     if (compiler_config.opts.dump_tokens)
         lexer_print_tokens(file);
@@ -313,8 +312,7 @@ int main(int argc, char **argv) {
     //     symboltable_list_print(&symboltable);
 
     // check_types(node_root);
-    generate_code(node_root);
-    exit(0);
+    codegen(node_root);
 
     if (!compiler_config.opts.compile_only) {
         assemble();

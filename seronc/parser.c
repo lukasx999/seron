@@ -48,6 +48,14 @@ BinOpKind binopkind_from_tokenkind(TokenKind kind) {
     }
 }
 
+UnaryOpKind unaryopkind_from_tokenkind(TokenKind kind) {
+    switch (kind) {
+        case TOK_MINUS: return UNARYOP_MINUS;
+        case TOK_BANG:  return UNARYOP_NEG;
+        default:        assert(!"unknown tokenkind");
+    }
+}
+
 BuiltinFunction builtin_from_tokenkind(TokenKind kind) {
     switch (kind) {
         case TOK_BUILTIN_ASM: return BUILTIN_ASM;
@@ -78,6 +86,21 @@ static inline Token parser_advance(Parser *p) {
 // Convenience function that allows us to change the allocator easily
 static inline void *parser_alloc(Parser *p, size_t size) {
     return arena_alloc(p->arena, size);
+}
+
+// TODO: think of a better way to handle this
+static AstNode *parser_empty_node(Parser *p) {
+
+    AstNode *node = parser_alloc(p, sizeof(AstNode));
+    node->kind = ASTNODE_LITERAL;
+    node->expr_literal = (ExprLiteral) {
+        .op = (Token) {
+            .kind = TOK_NUMBER,
+            .value = "0",
+        },
+    };
+
+    return node;
 }
 
 // checks if the current token is of one of the supplied kinds
@@ -471,7 +494,11 @@ static size_t rule_util_paramlist(Parser *p, Param *out_params) {
 }
 
 static AstNode *rule_primary(Parser *p) {
-    // <primary> ::= NUMBER | IDENTIFIER | STRING | "(" <expression> ")"
+    // <primary> ::=
+    //           | NUMBER
+    //           | IDENTIFIER
+    //           | STRING
+    //           | "(" <expression> ")"
 
     AstNode *astnode = parser_alloc(p, sizeof(AstNode));
 
@@ -540,11 +567,11 @@ static AstNode *rule_unary(Parser *p) {
     if (parser_match_tokenkinds(p, TOK_MINUS, TOK_BANG, SENTINEL)) {
         Token op = parser_advance(p);
 
-        AstNode *node = parser_alloc(p, sizeof(AstNode));
-
-        node->kind = ASTNODE_UNARYOP;
+        AstNode *node      = parser_alloc(p, sizeof(AstNode));
+        node->kind         = ASTNODE_UNARYOP;
         node->expr_unaryop = (ExprUnaryOp) {
             .op   = op,
+            .kind = unaryopkind_from_tokenkind(op.kind),
             .node = rule_unary(p),
         };
 
@@ -591,16 +618,16 @@ static AstNode *rule_term(Parser *p) {
         Token op = parser_advance(p);
         AstNode *rhs = rule_factor(p);
 
-        AstNode *astnode    = parser_alloc(p, sizeof(AstNode));
-        astnode->kind       = ASTNODE_BINOP;
-        astnode->expr_binop = (ExprBinOp) {
+        AstNode *node    = parser_alloc(p, sizeof(AstNode));
+        node->kind       = ASTNODE_BINOP;
+        node->expr_binop = (ExprBinOp) {
             .lhs  = lhs,
             .op   = op,
             .rhs  = rhs,
             .kind = binopkind_from_tokenkind(op.kind),
         };
 
-        lhs = astnode;
+        lhs = node;
     }
 
     return lhs;
@@ -645,11 +672,13 @@ static AstNode *rule_expression(Parser *p) {
     return rule_assignment(p);
 }
 
-static AstNode *rule_exprstmt(Parser *p) {
-    // TODO: make expr optional to allow empty statements
-    // <exprstmt> ::= <expr> ";"
 
-    AstNode *node = rule_expression(p);
+static AstNode *rule_exprstmt(Parser *p) {
+    // <exprstmt> ::= <expr>? ";"
+
+    AstNode *node = parser_match_tokenkind(p, TOK_SEMICOLON)
+        ? parser_empty_node(p)
+        : rule_expression(p);
     parser_expect_token(p, TOK_SEMICOLON);
     parser_advance(p);
     return node;
@@ -787,7 +816,14 @@ static AstNode *rule_return(Parser *p) {
 }
 
 static AstNode *rule_stmt(Parser *p) {
-    // <statement> ::= <block> | <procedure> | <vardeclaration> | <if> | <while> | <return> | <expr> ";"
+    // <statement> ::=
+    //             | <block>
+    //             | <procedure>
+    //             | <vardecl>
+    //             | <if>
+    //             | <while>
+    //             | <return>
+    //             | <exprstmt>
 
     return
         parser_match_tokenkind(p, TOK_LBRACE)      ? rule_block  (p) :

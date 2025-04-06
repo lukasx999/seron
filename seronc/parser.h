@@ -42,7 +42,7 @@ typedef enum {
     BINOP_DIV,
 } BinOpKind;
 
-extern BinOpKind binopkind_from_tokenkind(TokenKind kind);
+BinOpKind binopkind_from_tokenkind(TokenKind kind);
 
 typedef struct {
     AstNode *lhs, *rhs;
@@ -50,9 +50,17 @@ typedef struct {
     BinOpKind kind;
 } ExprBinOp;
 
+typedef enum {
+    UNARYOP_MINUS,
+    UNARYOP_NEG,
+} UnaryOpKind;
+
+UnaryOpKind unaryopkind_from_tokenkind(TokenKind kind);
+
 typedef struct {
     AstNode *node;
     Token op;
+    UnaryOpKind kind;
 } ExprUnaryOp;
 
 typedef enum {

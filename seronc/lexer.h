@@ -44,9 +44,8 @@ typedef enum {
     TOK_BUILTIN_ASM,
 
     TOK_TYPE_VOID,
-    TOK_TYPE_BYTE,
+    TOK_TYPE_CHAR,
     TOK_TYPE_INT,
-    TOK_TYPE_SIZE,
 
     TOK_EOF,
 

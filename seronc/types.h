@@ -6,8 +6,6 @@
 typedef struct AstNode AstNode;
 
 
-#define INTLITERAL TYPE_INT
-
 
 typedef struct Type Type;
 
@@ -27,11 +25,9 @@ typedef struct {
 
 typedef enum {
     TYPE_INVALID, // used for error checking
-
     TYPE_VOID,
-    TYPE_BYTE,
+    TYPE_CHAR,
     TYPE_INT,
-    TYPE_SIZE,
     TYPE_FUNCTION,
     TYPE_POINTER,
 } TypeKind;
@@ -46,14 +42,6 @@ struct Type {
         Type *type_pointee;
     };
 };
-
-
-
-/*
- TODO:
- have a type: TYPE_COERCABLE_INT be returned from integer literals, which can be
- coerced into any other integer type
-*/
 
 TypeKind typekind_from_tokenkind(TokenKind kind);
 const char *typekind_to_string(TypeKind type);

@@ -15,8 +15,7 @@
 TypeKind typekind_from_tokenkind(TokenKind kind) {
     switch (kind) {
         case TOK_TYPE_INT:  return TYPE_INT;
-        case TOK_TYPE_SIZE: return TYPE_SIZE;
-        case TOK_TYPE_BYTE: return TYPE_BYTE;
+        case TOK_TYPE_CHAR: return TYPE_CHAR;
         case TOK_TYPE_VOID: return TYPE_VOID;
         default:            return TYPE_INVALID;
     }
@@ -24,9 +23,8 @@ TypeKind typekind_from_tokenkind(TokenKind kind) {
 
 const char *typekind_to_string(TypeKind type) {
     switch (type) {
-        case TYPE_BYTE:     return "byte";    break;
+        case TYPE_CHAR:     return "char";    break;
         case TYPE_INT:      return "int";     break;
-        case TYPE_SIZE:     return "size";    break;
         case TYPE_POINTER:  return "pointer"; break;
         case TYPE_VOID:     return "void";    break;
         case TYPE_FUNCTION: return "proc";    break;
@@ -122,7 +120,7 @@ static Type ast_literal(ExprLiteral *literal, Symboltable *scope) {
         } break;
 
         case TOK_NUMBER:
-            return (Type) { .kind = INTLITERAL };
+            return (Type) { .kind = TYPE_INT };
             break;
 
         case TOK_STRING:

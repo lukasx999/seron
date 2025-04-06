@@ -8,16 +8,14 @@ main.h        \
 util.h        \
 lexer.h       \
 parser.h      \
-gen.h 	      \
-backend.h     \
+codegen.h     \
 symboltable.h \
 types.h       \
 
 SOURCES=\
 lexer.o       \
 parser.o      \
-gen.o         \
-backend.o     \
+codegen.o     \
 util.o        \
 types.o       \
 symboltable.o \

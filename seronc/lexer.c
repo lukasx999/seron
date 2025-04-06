@@ -40,8 +40,7 @@ const char *tokenkind_to_string(TokenKind tok) {
         [TOK_KW_RETURN]   = "return",
         [TOK_BUILTIN_ASM] = "asm",
         [TOK_TYPE_VOID]   = "void",
-        [TOK_TYPE_BYTE]   = "byte",
-        [TOK_TYPE_SIZE]   = "size",
+        [TOK_TYPE_CHAR]   = "char",
         [TOK_TYPE_INT]    = "int",
         [TOK_EOF]         = "eof",
     };
@@ -67,9 +66,8 @@ static TokenKind get_kw(const char *str) {
     match_kw(str, "return") ? TOK_KW_RETURN   :
     match_kw(str, "asm")    ? TOK_BUILTIN_ASM :
     match_kw(str, "void")   ? TOK_TYPE_VOID   :
-    match_kw(str, "byte")   ? TOK_TYPE_BYTE   :
+    match_kw(str, "char")   ? TOK_TYPE_CHAR   :
     match_kw(str, "int")    ? TOK_TYPE_INT    :
-    match_kw(str, "size")   ? TOK_TYPE_SIZE   :
 
     TOK_IDENTIFIER; // no keyword found? must be an identifier!
 }
@@ -87,7 +85,7 @@ Token lexer_next(LexerState *s) {
         return tok;
     }
 
-    // TODO: comments
+    // TODO: multi-line comments
 
     switch (*s->src) {
 
@@ -95,6 +93,12 @@ Token lexer_next(LexerState *s) {
         case '\r':
         case ' ':
         case '\n':
+            s->src++;
+            return lexer_next(s);
+            break;
+
+        case '#':
+            while (*++s->src != '\n');
             s->src++;
             return lexer_next(s);
             break;
@@ -200,8 +204,7 @@ Token lexer_next(LexerState *s) {
                 const char *start = s->src;
                 while (isalpha(*++s->src) || *s->src == '_' || isdigit(*s->src));
 
-                tok.kind = get_kw(start);
-                if (tok.kind == TOK_IDENTIFIER)
+                if ((tok.kind = get_kw(start)) == TOK_IDENTIFIER)
                     copy_slice_to_buf(tok.value, start, s->src);
 
 
