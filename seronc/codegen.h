@@ -3,7 +3,8 @@
 
 #include "parser.h"
 
-size_t typekind_get_size(TypeKind type);
+
+size_t get_type_size(TypeKind type);
 
 void codegen(AstNode *root);
 

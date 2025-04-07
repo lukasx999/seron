@@ -10,6 +10,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "lib/arena.h"
+#include "lib/util.h"
 
 
 #define SENTINEL TOK_INVALID
@@ -17,7 +18,7 @@
 
 
 
-void astnodelist_init(AstNodeList *list, Arena *arena) {
+static void astnodelist_init(AstNodeList *list, Arena *arena) {
      *list = (AstNodeList) {
         .cap   = 5,
         .size  = 0,
@@ -28,7 +29,7 @@ void astnodelist_init(AstNodeList *list, Arena *arena) {
     list->items = arena_alloc(arena, list->cap * sizeof(AstNode*));
 }
 
-void astnodelist_append(AstNodeList *list, AstNode *node) {
+static void astnodelist_append(AstNodeList *list, AstNode *node) {
 
     if (list->size == list->cap) {
         list->cap *= 2;
@@ -38,35 +39,45 @@ void astnodelist_append(AstNodeList *list, AstNode *node) {
     list->items[list->size++] = node;
 }
 
-BinOpKind binopkind_from_tokenkind(TokenKind kind) {
+static TypeKind type_from_token(TokenKind kind) {
+    switch (kind) {
+        case TOK_TYPE_INT:  return TYPE_INT;
+        case TOK_TYPE_CHAR: return TYPE_CHAR;
+        case TOK_TYPE_VOID: return TYPE_VOID;
+        default:            return TYPE_INVALID;
+    }
+}
+
+static LiteralKind literal_from_token(TokenKind kind) {
+    switch (kind) {
+        case TOK_NUMBER:     return LITERAL_NUMBER;
+        case TOK_IDENTIFIER: return LITERAL_IDENT;
+        case TOK_STRING:     return LITERAL_STRING;
+        default:             PANIC("unknown tokenkind");
+    }
+}
+
+static BinOpKind binop_from_token(TokenKind kind) {
     switch (kind) {
         case TOK_PLUS:     return BINOP_ADD;
         case TOK_MINUS:    return BINOP_SUB;
         case TOK_SLASH:    return BINOP_DIV;
         case TOK_ASTERISK: return BINOP_MUL;
-        default:           assert(!"unknown tokenkind");
+        default:           PANIC("unknown tokenkind");
     }
 }
 
-UnaryOpKind unaryopkind_from_tokenkind(TokenKind kind) {
+static UnaryOpKind unaryop_from_token(TokenKind kind) {
     switch (kind) {
         case TOK_MINUS: return UNARYOP_MINUS;
         case TOK_BANG:  return UNARYOP_NEG;
-        default:        assert(!"unknown tokenkind");
-    }
-}
-
-BuiltinFunction builtin_from_tokenkind(TokenKind kind) {
-    switch (kind) {
-        case TOK_BUILTIN_ASM: return BUILTIN_ASM;
-        default:              return BUILTIN_NONE;
+        default:        PANIC("unknown tokenkind");
     }
 }
 
 
 
 typedef struct {
-    size_t current;
     Arena *arena;
     Token tok;
     LexerState lexer;
@@ -105,7 +116,7 @@ static AstNode *parser_empty_node(Parser *p) {
 
 // checks if the current token is of one of the supplied kinds
 // last variadic argument should be `TOK_INVALID` aka `SENTINEL`
-static bool parser_match_tokenkinds(const Parser *p, ...) {
+static bool parser_match_tokens(const Parser *p, ...) {
     va_list va;
     va_start(va, p);
 
@@ -122,12 +133,12 @@ static bool parser_match_tokenkinds(const Parser *p, ...) {
 }
 
 // checks if the current token is of the supplied kind
-static inline bool parser_match_tokenkind(const Parser *p, TokenKind kind) {
-    return parser_match_tokenkinds(p, kind, SENTINEL);
+static inline bool parser_match_token(const Parser *p, TokenKind kind) {
+    return parser_match_tokens(p, kind, SENTINEL);
 }
 
 static inline void parser_expect_token(const Parser *p, TokenKind tokenkind) {
-    if (!parser_match_tokenkind(p, tokenkind)) {
+    if (!parser_match_token(p, tokenkind)) {
         Token tok = parser_tok(p);
         throw_error(tok, "Expected %s", tokenkind_to_string(tokenkind));
     }
@@ -138,7 +149,7 @@ static inline void parser_throw_error(const Parser *p, const char *msg) {
 }
 
 static inline bool parser_is_at_end(const Parser *p) {
-    return parser_match_tokenkind(p, TOK_EOF);
+    return parser_match_token(p, TOK_EOF);
 }
 
 void parser_traverse_ast(
@@ -175,8 +186,7 @@ void parser_traverse_ast(
             depth++;
             ExprCall *call = &root->expr_call;
 
-            if (call->builtin == BUILTIN_NONE)
-                parser_traverse_ast(call->callee, callback, top_down, args);
+            parser_traverse_ast(call->callee, callback, top_down, args);
 
             AstNodeList list = call->args;
             for (size_t i=0; i < list.size; ++i)
@@ -218,7 +228,7 @@ void parser_traverse_ast(
 
         case ASTNODE_PROCEDURE:
             depth++;
-            AstNode *body = root->stmt_procedure.body;
+            AstNode *body = root->stmt_proc.body;
             if (body != NULL)
                 parser_traverse_ast(body, callback, top_down, args);
             depth--;
@@ -347,17 +357,16 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
         } break;
 
         case ASTNODE_CALL: {
-            ExprCall *call = &root->expr_call;
             print_ast_value(
                 "call",
                 COLOR_BLUE,
                 NULL,
-                call->builtin != BUILTIN_NONE ? "builtin" : NULL
+                NULL
             );
         } break;
 
         case ASTNODE_PROCEDURE: {
-            StmtProcedure *func = &root->stmt_procedure;
+            StmtProc *func = &root->stmt_proc;
             print_ast_value(tokenkind_to_string(func->op.kind), COLOR_RED, func->identifier.value, NULL);
         } break;
 
@@ -393,7 +402,6 @@ static AstNode *rule_program(Parser *p);
 
 AstNode *parse(const char *src, Arena *arena) {
     Parser parser = {
-        .current  = 0,
         .arena    = arena,
         .lexer    = { .src = src },
     };
@@ -406,19 +414,23 @@ AstNode *parse(const char *src, Arena *arena) {
 
 
 // forward-declarations, as some rules have cyclic dependencies
-static AstNode *rule_expression(Parser *p);
+static AstNode *rule_expr(Parser *p);
 static AstNode *rule_stmt(Parser *p);
 
-static TypeKind rule_util_type(Parser *p) {
+static Type rule_util_type(Parser *p) {
     // <type> ::= TYPE
 
-    Token type_tok = parser_tok(p);
-    TypeKind type = typekind_from_tokenkind(type_tok.kind);
+    Token tok = parser_advance(p);
+    TypeKind kind = type_from_token(tok.kind);
 
-    if (type == TYPE_INVALID)
-        throw_error(type_tok, "Unknown type `%s`", type_tok.value);
+    if (kind == TYPE_INVALID)
+        throw_error(tok, "Unknown type `%s`", tok.value);
 
-    parser_advance(p);
+    Type type = {
+        .kind = kind,
+        .mutable = false,
+    };
+
     return type;
 }
 
@@ -431,13 +443,13 @@ static AstNodeList rule_util_arglist(Parser *p) {
     AstNodeList args = { 0 };
     astnodelist_init(&args, p->arena);
 
-    while (!parser_match_tokenkind(p, TOK_RPAREN)) {
-        astnodelist_append(&args, rule_expression(p));
+    while (!parser_match_token(p, TOK_RPAREN)) {
+        astnodelist_append(&args, rule_expr(p));
 
-        if (parser_match_tokenkind(p, TOK_COMMA)) {
+        if (parser_match_token(p, TOK_COMMA)) {
             parser_advance(p);
 
-            if (parser_match_tokenkind(p, TOK_RPAREN))
+            if (parser_match_token(p, TOK_RPAREN))
                 parser_throw_error(p, "Extraneous `,`");
         }
 
@@ -449,39 +461,32 @@ static AstNodeList rule_util_arglist(Parser *p) {
     return args;
 }
 
-
-/*
- * the max size of out_params is assumed to be MAX_ARG_COUNT
- * returns paramlist param count
- */
-static size_t rule_util_paramlist(Parser *p, Param *out_params) {
+static void rule_util_paramlist(Parser *p, ProcSignature *sig) {
     // <paramlist> ::= "(" (IDENTIFIER <type> ("," IDENTIFIER <type>)* )? ")"
-
-    size_t i = 0;
 
     parser_expect_token(p, TOK_LPAREN);
     parser_advance(p);
 
-    while (!parser_match_tokenkind(p, TOK_RPAREN)) {
+    while (!parser_match_token(p, TOK_RPAREN)) {
 
         parser_expect_token(p, TOK_IDENTIFIER);
         Token tok = parser_advance(p);
 
         Type *type = parser_alloc(p, sizeof(Type));
-        type->kind = rule_util_type(p);
+        *type = rule_util_type(p);
 
-        if (i >= MAX_ARG_COUNT)
+        if (sig->params_count >= MAX_ARG_COUNT)
             throw_error(tok, "Procedures may not have more than %lu arguments", MAX_ARG_COUNT);
 
-        out_params[i++] = (Param) {
+        sig->params[sig->params_count++] = (Param) {
             .ident = tok.value,
             .type  = type,
         };
 
-        if (parser_match_tokenkind(p, TOK_COMMA)) {
+        if (parser_match_token(p, TOK_COMMA)) {
             parser_advance(p);
 
-            if (parser_match_tokenkind(p, TOK_RPAREN))
+            if (parser_match_token(p, TOK_RPAREN))
                 parser_throw_error(p, "Extraneous `,`");
         }
 
@@ -490,7 +495,27 @@ static size_t rule_util_paramlist(Parser *p, Param *out_params) {
     parser_expect_token(p, TOK_RPAREN);
     parser_advance(p);
 
-    return i;
+}
+
+static AstNode *rule_grouping(Parser *p) {
+    // <grouping> ::= "(" <expression> ")"
+
+    assert(parser_match_token(p, TOK_LPAREN));
+    parser_advance(p);
+
+    if (parser_match_token(p, TOK_RPAREN))
+        parser_throw_error(p, "Don't write functional code!");
+
+    AstNode *astnode       = parser_alloc(p, sizeof(AstNode));
+    astnode->kind          = ASTNODE_GROUPING;
+    astnode->expr_grouping = (ExprGrouping) {
+        .expr = rule_expr(p)
+    };
+
+    parser_expect_token(p, TOK_RPAREN);
+    parser_advance(p);
+
+    return astnode;
 }
 
 static AstNode *rule_primary(Parser *p) {
@@ -498,54 +523,41 @@ static AstNode *rule_primary(Parser *p) {
     //           | NUMBER
     //           | IDENTIFIER
     //           | STRING
-    //           | "(" <expression> ")"
+    //           | <grouping>
 
-    AstNode *astnode = parser_alloc(p, sizeof(AstNode));
 
-    if (parser_match_tokenkinds(p, TOK_NUMBER, TOK_IDENTIFIER, TOK_STRING, SENTINEL)) {
-        astnode->kind = ASTNODE_LITERAL;
+    if (parser_match_tokens(p, TOK_NUMBER, TOK_IDENTIFIER, TOK_STRING, SENTINEL)) {
+
+        Token tok = parser_tok(p);
+
+        AstNode *astnode      = parser_alloc(p, sizeof(AstNode));
+        astnode->kind         = ASTNODE_LITERAL;
         astnode->expr_literal = (ExprLiteral) {
-            .op = parser_tok(p)
-        };
-        parser_advance(p);
-
-    } else if (parser_match_tokenkind(p, TOK_LPAREN)) {
-        parser_advance(p);
-
-        if (parser_match_tokenkind(p, TOK_RPAREN))
-            parser_throw_error(p, "Don't write functional code!");
-
-        astnode->kind = ASTNODE_GROUPING;
-        astnode->expr_grouping = (ExprGrouping) {
-            .expr = rule_expression(p)
+            .kind = literal_from_token(tok.kind),
+            .op   = tok,
         };
 
-        parser_expect_token(p, TOK_RPAREN);
         parser_advance(p);
+        return astnode;
+
+    } else if (parser_match_token(p, TOK_LPAREN)) {
+        return rule_grouping(p);
 
     } else {
         parser_throw_error(p, "Unexpected Token");
     }
 
-    return astnode;
+    UNREACHABLE;
+
 }
 
 static AstNode *rule_call(Parser *p) {
-    // <call> ::= ( <primary> | BUILTIN ) <argumentlist>
+    // <call> ::= <primary> <arglist>
 
-    Token callee = parser_tok(p);
-    BuiltinFunction builtin = builtin_from_tokenkind(callee.kind);
+    AstNode *node = rule_primary(p);
 
-    AstNode *node = NULL;
-    if (builtin == BUILTIN_NONE) {
-        node = rule_primary(p);
-
-        if (!parser_match_tokenkind(p, TOK_LPAREN))
-            return node;
-
-    } else {
-        parser_advance(p);
-    }
+    if (!parser_match_token(p, TOK_LPAREN))
+        return node;
 
     Token op = parser_tok(p);
 
@@ -555,40 +567,36 @@ static AstNode *rule_call(Parser *p) {
         .op      = op,
         .callee  = node,
         .args    = rule_util_arglist(p),
-        .builtin = builtin,
     };
 
     return call;
 }
 
 static AstNode *rule_unary(Parser *p) {
-    // <unary> ::= ("!" | "-") <unary> | <call>
+    // <unary> ::= ( "!" | "-" ) <unary> | <call>
 
-    if (parser_match_tokenkinds(p, TOK_MINUS, TOK_BANG, SENTINEL)) {
-        Token op = parser_advance(p);
-
-        AstNode *node      = parser_alloc(p, sizeof(AstNode));
-        node->kind         = ASTNODE_UNARYOP;
-        node->expr_unaryop = (ExprUnaryOp) {
-            .op   = op,
-            .kind = unaryopkind_from_tokenkind(op.kind),
-            .node = rule_unary(p),
-        };
-
-        return node;
-
-    } else {
+    if (!parser_match_tokens(p, TOK_MINUS, TOK_BANG, SENTINEL))
         return rule_call(p);
-    }
+
+    Token op           = parser_advance(p);
+    AstNode *node      = parser_alloc(p, sizeof(AstNode));
+    node->kind         = ASTNODE_UNARYOP;
+    node->expr_unaryop = (ExprUnaryOp) {
+        .op   = op,
+        .kind = unaryop_from_token(op.kind),
+        .node = rule_unary(p),
+    };
+
+    return node;
 
 }
 
 static AstNode *rule_factor(Parser *p) {
-    // <factor> ::= <unary> (("/" | "*") <unary>)*
+    // <factor> ::= <unary> (( "/" | "*" ) <unary>)*
 
     AstNode *lhs = rule_unary(p);
 
-    while (parser_match_tokenkinds(p, TOK_SLASH, TOK_ASTERISK, SENTINEL)) {
+    while (parser_match_tokens(p, TOK_SLASH, TOK_ASTERISK, SENTINEL)) {
         Token op = parser_advance(p);
 
         AstNode *rhs = rule_unary(p);
@@ -599,7 +607,7 @@ static AstNode *rule_factor(Parser *p) {
             .lhs  = lhs,
             .op   = op,
             .rhs  = rhs,
-            .kind = binopkind_from_tokenkind(op.kind),
+            .kind = binop_from_token(op.kind),
         };
 
         lhs = astnode;
@@ -614,7 +622,7 @@ static AstNode *rule_term(Parser *p) {
 
     AstNode *lhs = rule_factor(p);
 
-    while (parser_match_tokenkinds(p, TOK_PLUS, TOK_MINUS, SENTINEL)) {
+    while (parser_match_tokens(p, TOK_PLUS, TOK_MINUS, SENTINEL)) {
         Token op = parser_advance(p);
         AstNode *rhs = rule_factor(p);
 
@@ -624,7 +632,7 @@ static AstNode *rule_term(Parser *p) {
             .lhs  = lhs,
             .op   = op,
             .rhs  = rhs,
-            .kind = binopkind_from_tokenkind(op.kind),
+            .kind = binop_from_token(op.kind),
         };
 
         lhs = node;
@@ -638,36 +646,34 @@ static AstNode *rule_assignment(Parser *p) {
 
     AstNode *expr = rule_term(p);
 
-    if (parser_match_tokenkind(p, TOK_ASSIGN)) {
-        Token op = parser_advance(p);
-
-        bool is_literal = expr->kind == ASTNODE_LITERAL;
-        bool is_ident   = expr->expr_literal.op.kind == TOK_IDENTIFIER;
-        if (!(is_literal && is_ident))
-            parser_throw_error(p, "Invalid assignment target");
-
-        // AstNode is not needed anymore, since we know its an identifier
-        Token ident = expr->expr_literal.op;
-
-        AstNode *value = rule_assignment(p);
-
-        AstNode *node     = parser_alloc(p, sizeof(AstNode));
-        node->kind        = ASTNODE_ASSIGN;
-        node->expr_assign = (ExprAssignment) {
-            .op         = op,
-            .value      = value,
-            .identifier = ident,
-        };
-
-        return node;
-
-    } else {
+    if (!parser_match_token(p, TOK_ASSIGN))
         return expr;
-    }
+
+    Token op = parser_advance(p);
+
+    bool is_literal = expr->kind == ASTNODE_LITERAL;
+    bool is_ident   = expr->expr_literal.op.kind == TOK_IDENTIFIER;
+    if (!(is_literal && is_ident))
+        parser_throw_error(p, "Invalid assignment target");
+
+    // AstNode is not needed anymore, since we know its an identifier
+    Token ident = expr->expr_literal.op;
+
+    AstNode *value = rule_assignment(p);
+
+    AstNode *node     = parser_alloc(p, sizeof(AstNode));
+    node->kind        = ASTNODE_ASSIGN;
+    node->expr_assign = (ExprAssignment) {
+        .op         = op,
+        .value      = value,
+        .identifier = ident,
+    };
+
+    return node;
 
 }
 
-static AstNode *rule_expression(Parser *p) {
+static AstNode *rule_expr(Parser *p) {
     // <expression> ::= <assignment>
     return rule_assignment(p);
 }
@@ -676,9 +682,9 @@ static AstNode *rule_expression(Parser *p) {
 static AstNode *rule_exprstmt(Parser *p) {
     // <exprstmt> ::= <expr>? ";"
 
-    AstNode *node = parser_match_tokenkind(p, TOK_SEMICOLON)
+    AstNode *node = parser_match_token(p, TOK_SEMICOLON)
         ? parser_empty_node(p)
-        : rule_expression(p);
+        : rule_expr(p);
     parser_expect_token(p, TOK_SEMICOLON);
     parser_advance(p);
     return node;
@@ -687,23 +693,20 @@ static AstNode *rule_exprstmt(Parser *p) {
 static AstNode *rule_vardecl(Parser *p) {
     // <vardecl> ::= "let" <identifier> <type> ("=" <expression>)? ";"
 
-    assert(parser_match_tokenkind(p, TOK_KW_VARDECL));
+    assert(parser_match_token(p, TOK_KW_VARDECL));
     Token op = parser_advance(p);
 
     parser_expect_token(p, TOK_IDENTIFIER);
     Token identifier = parser_advance(p);
 
-    Type type = {
-        .kind = rule_util_type(p)
-    };
-
+    Type type = rule_util_type(p);
     AstNode *value = NULL;
 
-    if (!parser_match_tokenkind(p, TOK_SEMICOLON)) {
+    if (!parser_match_token(p, TOK_SEMICOLON)) {
         parser_expect_token(p, TOK_ASSIGN);
         parser_advance(p);
 
-        value = rule_expression(p);
+        value = rule_expr(p);
     }
 
     parser_expect_token(p, TOK_SEMICOLON);
@@ -735,7 +738,7 @@ static AstNode *rule_block(Parser *p) {
     };
     astnodelist_init(&node->block.stmts, p->arena);
 
-    while (!parser_match_tokenkind(p, TOK_RBRACE)) {
+    while (!parser_match_token(p, TOK_RBRACE)) {
 
         if (parser_is_at_end(p))
             throw_error(brace, "Unmatching brace");
@@ -750,10 +753,10 @@ static AstNode *rule_block(Parser *p) {
 static AstNode *rule_while(Parser *p) {
     // <while> ::= "while" <expression> <block>
 
-    assert(parser_match_tokenkind(p, TOK_KW_WHILE));
+    assert(parser_match_token(p, TOK_KW_WHILE));
     Token op = parser_advance(p);
 
-    AstNode *cond  = rule_expression(p);
+    AstNode *cond  = rule_expr(p);
     AstNode *body  = rule_block(p);
 
     AstNode *node    = parser_alloc(p, sizeof(AstNode));
@@ -770,14 +773,14 @@ static AstNode *rule_while(Parser *p) {
 static AstNode *rule_if(Parser *p) {
     // <if> ::= "if" <expression> <block> ("else" <block>)?
 
-    assert(parser_match_tokenkind(p, TOK_KW_IF));
+    assert(parser_match_token(p, TOK_KW_IF));
     Token op = parser_advance(p);
 
-    AstNode *cond  = rule_expression(p);
+    AstNode *cond  = rule_expr(p);
     AstNode *then  = rule_block(p);
     AstNode *else_ = NULL;
 
-    if (parser_match_tokenkind(p, TOK_KW_ELSE)) {
+    if (parser_match_token(p, TOK_KW_ELSE)) {
         parser_advance(p);
         else_ = rule_block(p);
     }
@@ -795,12 +798,14 @@ static AstNode *rule_if(Parser *p) {
 }
 
 static AstNode *rule_return(Parser *p) {
-    // <return> ::= "return" <expression> ";"
+    // <return> ::= "return" <expression>? ";"
 
-    assert(parser_match_tokenkind(p, TOK_KW_RETURN));
+    assert(parser_match_token(p, TOK_KW_RETURN));
     Token op = parser_advance(p);
 
-    AstNode *expr = rule_expression(p);
+    AstNode *expr = parser_match_token(p, TOK_SEMICOLON)
+        ? NULL
+        : rule_expr(p);
 
     AstNode *node = parser_alloc(p, sizeof(AstNode));
     node->kind = ASTNODE_RETURN;
@@ -826,44 +831,46 @@ static AstNode *rule_stmt(Parser *p) {
     //             | <exprstmt>
 
     return
-        parser_match_tokenkind(p, TOK_LBRACE)      ? rule_block  (p) :
-        parser_match_tokenkind(p, TOK_KW_VARDECL)  ? rule_vardecl(p) :
-        parser_match_tokenkind(p, TOK_KW_IF)       ? rule_if     (p) :
-        parser_match_tokenkind(p, TOK_KW_WHILE)    ? rule_while  (p) :
-        parser_match_tokenkind(p, TOK_KW_RETURN)   ? rule_return (p) :
+        parser_match_token(p, TOK_LBRACE)      ? rule_block  (p) :
+        parser_match_token(p, TOK_KW_VARDECL)  ? rule_vardecl(p) :
+        parser_match_token(p, TOK_KW_IF)       ? rule_if     (p) :
+        parser_match_token(p, TOK_KW_WHILE)    ? rule_while  (p) :
+        parser_match_token(p, TOK_KW_RETURN)   ? rule_return (p) :
     rule_exprstmt(p);
 }
 
 static AstNode *rule_procedure(Parser *p) {
     // <procedure> ::= "proc" IDENTIFIER <paramlist> <type> <block>
 
-    assert(parser_match_tokenkind(p, TOK_KW_FUNCTION));
+    assert(parser_match_token(p, TOK_KW_FUNCTION));
     Token op = parser_advance(p);
 
     parser_expect_token(p, TOK_IDENTIFIER);
     Token identifier = parser_advance(p);
 
     ProcSignature sig = { 0 };
-    sig.params_count = rule_util_paramlist(p, sig.params);
+    rule_util_paramlist(p, &sig);
 
     sig.returntype = parser_alloc(p, sizeof(Type));
-    /* Returntype is void if not specified */
-    sig.returntype->kind = parser_match_tokenkinds(p, TOK_LBRACE, TOK_SEMICOLON, SENTINEL)
-        ? TYPE_VOID
-        : rule_util_type(p);
+
+    // Returntype is void if not specified
+    if (parser_match_tokens(p, TOK_LBRACE, TOK_SEMICOLON, SENTINEL))
+        sig.returntype->kind = TYPE_VOID;
+    else
+        *sig.returntype = rule_util_type(p);
 
     Type type = {
         .kind = TYPE_FUNCTION,
         .type_signature = sig,
     };
 
-    AstNode *body = parser_match_tokenkind(p, TOK_SEMICOLON)
-        ? parser_advance(p), NULL // bet you didn't know about this one
+    AstNode *body = parser_match_token(p, TOK_SEMICOLON)
+        ? parser_advance(p), NULL
         : rule_block(p);
 
     AstNode *proc = parser_alloc(p, sizeof(AstNode));
     proc->kind = ASTNODE_PROCEDURE;
-    proc->stmt_procedure = (StmtProcedure) {
+    proc->stmt_proc = (StmtProc) {
         .op         = op,
         .body       = body,
         .identifier = identifier,
@@ -877,8 +884,8 @@ static AstNode *rule_declaration(Parser *p) {
     // <declaration> ::= <procedure> | <vardecl>
 
     return
-        parser_match_tokenkind(p, TOK_KW_FUNCTION) ? rule_procedure(p) :
-        parser_match_tokenkind(p, TOK_KW_VARDECL)  ? rule_vardecl  (p) :
+        parser_match_token(p, TOK_KW_FUNCTION) ? rule_procedure(p) :
+        parser_match_token(p, TOK_KW_VARDECL)  ? rule_vardecl  (p) :
     (compiler_message(MSG_ERROR, "Expected declaration"), exit(EXIT_FAILURE), NULL);
     // TODO: synchronize parser
 }

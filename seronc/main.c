@@ -21,14 +21,13 @@
 #include "codegen.h"
 #include "symboltable.h"
 #include "main.h"
+#include "lib/util.h"
 
 
 #define FILE_EXTENSION "srn"
 
 
 struct CompilerConfig compiler_config = { 0 };
-
-
 
 
 static void check_fileextension(const char *filename) {
@@ -57,7 +56,7 @@ static char *read_file(const char *filename) {
 
     if (file == NULL) {
         compiler_message(MSG_ERROR, "Source file `%s` does not exist", filename);
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     struct stat statbuf = { 0 };
@@ -102,7 +101,7 @@ static void assemble(void) {
 
     if (ret) {
         compiler_message(MSG_ERROR, "Failed to assemble via `nasm` (is nasm installed?)");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
 }
@@ -123,7 +122,7 @@ static void link_cc(void) {
 
     if (ret) {
         compiler_message(MSG_ERROR, "Failed to link via `cc`");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
 }
@@ -160,7 +159,7 @@ static void set_filenames(const char *raw) {
     strcat(obj, ".o");
 }
 
-static void parse_args(int argc, char *argv[]) {
+static void parse_args(int argc, char **argv) {
 
     int opt_index = 0;
     struct option opts[] = {
@@ -189,7 +188,7 @@ static void parse_args(int argc, char *argv[]) {
 
             default:
                 compiler_message(MSG_ERROR, "Unknown option");
-                exit(1);
+                exit(EXIT_FAILURE);
         }
 
     }
@@ -270,7 +269,7 @@ void test_parser(void) {
     AstNode *func = *root->block.stmts.items;
     assert(func->kind == ASTNODE_PROCEDURE);
 
-    AstNode *plus = *func->stmt_procedure.body->block.stmts.items;
+    AstNode *plus = *func->stmt_proc.body->block.stmts.items;
     assert(plus->kind == ASTNODE_BINOP);
 
     AstNode *lhs = plus->expr_binop.lhs;
@@ -288,8 +287,6 @@ void test(void) {
 }
 
 int main(int argc, char **argv) {
-    // test();
-    // exit(0);
 
     parse_args(argc, argv);
 

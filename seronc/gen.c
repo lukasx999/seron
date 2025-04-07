@@ -139,7 +139,7 @@ void gen_procedure_start(
     const char          *identifier,
     uint64_t             stack_size,
     const ProcSignature *sig,
-    const Symboltable   *scope
+    const Hashtable   *scope
 ) {
 
     gen_comment(gen, "START: proc");

@@ -11,6 +11,7 @@
 #include "parser.h"
 #include "gen.h"
 #include "symboltable.h"
+#include "lib/util.h"
 
 
 
@@ -33,8 +34,8 @@ static HashtableEntry *new_hashtable_entry(const char *key, Symbol value) {
     return entry;
 }
 
-void symboltable_init(Symboltable *st, size_t size) {
-    *st = (Symboltable) {
+void hashtable_init(Hashtable *st, size_t size) {
+    *st = (Hashtable) {
         .size     = size,
         .buckets  = NULL,
         .parent   = NULL,
@@ -46,7 +47,7 @@ void symboltable_init(Symboltable *st, size_t size) {
         st->buckets[i] = NULL;
 }
 
-void symboltable_destroy(Symboltable *st) {
+void hashtable_destroy(Hashtable *st) {
     for (size_t i=0; i < st->size; ++i) {
         HashtableEntry *entry = st->buckets[i];
 
@@ -62,7 +63,7 @@ void symboltable_destroy(Symboltable *st) {
     st->buckets = NULL;
 }
 
-int symboltable_insert(Symboltable *st, const char *key, Symbol value) {
+int hashtable_insert(Hashtable *st, const char *key, Symbol value) {
     assert(st != NULL);
 
     size_t index = hash(st->size, key);
@@ -88,7 +89,7 @@ int symboltable_insert(Symboltable *st, const char *key, Symbol value) {
     assert(!"unreachable");
 }
 
-Symbol *symboltable_get(const Symboltable *st, const char *key) {
+Symbol *hashtable_get(const Hashtable *st, const char *key) {
     size_t index = hash(st->size, key);
     HashtableEntry *current = st->buckets[index];
 
@@ -106,12 +107,12 @@ Symbol *symboltable_get(const Symboltable *st, const char *key) {
 
 }
 
-Symbol *symboltable_list_lookup(const Symboltable *st, const char *key) {
+Symbol *symboltable_list_lookup(const Hashtable *st, const char *key) {
     assert(st != NULL);
-    const Symboltable *current = st;
+    const Hashtable *current = st;
 
     while (current != NULL) {
-        Symbol *value = symboltable_get(current, key);
+        Symbol *value = hashtable_get(current, key);
 
         if (value != NULL)
             return value;
@@ -122,7 +123,7 @@ Symbol *symboltable_list_lookup(const Symboltable *st, const char *key) {
     return NULL;
 }
 
-void symboltable_print(const Symboltable *st) {
+void hashtable_print(const Hashtable *st) {
     for (size_t i=0; i < st->size; ++i) {
         HashtableEntry *entry = st->buckets[i];
 
@@ -168,21 +169,21 @@ void symboltable_list_init(SymboltableList *s, size_t capacity, size_t table_siz
         .items      = NULL,
     };
 
-    s->items = malloc(s->capacity * sizeof(Symboltable));
+    s->items = malloc(s->capacity * sizeof(Hashtable));
 
     for (size_t i=0; i < s->capacity; ++i)
-        symboltable_init(&s->items[i], table_size);
+        hashtable_init(&s->items[i], table_size);
 }
 
 void symboltable_list_destroy(SymboltableList *s) {
     for (size_t i=0; i < s->capacity; ++i)
-        symboltable_destroy(&s->items[i]);
+        hashtable_destroy(&s->items[i]);
 
     free(s->items);
     s->items = NULL;
 }
 
-Symboltable *symboltable_list_append(SymboltableList *s, Symboltable *parent) {
+Hashtable *symboltable_list_append(SymboltableList *s, Hashtable *parent) {
     assert(s->size < s->capacity);
     s->items[s->size++].parent = parent;
     return &s->items[s->size-1];
@@ -193,7 +194,7 @@ void symboltable_list_print(const SymboltableList *st) {
     const char *divider = "-----------------------";
 
     for (size_t i=0; i < st->size; ++i) {
-        Symboltable *ht = &st->items[i];
+        Hashtable *ht = &st->items[i];
         ptrdiff_t parent = ht->parent - st->items;
 
         printf("%s%s%s ", COLOR_GRAY, divider, COLOR_END);
@@ -203,7 +204,7 @@ void symboltable_list_print(const SymboltableList *st) {
         else
             printf(" -> %ld\n", parent);
 
-        symboltable_print(ht);
+        hashtable_print(ht);
     }
 
     printf("%s%s%s\n\n", COLOR_GRAY, divider, COLOR_END);
@@ -243,7 +244,7 @@ void symboltable_list_print(const SymboltableList *st) {
 //
 
 typedef struct {
-    Symboltable     *scope; // current parent symboltable
+    Hashtable     *scope; // current parent symboltable
     SymboltableList *st;    // array of all symboltables
 } TraversalContext;
 
@@ -263,7 +264,7 @@ static void ast_block(Block *block, TraversalContext *ctx) {
     }
 }
 
-static void ast_procedure(StmtProcedure *proc, TraversalContext *ctx) {
+static void ast_procedure(StmtProc *proc, TraversalContext *ctx) {
     const char *ident = proc->identifier.value;
 
     Symbol sym = {
@@ -272,7 +273,7 @@ static void ast_procedure(StmtProcedure *proc, TraversalContext *ctx) {
         .label = ident,
     };
 
-    int ret = symboltable_insert(ctx->scope, ident, sym);
+    int ret = hashtable_insert(ctx->scope, ident, sym);
     if (ret) {
         compiler_message(MSG_ERROR, "Procedure `%s` already exists", ident);
         exit(1);
@@ -291,7 +292,7 @@ static void ast_vardecl(StmtVarDecl *vardecl, TraversalContext *ctx) {
         .type = vardecl->type,
     };
 
-    int ret = symboltable_insert(ctx->scope, ident, sym);
+    int ret = hashtable_insert(ctx->scope, ident, sym);
     if (ret) {
         compiler_message(MSG_ERROR, "Variable `%s` already exists", ident);
         exit(1);
@@ -310,7 +311,7 @@ static void traverse_ast(AstNode *root, TraversalContext *ctx) {
             break;
 
         case ASTNODE_PROCEDURE:
-            ast_procedure(&root->stmt_procedure, ctx);
+            ast_procedure(&root->stmt_proc, ctx);
             break;
 
         case ASTNODE_VARDECL:
@@ -357,7 +358,7 @@ static void scope_count_callback(AstNode *_node, int _depth, void *args) {
 static void proc_insert_params_callback(AstNode *node, int _depth, void *_args) {
     (void) _depth, (void) _args;
 
-    StmtProcedure *proc = &node->stmt_procedure;
+    StmtProc *proc = &node->stmt_proc;
     ProcSignature *sig = &proc->type.type_signature;
 
     // Declaration
@@ -374,7 +375,7 @@ static void proc_insert_params_callback(AstNode *node, int _depth, void *_args) 
             .type  = *param->type,
         };
 
-        int ret = symboltable_insert(block->symboltable, param->ident, sym);
+        int ret = hashtable_insert(block->symboltable, param->ident, sym);
         if (ret != 0) {
             compiler_message(MSG_ERROR, "Parameter named `%s` already exists", param->ident);
             exit(EXIT_FAILURE);
@@ -387,7 +388,7 @@ static void proc_insert_params_callback(AstNode *node, int _depth, void *_args) 
 static void precompute_stack_layout(AstNode *node, int _depth, void *_args) {
     (void) _depth, (void) _args;
 
-    StmtProcedure *proc = &node->stmt_procedure;
+    StmtProc *proc = &node->stmt_proc;
     ProcSignature *sig = &proc->type.type_signature;
     assert(proc->stack_size == 0);
 
@@ -400,9 +401,9 @@ static void precompute_stack_layout(AstNode *node, int _depth, void *_args) {
 
     for (size_t i=0; i < sig->params_count; ++i) {
         Param *param = &sig->params[i];
-        proc->stack_size += typekind_get_size(param->type->kind);
+        proc->stack_size += get_type_size(param->type->kind);
 
-        Symbol *sym = symboltable_get(body->symboltable, param->ident);
+        Symbol *sym = hashtable_get(body->symboltable, param->ident);
         assert(sym != NULL);
         sym->stack_addr = proc->stack_size;
     }
@@ -415,9 +416,9 @@ static void precompute_stack_layout(AstNode *node, int _depth, void *_args) {
 
         if (item->kind == ASTNODE_VARDECL) {
             StmtVarDecl *vardecl = &item->stmt_vardecl;
-            proc->stack_size += typekind_get_size(vardecl->type.kind);
+            proc->stack_size += get_type_size(vardecl->type.kind);
 
-            Symbol *sym = symboltable_get(body->symboltable, vardecl->identifier.value);
+            Symbol *sym = hashtable_get(body->symboltable, vardecl->identifier.value);
             assert(sym != NULL);
             sym->stack_addr = proc->stack_size;
         }

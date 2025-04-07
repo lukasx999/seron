@@ -12,14 +12,6 @@
 
 
 
-TypeKind typekind_from_tokenkind(TokenKind kind) {
-    switch (kind) {
-        case TOK_TYPE_INT:  return TYPE_INT;
-        case TOK_TYPE_CHAR: return TYPE_CHAR;
-        case TOK_TYPE_VOID: return TYPE_VOID;
-        default:            return TYPE_INVALID;
-    }
-}
 
 const char *typekind_to_string(TypeKind type) {
     switch (type) {
@@ -45,10 +37,10 @@ static void compare_types(const Type *type, const Type *expected, Token tok) {
 
 
 
-static Type traverse_ast(AstNode *root, Symboltable *scope);
+static Type traverse_ast(AstNode *root, Hashtable *scope);
 
 
-static Type ast_assignment(ExprAssignment *assign, Symboltable *scope) {
+static Type ast_assignment(ExprAssignment *assign, Hashtable *scope) {
     Type type = traverse_ast(assign->value, scope);
 
     const char *ident = assign->identifier.value;
@@ -62,7 +54,7 @@ static Type ast_assignment(ExprAssignment *assign, Symboltable *scope) {
     return type;
 }
 
-static void ast_vardecl(StmtVarDecl *vardecl, Symboltable *scope) {
+static void ast_vardecl(StmtVarDecl *vardecl, Hashtable *scope) {
     if (vardecl->value == NULL)
         return;
 
@@ -71,16 +63,7 @@ static void ast_vardecl(StmtVarDecl *vardecl, Symboltable *scope) {
     compare_types(&type, &expected, vardecl->op);
 }
 
-static Type ast_call(ExprCall *call, Symboltable *scope) {
-
-    if (call->builtin != BUILTIN_NONE) {
-        AstNodeList list = call->args;
-        for (size_t i=0; i < list.size; ++i)
-            traverse_ast(list.items[i], scope);
-
-        return (Type) { .kind = TYPE_VOID };
-    }
-
+static Type ast_call(ExprCall *call, Hashtable *scope) {
 
     Type callee = traverse_ast(call->callee, scope);
     ProcSignature *sig = &callee.type_signature;
@@ -103,7 +86,7 @@ static Type ast_call(ExprCall *call, Symboltable *scope) {
     return *sig->returntype;
 }
 
-static Type ast_literal(ExprLiteral *literal, Symboltable *scope) {
+static Type ast_literal(ExprLiteral *literal, Hashtable *scope) {
 
     switch (literal->op.kind) {
 
@@ -133,14 +116,14 @@ static Type ast_literal(ExprLiteral *literal, Symboltable *scope) {
     }
 }
 
-static Type ast_binop(ExprBinOp *binop, Symboltable *scope) {
+static Type ast_binop(ExprBinOp *binop, Hashtable *scope) {
     Type lhs = traverse_ast(binop->lhs, scope);
     Type rhs = traverse_ast(binop->rhs, scope);
     compare_types(&lhs, &rhs, binop->op);
     return lhs;
 }
 
-static Type traverse_ast(AstNode *root, Symboltable *scope) {
+static Type traverse_ast(AstNode *root, Hashtable *scope) {
     assert(root != NULL);
 
     switch (root->kind) {
@@ -200,7 +183,7 @@ static Type traverse_ast(AstNode *root, Symboltable *scope) {
             break;
 
         case ASTNODE_PROCEDURE: {
-            const StmtProcedure *func = &root->stmt_procedure;
+            const StmtProc *func = &root->stmt_proc;
             AstNode *body = func->body;
             if (body != NULL)
                 traverse_ast(body, scope);

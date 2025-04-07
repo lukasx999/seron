@@ -20,15 +20,15 @@ typedef struct {
     AstNode **items;
 } AstNodeList;
 
-void astnodelist_init  (AstNodeList *list, Arena *arena);
-void astnodelist_append(AstNodeList *list, AstNode *node);
+typedef enum {
+    LITERAL_NUMBER,
+    LITERAL_IDENT,
+    LITERAL_STRING,
+} LiteralKind;
 
-
-// Token is included in AstNode for printing source location on error/warning
-
-// TODO: literal kind
 typedef struct {
     Token op;
+    LiteralKind kind;
 } ExprLiteral;
 
 typedef struct {
@@ -42,8 +42,6 @@ typedef enum {
     BINOP_DIV,
 } BinOpKind;
 
-BinOpKind binopkind_from_tokenkind(TokenKind kind);
-
 typedef struct {
     AstNode *lhs, *rhs;
     Token op;
@@ -55,26 +53,16 @@ typedef enum {
     UNARYOP_NEG,
 } UnaryOpKind;
 
-UnaryOpKind unaryopkind_from_tokenkind(TokenKind kind);
-
 typedef struct {
     AstNode *node;
     Token op;
     UnaryOpKind kind;
 } ExprUnaryOp;
 
-typedef enum {
-    BUILTIN_ASM,
-    BUILTIN_NONE,
-} BuiltinFunction;
-
-BuiltinFunction builtin_from_tokenkind(TokenKind kind);
-
 typedef struct {
     Token           op;
     AstNode        *callee; // NULL if builtin
     AstNodeList     args;
-    BuiltinFunction builtin; // BUILTIN_NONE if no builtin
 } ExprCall;
 
 // TODO: make assignee an expression, to allow for struct member assignments
@@ -85,7 +73,7 @@ typedef struct {
 
 typedef struct {
     AstNodeList stmts;
-    Symboltable *symboltable;
+    Hashtable *symboltable;
 } Block;
 
 typedef struct {
@@ -94,7 +82,7 @@ typedef struct {
     // TODO: why not just use ProcSignature
     Type type; // type is holding function signature
     uint64_t stack_size;
-} StmtProcedure;
+} StmtProc;
 
 typedef struct {
     Token op;
@@ -108,7 +96,7 @@ typedef struct {
 
 typedef struct {
     Token op;
-    AstNode *expr; // TODO: NULL if no expr
+    AstNode *expr;
 } StmtReturn;
 
 typedef struct {
@@ -142,16 +130,13 @@ struct AstNode {
         ExprCall       expr_call;
         ExprAssignment expr_assign;
         Block          block;
-        StmtProcedure  stmt_procedure;
+        StmtProc       stmt_proc;
         StmtVarDecl    stmt_vardecl;
         StmtIf         stmt_if;
         StmtWhile      stmt_while;
         StmtReturn     stmt_return;
     };
 };
-
-
-
 
 // Allocate an AST into the given arena
 AstNode *parse(const char *src, Arena *arena);

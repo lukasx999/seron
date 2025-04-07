@@ -43,7 +43,6 @@ struct Type {
     };
 };
 
-TypeKind typekind_from_tokenkind(TokenKind kind);
 const char *typekind_to_string(TypeKind type);
 
 void check_types(AstNode *root);

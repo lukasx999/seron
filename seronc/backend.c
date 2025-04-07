@@ -147,7 +147,7 @@ static void builtin_inlineasm(ExprCall *call, Symboltable *scope) {
 //     return value;
 // }
 
-static void procedure(StmtProcedure *proc) {
+static void procedure(StmtProc *proc) {
     const char *ident  = proc->identifier.value;
     ProcSignature *sig = &proc->type.type_signature;
 
@@ -157,7 +157,7 @@ static void procedure(StmtProcedure *proc) {
     }
 
     assert(proc->body->kind == ASTNODE_BLOCK);
-    Symboltable *body = proc->body->block.symboltable;
+    Hashtable *body = proc->body->block.symboltable;
 
     gen_procedure_start(&codegen, ident, proc->stack_size, sig, body);
     traverse_ast(proc->body);
@@ -204,7 +204,7 @@ static void traverse_ast(AstNode *node) {
             break;
 
         case ASTNODE_PROCEDURE:
-            procedure(&node->stmt_procedure);
+            procedure(&node->stmt_proc);
             break;
 
         case ASTNODE_BINOP:

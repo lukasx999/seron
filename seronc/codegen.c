@@ -12,22 +12,26 @@
 #include "symboltable.h"
 #include "main.h"
 #include "parser.h"
+#include "lib/util.h"
 
 
 
-size_t typekind_get_size(TypeKind type) {
+
+
+
+size_t get_type_size(TypeKind type) {
     switch (type) {
         case TYPE_CHAR: return 1;
         case TYPE_INT:  return 4;
-        default: assert(!"unknown type");
+        default:        PANIC("unknown type");
     }
 }
 
-static const char *typekind_get_size_operand(TypeKind type) {
+UNUSED static const char *typekind_get_size_operand(TypeKind type) {
     switch (type) {
         case TYPE_CHAR: return "byte";
         case TYPE_INT:  return "dword";
-        default: assert(!"unknown type");
+        default:        PANIC("unknown type");
     }
 }
 
@@ -37,50 +41,50 @@ static const char *typekind_get_subregister(Register reg, TypeKind type) {
         case REG_RAX: switch (type) {
             case TYPE_INT:  return "eax";
             case TYPE_CHAR: return "al";
-            default: assert(!"unknown type");
+            default: PANIC("unknown type");
         } break;
 
         case REG_RDI: switch (type) {
             case TYPE_INT:  return "edi";
             case TYPE_CHAR: return "dil";
-            default: assert(!"unknown type");
+            default: PANIC("unknown type");
         } break;
 
         case REG_RSI: switch (type) {
             case TYPE_INT:  return "esi";
             case TYPE_CHAR: return "sil";
-            default: assert(!"unknown type");
+            default: PANIC("unknown type");
         } break;
 
         case REG_RDX: switch (type) {
             case TYPE_INT:  return "edx";
             case TYPE_CHAR: return "dl";
-            default: assert(!"unknown type");
+            default: PANIC("unknown type");
         } break;
 
         case REG_RCX: switch (type) {
             case TYPE_INT:  return "ecx";
             case TYPE_CHAR: return "cl";
-            default: assert(!"unknown type");
+            default: PANIC("unknown type");
         } break;
 
         case REG_R8: switch (type) {
             case TYPE_INT:  return "r8d";
             case TYPE_CHAR: return "r8b";
-            default: assert(!"unknown type");
+            default: PANIC("unknown type");
         } break;
 
         case REG_R9: switch (type) {
             case TYPE_INT:  return "r9d";
             case TYPE_CHAR: return "r9b";
-            default: assert(!"unknown type");
+            default: PANIC("unknown type");
         } break;
 
-        default: assert(!"unknown register");
+        default: PANIC("unknown register");
     }
 }
 
-static const char *abi_get_register(int arg_n, TypeKind type) {
+UNUSED static const char *abi_get_register(int arg_n, TypeKind type) {
     assert(arg_n != 0);
 
     /* x86_64-linux ABI */
@@ -111,11 +115,13 @@ struct Gen {
 } gen = { 0 };
 
 static void gen_init(const char *out_file) {
+
     gen.file = fopen(out_file, "w");
     if (gen.file == NULL) {
         compiler_message(MSG_ERROR, "Failed to open output file %s", out_file);
         exit(EXIT_FAILURE);
     }
+
 }
 
 static void gen_destroy(void) {
@@ -134,7 +140,7 @@ static void gen_write(const char *fmt, ...) {
 
 static void emit(AstNode *node);
 
-static void procedure(const StmtProcedure *proc) {
+static void proc(const StmtProc *proc) {
     const char *ident  = proc->identifier.value;
     const ProcSignature *sig = &proc->type.type_signature;
     (void) sig;
@@ -161,7 +167,9 @@ static void procedure(const StmtProcedure *proc) {
 
 static void return_(const StmtReturn *ret) {
     // TODO: early return
-    emit(ret->expr);
+    if (ret->expr != NULL) {
+        emit(ret->expr);
+    }
 }
 
 static void block(const Block *block) {
@@ -177,7 +185,7 @@ static void unaryop(const ExprUnaryOp *unaryop) {
 
     switch (unaryop->kind) {
         case UNARYOP_MINUS: gen_write("imul rax, -1"); break;
-        default:            assert(!"unimplemented");
+        default:            PANIC("unknown operation");
     }
 
 }
@@ -195,22 +203,28 @@ static void binop(const ExprBinOp *binop) {
         case BINOP_SUB: gen_write("sub rax, rdi"); break;
         case BINOP_MUL: gen_write("imul rdi");     break;
         case BINOP_DIV: gen_write("idiv rdi");     break;
-        default:        assert(!"unimplemented");
+        default:        PANIC("unknown operation");
     }
 
 }
 
 static void literal(const ExprLiteral *literal) {
-    switch (literal->op.kind) {
 
-        case TOK_NUMBER: {
+    switch (literal->kind) {
+
+        case LITERAL_NUMBER: {
             int num = atoll(literal->op.value);
             typekind_get_subregister(REG_RAX, TYPE_INT);
             gen_write("mov rax, %d", num);
         } break;
 
-        default: assert(!"unimplemented");
+        case LITERAL_IDENT: {
+            TODO("ident literal");
+        } break;
+
+        default: PANIC("unknown operation");
     }
+
 }
 
 static void grouping(const ExprGrouping *grouping) {
@@ -242,18 +256,18 @@ static void cond(const StmtIf *cond) {
 }
 
 static void emit(AstNode *node) {
-    assert(node != NULL);
+    NON_NULL(node);
 
     switch (node->kind) {
         case ASTNODE_BLOCK:     block     (&node->block);          break;
         case ASTNODE_GROUPING:  grouping  (&node->expr_grouping);  break;
-        case ASTNODE_PROCEDURE: procedure (&node->stmt_procedure); break;
+        case ASTNODE_PROCEDURE: proc      (&node->stmt_proc);      break;
         case ASTNODE_RETURN:    return_   (&node->stmt_return);    break;
         case ASTNODE_IF:        cond      (&node->stmt_if);        break;
         case ASTNODE_BINOP:     binop     (&node->expr_binop);     break;
         case ASTNODE_UNARYOP:   unaryop   (&node->expr_unaryop);   break;
         case ASTNODE_LITERAL:   literal   (&node->expr_literal);   break;
-        default: assert(!"unexpected node kind");
+        default:                PANIC("unexpected node kind");
     }
 
 }
