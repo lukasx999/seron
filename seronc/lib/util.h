@@ -100,7 +100,7 @@ static inline void *_impl_non_null(
 #define ARRAY_LEN(xs) \
     (sizeof(xs) / sizeof *(xs))
 
-#define UNREACHABLE \
+#define UNREACHABLE() \
     PANIC("unreachable")
 
 #define TODO(msg) \

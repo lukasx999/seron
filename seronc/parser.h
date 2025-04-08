@@ -79,9 +79,8 @@ typedef struct {
 typedef struct {
     Token op, identifier;
     AstNode *body; // NULL if declaration
-    // TODO: why not just use ProcSignature
-    Type type; // type is holding function signature
-    uint64_t stack_size;
+    Type type;     // type is holding function signature
+    int stack_size;
 } StmtProc;
 
 typedef struct {
@@ -144,7 +143,7 @@ AstNode *parse(const char *src, Arena *arena);
 typedef void (*AstCallback)(AstNode *node, int depth, void *args);
 
 // Call the given callback function for every node in the AST
-void parser_traverse_ast(AstNode *root, AstCallback callback, bool top_down, void *args);
+void parser_traverse_ast(AstNode *root, AstCallback callback, void *args);
 // Call the given callback function for every node of kind `kind` in the AST
 void parser_query_ast(AstNode *root, AstCallback callback, AstNodeKind kind, void *args);
 void parser_print_ast(AstNode *root, int spacing);

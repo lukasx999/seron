@@ -26,12 +26,13 @@ const char *typekind_to_string(TypeKind type) {
 
 static void compare_types(const Type *type, const Type *expected, Token tok) {
     if (type->kind != expected->kind) {
-        throw_error(
-            tok,
+        compiler_message_tok(
+            MSG_ERROR, tok,
             "Invalid type %s, expected %s",
             typekind_to_string(type->kind),
             typekind_to_string(expected->kind)
         );
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -46,8 +47,15 @@ static Type ast_assignment(ExprAssignment *assign, Hashtable *scope) {
     const char *ident = assign->identifier.value;
     Symbol *sym = symboltable_list_lookup(scope, ident);
 
-    if (sym == NULL)
-        throw_error(assign->identifier, "Symbol `%s` does not exist", ident);
+    if (sym == NULL) {
+        compiler_message_tok(
+            MSG_ERROR,
+            assign->identifier,
+            "Symbol `%s` does not exist",
+            ident
+        );
+        exit(EXIT_FAILURE);
+    }
 
     compare_types(&sym->type, &type, assign->op);
 
@@ -68,14 +76,18 @@ static Type ast_call(ExprCall *call, Hashtable *scope) {
     Type callee = traverse_ast(call->callee, scope);
     ProcSignature *sig = &callee.type_signature;
 
-    if (callee.kind != TYPE_FUNCTION)
-        throw_error(call->op, "Callee must be a procedure");
+    if (callee.kind != TYPE_FUNCTION) {
+        compiler_message_tok(MSG_ERROR, call->op, "Callee must be a procedure");
+        exit(EXIT_FAILURE);
+    }
 
 
     AstNodeList list = call->args;
 
-    if (list.size != sig->params_count)
-        throw_error(call->op, "Expected %lu arguments, got %lu", sig->params_count, list.size);
+    if (list.size != sig->params_count) {
+        compiler_message_tok(MSG_ERROR, call->op, "Expected %lu arguments, got %lu", sig->params_count, list.size);
+        exit(EXIT_FAILURE);
+    }
 
     for (size_t i=0; i < list.size; ++i) {
         Type *paramtype = sig->params[i].type;

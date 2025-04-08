@@ -99,21 +99,6 @@ static inline void *parser_alloc(Parser *p, size_t size) {
     return arena_alloc(p->arena, size);
 }
 
-// TODO: think of a better way to handle this
-static AstNode *parser_empty_node(Parser *p) {
-
-    AstNode *node = parser_alloc(p, sizeof(AstNode));
-    node->kind = ASTNODE_LITERAL;
-    node->expr_literal = (ExprLiteral) {
-        .op = (Token) {
-            .kind = TOK_NUMBER,
-            .value = "0",
-        },
-    };
-
-    return node;
-}
-
 // checks if the current token is of one of the supplied kinds
 // last variadic argument should be `TOK_INVALID` aka `SENTINEL`
 static bool parser_match_tokens(const Parser *p, ...) {
@@ -140,12 +125,9 @@ static inline bool parser_match_token(const Parser *p, TokenKind kind) {
 static inline void parser_expect_token(const Parser *p, TokenKind tokenkind) {
     if (!parser_match_token(p, tokenkind)) {
         Token tok = parser_tok(p);
-        throw_error(tok, "Expected %s", tokenkind_to_string(tokenkind));
+        compiler_message_tok(MSG_ERROR, tok, "Expected %s", tokenkind_to_string(tokenkind));
+        exit(EXIT_FAILURE);
     }
-}
-
-static inline void parser_throw_error(const Parser *p, const char *msg) {
-    throw_error(parser_tok(p), "%s", msg);
 }
 
 static inline bool parser_is_at_end(const Parser *p) {
@@ -155,14 +137,12 @@ static inline bool parser_is_at_end(const Parser *p) {
 void parser_traverse_ast(
     AstNode *root,
     AstCallback callback,
-    bool top_down,
     void *args
 ) {
     assert(root != NULL);
 
     static int depth = 0;
-    if (top_down)
-        callback(root, depth, args);
+    callback(root, depth, args);
 
     switch (root->kind) {
 
@@ -171,14 +151,14 @@ void parser_traverse_ast(
             AstNodeList list = root->block.stmts;
 
             for (size_t i=0; i < list.size; ++i)
-                parser_traverse_ast(list.items[i], callback, top_down, args);
+                parser_traverse_ast(list.items[i], callback, args);
 
             depth--;
         } break;
 
         case ASTNODE_ASSIGN: {
             depth++;
-            parser_traverse_ast(root->expr_assign.value, callback, top_down, args);
+            parser_traverse_ast(root->expr_assign.value, callback, args);
             depth--;
         } break;
 
@@ -186,11 +166,11 @@ void parser_traverse_ast(
             depth++;
             ExprCall *call = &root->expr_call;
 
-            parser_traverse_ast(call->callee, callback, top_down, args);
+            parser_traverse_ast(call->callee, callback, args);
 
             AstNodeList list = call->args;
             for (size_t i=0; i < list.size; ++i)
-                parser_traverse_ast(list.items[i], callback, top_down, args);
+                parser_traverse_ast(list.items[i], callback, args);
 
             depth--;
         } break;
@@ -198,31 +178,32 @@ void parser_traverse_ast(
         case ASTNODE_WHILE: {
             depth++;
             StmtWhile *while_ = &root->stmt_while;
-            parser_traverse_ast(while_->condition, callback, top_down, args);
-            parser_traverse_ast(while_->body, callback, top_down, args);
+            parser_traverse_ast(while_->condition, callback, args);
+            parser_traverse_ast(while_->body, callback, args);
             depth--;
         } break;
 
         case ASTNODE_RETURN: {
             depth++;
             StmtReturn *return_ = &root->stmt_return;
-            parser_traverse_ast(return_->expr, callback, top_down, args);
+            if (return_->expr != NULL)
+                parser_traverse_ast(return_->expr, callback, args);
             depth--;
         } break;
 
         case ASTNODE_IF: {
             depth++;
             StmtIf if_ = root->stmt_if;
-            parser_traverse_ast(if_.condition, callback, top_down, args);
-            parser_traverse_ast(if_.then_body, callback, top_down, args);
+            parser_traverse_ast(if_.condition, callback, args);
+            parser_traverse_ast(if_.then_body, callback, args);
             if (if_.else_body != NULL)
-                parser_traverse_ast(if_.else_body, callback, top_down, args);
+                parser_traverse_ast(if_.else_body, callback, args);
             depth--;
         } break;
 
         case ASTNODE_GROUPING:
             depth++;
-            parser_traverse_ast(root->expr_grouping.expr, callback, top_down, args);
+            parser_traverse_ast(root->expr_grouping.expr, callback, args);
             depth--;
             break;
 
@@ -230,7 +211,7 @@ void parser_traverse_ast(
             depth++;
             AstNode *body = root->stmt_proc.body;
             if (body != NULL)
-                parser_traverse_ast(body, callback, top_down, args);
+                parser_traverse_ast(body, callback, args);
             depth--;
             break;
 
@@ -238,22 +219,22 @@ void parser_traverse_ast(
             depth++;
             StmtVarDecl *vardecl = &root->stmt_vardecl;
             if (vardecl->value != NULL)
-                parser_traverse_ast(vardecl->value, callback, top_down, args);
+                parser_traverse_ast(vardecl->value, callback, args);
             depth--;
         } break;
 
         case ASTNODE_BINOP: {
             depth++;
             ExprBinOp *binop = &root->expr_binop;
-            parser_traverse_ast(binop->lhs, callback, top_down, args);
-            parser_traverse_ast(binop->rhs, callback, top_down, args);
+            parser_traverse_ast(binop->lhs, callback, args);
+            parser_traverse_ast(binop->rhs, callback, args);
             depth--;
         } break;
 
         case ASTNODE_UNARYOP: {
             depth++;
             ExprUnaryOp *unaryop = &root->expr_unaryop;
-            parser_traverse_ast(unaryop->node, callback, top_down, args);
+            parser_traverse_ast(unaryop->node, callback, args);
             depth--;
         } break;
 
@@ -264,9 +245,6 @@ void parser_traverse_ast(
             assert(!"Unexpected Node Kind");
             break;
     }
-
-    if (!top_down)
-        callback(root, depth, args);
 
 }
 
@@ -290,7 +268,7 @@ void parser_query_ast(AstNode *root, AstCallback callback, AstNodeKind kind, voi
         .kind     = kind,
     };
 
-    parser_traverse_ast(root, query_callback, true, (void*) &q);
+    parser_traverse_ast(root, query_callback, (void*) &q);
 }
 
 // Prints a value in the following format: `<str>: <arg>`
@@ -310,7 +288,7 @@ static inline void print_ast_value(
 }
 
 static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
-    assert(root != NULL);
+    NON_NULL(root);
     int spacing = *(int*) args;
 
     for (int _=0; _ < depth * spacing; ++_)
@@ -393,21 +371,19 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
 }
 
 void parser_print_ast(AstNode *root, int spacing) {
-    printf("\n");
-    parser_traverse_ast(root, parser_print_ast_callback, true, &spacing);
-    printf("\n");
+    parser_traverse_ast(root, parser_print_ast_callback, &spacing);
 }
 
 static AstNode *rule_program(Parser *p);
 
 AstNode *parse(const char *src, Arena *arena) {
+
     Parser parser = {
         .arena    = arena,
         .lexer    = { .src = src },
     };
 
     parser_advance(&parser); // get first token
-
     return rule_program(&parser);
 }
 
@@ -418,13 +394,16 @@ static AstNode *rule_expr(Parser *p);
 static AstNode *rule_stmt(Parser *p);
 
 static Type rule_util_type(Parser *p) {
-    // <type> ::= TYPE
+    // <type> ::=
+    //        | "int"
+    //        | "void"
+    //        | "char"
 
     Token tok = parser_advance(p);
     TypeKind kind = type_from_token(tok.kind);
 
     if (kind == TYPE_INVALID)
-        throw_error(tok, "Unknown type `%s`", tok.value);
+        compiler_message_tok(MSG_ERROR, tok, "Unknown type `%s`", tok.value);
 
     Type type = {
         .kind = kind,
@@ -449,8 +428,10 @@ static AstNodeList rule_util_arglist(Parser *p) {
         if (parser_match_token(p, TOK_COMMA)) {
             parser_advance(p);
 
-            if (parser_match_token(p, TOK_RPAREN))
-                parser_throw_error(p, "Extraneous `,`");
+            if (parser_match_token(p, TOK_RPAREN)) {
+                compiler_message_tok(MSG_ERROR, parser_tok(p),  "Extraneous `,`");
+                exit(EXIT_FAILURE);
+            }
         }
 
     }
@@ -475,8 +456,10 @@ static void rule_util_paramlist(Parser *p, ProcSignature *sig) {
         Type *type = parser_alloc(p, sizeof(Type));
         *type = rule_util_type(p);
 
-        if (sig->params_count >= MAX_ARG_COUNT)
-            throw_error(tok, "Procedures may not have more than %lu arguments", MAX_ARG_COUNT);
+        if (sig->params_count >= MAX_ARG_COUNT) {
+            compiler_message_tok(MSG_ERROR, tok, "Procedures may not have more than %lu arguments", MAX_ARG_COUNT);
+            exit(EXIT_FAILURE);
+        }
 
         sig->params[sig->params_count++] = (Param) {
             .ident = tok.value,
@@ -486,8 +469,10 @@ static void rule_util_paramlist(Parser *p, ProcSignature *sig) {
         if (parser_match_token(p, TOK_COMMA)) {
             parser_advance(p);
 
-            if (parser_match_token(p, TOK_RPAREN))
-                parser_throw_error(p, "Extraneous `,`");
+            if (parser_match_token(p, TOK_RPAREN)) {
+                compiler_message_tok(MSG_ERROR, parser_tok(p), "Extraneous `,`"),
+                exit(EXIT_FAILURE);
+            }
         }
 
     }
@@ -503,8 +488,10 @@ static AstNode *rule_grouping(Parser *p) {
     assert(parser_match_token(p, TOK_LPAREN));
     parser_advance(p);
 
-    if (parser_match_token(p, TOK_RPAREN))
-        parser_throw_error(p, "Don't write functional code!");
+    if (parser_match_token(p, TOK_RPAREN)) {
+        compiler_message_tok(MSG_ERROR, parser_tok(p), "Don't write functional code!");
+        exit(EXIT_FAILURE);
+    }
 
     AstNode *astnode       = parser_alloc(p, sizeof(AstNode));
     astnode->kind          = ASTNODE_GROUPING;
@@ -544,10 +531,11 @@ static AstNode *rule_primary(Parser *p) {
         return rule_grouping(p);
 
     } else {
-        parser_throw_error(p, "Unexpected Token");
+        compiler_message_tok(MSG_ERROR, parser_tok(p), "Unexpected Token");
+        exit(EXIT_FAILURE);
     }
 
-    UNREACHABLE;
+    UNREACHABLE();
 
 }
 
@@ -653,8 +641,10 @@ static AstNode *rule_assignment(Parser *p) {
 
     bool is_literal = expr->kind == ASTNODE_LITERAL;
     bool is_ident   = expr->expr_literal.op.kind == TOK_IDENTIFIER;
-    if (!(is_literal && is_ident))
-        parser_throw_error(p, "Invalid assignment target");
+    if (!(is_literal && is_ident)) {
+        compiler_message_tok(MSG_ERROR, parser_tok(p), "Invalid assignment target");
+        exit(EXIT_FAILURE);
+    }
 
     // AstNode is not needed anymore, since we know its an identifier
     Token ident = expr->expr_literal.op;
@@ -679,11 +669,12 @@ static AstNode *rule_expr(Parser *p) {
 }
 
 
+// returns NULL on empty statement
 static AstNode *rule_exprstmt(Parser *p) {
     // <exprstmt> ::= <expr>? ";"
 
     AstNode *node = parser_match_token(p, TOK_SEMICOLON)
-        ? parser_empty_node(p)
+        ? NULL
         : rule_expr(p);
     parser_expect_token(p, TOK_SEMICOLON);
     parser_advance(p);
@@ -740,10 +731,14 @@ static AstNode *rule_block(Parser *p) {
 
     while (!parser_match_token(p, TOK_RBRACE)) {
 
-        if (parser_is_at_end(p))
-            throw_error(brace, "Unmatching brace");
+        if (parser_is_at_end(p)) {
+            compiler_message_tok(MSG_ERROR, brace, "Unmatching brace");
+            exit(EXIT_FAILURE);
+        }
 
-        astnodelist_append(&node->block.stmts, rule_stmt(p));
+        AstNode *stmt = rule_stmt(p);
+        if (stmt != NULL)
+            astnodelist_append(&node->block.stmts, stmt);
     }
 
     parser_advance(p);
@@ -820,6 +815,7 @@ static AstNode *rule_return(Parser *p) {
     return node;
 }
 
+// returns NULL on empty statement
 static AstNode *rule_stmt(Parser *p) {
     // <statement> ::=
     //             | <block>
@@ -831,11 +827,11 @@ static AstNode *rule_stmt(Parser *p) {
     //             | <exprstmt>
 
     return
-        parser_match_token(p, TOK_LBRACE)      ? rule_block  (p) :
-        parser_match_token(p, TOK_KW_VARDECL)  ? rule_vardecl(p) :
-        parser_match_token(p, TOK_KW_IF)       ? rule_if     (p) :
-        parser_match_token(p, TOK_KW_WHILE)    ? rule_while  (p) :
-        parser_match_token(p, TOK_KW_RETURN)   ? rule_return (p) :
+        parser_match_token(p, TOK_LBRACE)     ? rule_block  (p) :
+        parser_match_token(p, TOK_KW_VARDECL) ? rule_vardecl(p) :
+        parser_match_token(p, TOK_KW_IF)      ? rule_if     (p) :
+        parser_match_token(p, TOK_KW_WHILE)   ? rule_while  (p) :
+        parser_match_token(p, TOK_KW_RETURN)  ? rule_return (p) :
     rule_exprstmt(p);
 }
 

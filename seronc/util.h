@@ -14,9 +14,7 @@ typedef enum {
 } MessageKind;
 
 
-void compiler_message (MessageKind kind, const char *fmt, ...);
-void throw_error      (Token tok, const char *fmt, ...);
-void throw_warning    (Token tok, const char *fmt, ...);
-
+void compiler_message     (MessageKind kind, const char *fmt, ...);
+void compiler_message_tok (MessageKind kind, Token tok, const char *fmt, ...);
 
 #endif // _UTIL_H
