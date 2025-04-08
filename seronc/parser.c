@@ -124,8 +124,12 @@ static inline bool parser_match_token(const Parser *p, TokenKind kind) {
 
 static inline void parser_expect_token(const Parser *p, TokenKind tokenkind) {
     if (!parser_match_token(p, tokenkind)) {
-        Token tok = parser_tok(p);
-        compiler_message_tok(MSG_ERROR, tok, "Expected %s", tokenkind_to_string(tokenkind));
+        compiler_message_tok(
+            MSG_ERROR,
+            parser_tok(p),
+            "Expected %s",
+            tokenkind_to_string(tokenkind)
+        );
         exit(EXIT_FAILURE);
     }
 }
@@ -134,12 +138,8 @@ static inline bool parser_is_at_end(const Parser *p) {
     return parser_match_token(p, TOK_EOF);
 }
 
-void parser_traverse_ast(
-    AstNode *root,
-    AstCallback callback,
-    void *args
-) {
-    assert(root != NULL);
+void parser_traverse_ast(AstNode *root, AstCallback callback, void *args) {
+    NON_NULL(root);
 
     static int depth = 0;
     callback(root, depth, args);
@@ -164,8 +164,8 @@ void parser_traverse_ast(
 
         case ASTNODE_CALL: {
             depth++;
-            ExprCall *call = &root->expr_call;
 
+            ExprCall *call = &root->expr_call;
             parser_traverse_ast(call->callee, callback, args);
 
             AstNodeList list = call->args;
@@ -193,11 +193,14 @@ void parser_traverse_ast(
 
         case ASTNODE_IF: {
             depth++;
-            StmtIf if_ = root->stmt_if;
-            parser_traverse_ast(if_.condition, callback, args);
-            parser_traverse_ast(if_.then_body, callback, args);
-            if (if_.else_body != NULL)
-                parser_traverse_ast(if_.else_body, callback, args);
+
+            StmtIf *if_ = &root->stmt_if;
+            parser_traverse_ast(if_->condition, callback, args);
+            parser_traverse_ast(if_->then_body, callback, args);
+
+            if (if_->else_body != NULL)
+                parser_traverse_ast(if_->else_body, callback, args);
+
             depth--;
         } break;
 
@@ -209,9 +212,11 @@ void parser_traverse_ast(
 
         case ASTNODE_PROCEDURE:
             depth++;
+
             AstNode *body = root->stmt_proc.body;
             if (body != NULL)
                 parser_traverse_ast(body, callback, args);
+
             depth--;
             break;
 
@@ -238,38 +243,64 @@ void parser_traverse_ast(
             depth--;
         } break;
 
-        case ASTNODE_LITERAL:
-            break;
+        case ASTNODE_LITERAL: break;
 
-        default:
-            assert(!"Unexpected Node Kind");
-            break;
+        default: PANIC("unexpected node kind");
     }
 
 }
 
 typedef struct {
-    AstCallback callback;
+    AstCallback fn;
     AstNodeKind kind;
-    void *args;
+    void *user_args;
 } Query;
 
 static void query_callback(AstNode *node, int depth, void *args) {
-    Query *q = (Query*) args;
+    Query *query = (Query*) args;
 
-    if (node->kind == q->kind)
-        q->callback(node, depth, q->args);
+    if (node->kind == query->kind)
+        query->fn(node, depth, query->user_args);
 }
 
-void parser_query_ast(AstNode *root, AstCallback callback, AstNodeKind kind, void *args) {
-    Query q = {
-        .args     = args,
-        .callback = callback,
-        .kind     = kind,
-    };
-
+void parser_query_ast(AstNode *root, AstCallback fn, AstNodeKind kind, void *args) {
+    Query q = { fn, kind, args };
     parser_traverse_ast(root, query_callback, (void*) &q);
 }
+
+
+
+
+
+typedef struct {
+    AstCallback *fns;
+    size_t size;
+    void *user_args;
+} DispatchTable;
+
+static void dispatch_callback(AstNode *root, int depth, void *args) {
+    DispatchTable table = *(DispatchTable*) args;
+
+    AstNodeKind kind = root->kind;
+    if (kind >= table.size) return;
+
+    AstCallback fn = table.fns[kind];
+    if (fn != NULL)
+        fn(root, depth, table.user_args);
+
+}
+
+// this function uses the astnode kind as an index into an array of
+// callbacks, effectively making it a table 
+// it may use more memory than an array, but lookup is a lot faster, as
+// the node kind can be used for indexing, instread of linear search
+void parser_dispatch_ast(AstNode *root, AstCallback *table, size_t table_size, void *args) {
+    DispatchTable t = { table, table_size, args };
+    parser_traverse_ast(root, dispatch_callback, (void*) &t);
+}
+
+
+
 
 // Prints a value in the following format: `<str>: <arg>`
 // <arg> is omitted if arg == NULL
@@ -727,6 +758,7 @@ static AstNode *rule_block(Parser *p) {
         .stmts       = { 0 },
         .symboltable = NULL,
     };
+
     astnodelist_init(&node->block.stmts, p->arena);
 
     while (!parser_match_token(p, TOK_RBRACE)) {

@@ -8,15 +8,6 @@
 
 #include "types.h"
 
-typedef enum {
-    REG_RAX,
-    REG_RDI,
-    REG_RSI,
-    REG_RDX,
-    REG_RCX,
-    REG_R8,
-    REG_R9,
-} Register;
 
 
 // TODO: static variables
@@ -43,27 +34,6 @@ typedef struct {
     };
 } Symbol;
 
-typedef struct HashtableEntry {
-    const char *key;
-    struct HashtableEntry *next;
-    Symbol value;
-} HashtableEntry;
-
-// separate-chaining hashtable
-typedef struct Hashtable {
-    size_t size;
-    HashtableEntry **buckets;
-    struct Hashtable *parent;
-} Hashtable;
-
-void    hashtable_init    (Hashtable *ht, size_t size);
-void    hashtable_destroy (Hashtable *ht);
-/* returns -1 if key already exists, else 0 */
-int     hashtable_insert  (Hashtable *ht, const char *key, Symbol value);
-/* does a lookup in the current hashtable */
-/* returns NULL if the key does not exist */
-Symbol *hashtable_get     (const Hashtable *ht, const char *key);
-void    hashtable_print   (const Hashtable *ht);
 
 
 

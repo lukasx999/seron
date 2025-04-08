@@ -6,16 +6,23 @@
 #include <stdbool.h>
 #include <alloca.h>
 
-#include "types.h"
 #include "util.h"
 #include "lexer.h"
-#include "symboltable.h"
 #include "main.h"
 #include "parser.h"
 #include "lib/util.h"
 
 
 
+typedef enum {
+    REG_RAX,
+    REG_RDI,
+    REG_RSI,
+    REG_RDX,
+    REG_RCX,
+    REG_R8,
+    REG_R9,
+} Register;
 
 
 

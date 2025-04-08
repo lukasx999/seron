@@ -6,9 +6,8 @@
 #include <stdint.h>
 
 #include "lexer.h"
+#include "hashtable.h"
 #include "lib/arena.h"
-#include "types.h"
-#include "symboltable.h"
 
 
 
@@ -60,9 +59,9 @@ typedef struct {
 } ExprUnaryOp;
 
 typedef struct {
-    Token           op;
-    AstNode        *callee; // NULL if builtin
-    AstNodeList     args;
+    Token        op;
+    AstNode     *callee; // NULL if builtin
+    AstNodeList  args;
 } ExprCall;
 
 // TODO: make assignee an expression, to allow for struct member assignments
@@ -142,10 +141,17 @@ AstNode *parse(const char *src, Arena *arena);
 
 typedef void (*AstCallback)(AstNode *node, int depth, void *args);
 
+
 // Call the given callback function for every node in the AST
 void parser_traverse_ast(AstNode *root, AstCallback callback, void *args);
+
 // Call the given callback function for every node of kind `kind` in the AST
-void parser_query_ast(AstNode *root, AstCallback callback, AstNodeKind kind, void *args);
+void parser_query_ast(AstNode *root, AstCallback fn, AstNodeKind kind, void *args);
+
+// Call the given callback functions for their equivalent AST Node in the dispatch table
+// The table is an array, where the index corresponds to the Node kind
+void parser_dispatch_ast(AstNode *root, AstCallback *table, size_t table_size, void *args);
+
 void parser_print_ast(AstNode *root, int spacing);
 
 

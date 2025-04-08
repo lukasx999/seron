@@ -6,11 +6,9 @@
 #include <stdbool.h>
 #include <alloca.h>
 
-#include "types.h"
 #include "util.h"
 #include "lexer.h"
 #include "gen.h"
-#include "symboltable.h"
 #include "main.h"
 #include "parser.h"
 

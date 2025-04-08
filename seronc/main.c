@@ -17,9 +17,7 @@
 #include "util.h"
 #include "lexer.h"
 #include "parser.h"
-#include "types.h"
 #include "codegen.h"
-#include "symboltable.h"
 #include "main.h"
 #include "lib/util.h"
 
@@ -286,6 +284,10 @@ void test(void) {
     test_parser();
 }
 
+
+// TODO: delete me!
+void symboltable(AstNode *root);
+
 int main(int argc, char **argv) {
 
     parse_args(argc, argv);
@@ -303,6 +305,7 @@ int main(int argc, char **argv) {
     if (compiler_config.opts.dump_ast)
         parser_print_ast(node_root, 2);
 
+    symboltable(node_root);
 
     // SymboltableList symboltable = symboltable_list_construct(node_root, 5);
     // if (compiler_config.opts.dump_symboltable)
