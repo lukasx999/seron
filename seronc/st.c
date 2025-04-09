@@ -1,39 +1,51 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <assert.h>
 #include <stdint.h>
 #include <stdbool.h>
 
 #include "parser.h"
+#include "hashtable.h"
 #include "lib/util.h"
+#include "lib/arena.h"
 
 
+Hashtable *head = NULL;
 
-
-
-
-static void blockcount_callback(UNUSED AstNode *_node, UNUSED int _depth, void *args) {
-    ++*(int*) args;
+static inline void symboltable_push(Hashtable *ht) {
+    ht->parent = head;
+    head = ht;
 }
 
-UNUSED static void vardecl(AstNode *root, int depth, void *args) {
-    DISCARD(root);
-    DISCARD(depth);
-    DISCARD(args);
-    printf("vardecl!\n");
+static inline void symboltable_pop(void) {
+    head = head->parent;
 }
 
-UNUSED static void block(AstNode *root, int depth, void *args) {
-    DISCARD(root);
-    DISCARD(depth);
-    DISCARD(args);
-    printf("block!\n");
+
+static void vardecl(AstNode *root, UNUSED int _depth, UNUSED void *_args) {
+    static int i = 0;
+
+    StmtVarDecl *vardecl = &root->stmt_vardecl;
+    const char *ident = vardecl->identifier.value;
+    // hashtable_insert(head, ident, i++);
+
+}
+
+static void block(AstNode *root, UNUSED int _depth, UNUSED void *_args) {
+
+    Block *block = &root->block;
+
+    // TODO: use arena for this
+    Hashtable *ht = malloc(sizeof(Hashtable));
+    block->symboltable = ht;
+
+    symboltable_push(ht);
+    // TODO: post traversal callback for pop operation
+    // OR: do this in the parser
+
 }
 
 void symboltable(AstNode *root) {
-    int block_count = 0;
-    parser_query_ast(root, blockcount_callback, ASTNODE_BLOCK, (void*) &block_count);
 
     AstCallback table[] = {
         [ASTNODE_VARDECL] = vardecl,
@@ -41,6 +53,5 @@ void symboltable(AstNode *root) {
     };
 
     parser_dispatch_ast(root, table, ARRAY_LEN(table), NULL);
-
 
 }

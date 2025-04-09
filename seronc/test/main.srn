@@ -1,0 +1,12 @@
+proc main() int {
+
+    let foo int = 45;
+
+    if 1 {
+        1+2;
+    } else {
+        3+4;
+    }
+
+    return 0;
+}

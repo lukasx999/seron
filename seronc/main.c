@@ -18,6 +18,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "codegen.h"
+#include "hashtable.h"
 #include "main.h"
 #include "lib/util.h"
 

@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -Wextra -ggdb -std=c11 -pedantic -fsanitize=address,undefined
+CFLAGS=-Wall -Wextra -ggdb -std=c11 -pedantic # -fsanitize=address,undefined
 
 BIN=seronc
 

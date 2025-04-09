@@ -94,3 +94,24 @@ Symbol *hashtable_get(const Hashtable *ht, const char *key) {
     return NULL;
 
 }
+
+static inline void stringify_symbol(const Symbol *sym, char *buf, size_t buf_size) {
+    snprintf(buf, buf_size, "%d", *sym);
+}
+
+void hashtable_print(const Hashtable *ht) {
+
+    for (size_t i=0; i < ht->size; ++i) {
+        HashtableEntry *current = ht->buckets[i];
+
+        while (current != NULL) {
+            char buf[512] = { 0 };
+            stringify_symbol(&current->value, buf, ARRAY_LEN(buf));
+            printf("[%s]: %s\n", current->key, buf);
+            current = current->next;
+        }
+
+    }
+
+
+}

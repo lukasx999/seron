@@ -262,18 +262,40 @@ static void cond(const StmtIf *cond) {
 
 }
 
+static void while_(const StmtWhile *loop) {
+
+    int lbl = gen.label_count++;
+    emit(loop->condition);
+    // TODO: rdi might get overridden by body
+    gen_write("mov rdi, rax");
+
+    // WHILE
+    gen_write("jmp .cond_%d", lbl);
+    gen_write(".while_%d:", lbl);
+
+    // DO
+    emit(loop->body);
+
+    // END
+    gen_write(".cond_%lu:", lbl);
+    gen_write("cmp rax, 0");
+    gen_write("jne .while_%lu", lbl);
+
+}
+
 static void emit(AstNode *node) {
     NON_NULL(node);
 
     switch (node->kind) {
-        case ASTNODE_BLOCK:     block     (&node->block);          break;
-        case ASTNODE_GROUPING:  grouping  (&node->expr_grouping);  break;
-        case ASTNODE_PROCEDURE: proc      (&node->stmt_proc);      break;
-        case ASTNODE_RETURN:    return_   (&node->stmt_return);    break;
-        case ASTNODE_IF:        cond      (&node->stmt_if);        break;
-        case ASTNODE_BINOP:     binop     (&node->expr_binop);     break;
-        case ASTNODE_UNARYOP:   unaryop   (&node->expr_unaryop);   break;
-        case ASTNODE_LITERAL:   literal   (&node->expr_literal);   break;
+        case ASTNODE_BLOCK:     block    (&node->block);          break;
+        case ASTNODE_GROUPING:  grouping (&node->expr_grouping);  break;
+        case ASTNODE_PROCEDURE: proc     (&node->stmt_proc);      break;
+        case ASTNODE_RETURN:    return_  (&node->stmt_return);    break;
+        case ASTNODE_IF:        cond     (&node->stmt_if);        break;
+        case ASTNODE_WHILE:     while_   (&node->stmt_while);     break;
+        case ASTNODE_BINOP:     binop    (&node->expr_binop);     break;
+        case ASTNODE_UNARYOP:   unaryop  (&node->expr_unaryop);   break;
+        case ASTNODE_LITERAL:   literal  (&node->expr_literal);   break;
         default:                PANIC("unexpected node kind");
     }
 

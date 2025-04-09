@@ -138,6 +138,7 @@ static inline bool parser_is_at_end(const Parser *p) {
     return parser_match_token(p, TOK_EOF);
 }
 
+// TODO: add pre and post traversal callbacks
 void parser_traverse_ast(AstNode *root, AstCallback callback, void *args) {
     NON_NULL(root);
 
@@ -270,8 +271,6 @@ void parser_query_ast(AstNode *root, AstCallback fn, AstNodeKind kind, void *arg
 
 
 
-
-
 typedef struct {
     AstCallback *fns;
     size_t size;
@@ -318,61 +317,94 @@ static inline void print_ast_value(
     puts("");
 }
 
+static void print_colored(const char *color, const char *fmt, ...) {
+    va_list va;
+    va_start(va, fmt);
+    printf("%s", color);
+    vprintf(fmt, va);
+    printf(COLOR_END);
+    va_end(va);
+}
+
+#define AST_COLOR_KEYWORD COLOR_RED
+#define AST_COLOR_SEMANTIC COLOR_BLUE
+#define AST_COLOR_OPERATION COLOR_PURPLE
+
 static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
+
     NON_NULL(root);
+    NON_NULL(args);
+
     int spacing = *(int*) args;
 
     for (int _=0; _ < depth * spacing; ++_)
         printf("%s⋅%s", COLOR_GRAY, COLOR_END);
 
     switch (root->kind) {
-        case ASTNODE_BLOCK: {
-            print_ast_value(
-                "block",
-                COLOR_BLUE,
-                NULL,
-                NULL
-            );
-        } break;
 
-        case ASTNODE_GROUPING:
-            print_ast_value("grouping", COLOR_BLUE, NULL, NULL);
+        case ASTNODE_BLOCK:
+            print_colored(AST_COLOR_SEMANTIC, "block\n");
             break;
 
-        case ASTNODE_ASSIGN:
-            print_ast_value("assign", COLOR_RED, root->expr_assign.identifier.value, NULL);
+        case ASTNODE_GROUPING:
+            print_colored(AST_COLOR_SEMANTIC, "grouping\n");
             break;
 
         case ASTNODE_IF:
-            print_ast_value("if", COLOR_RED, NULL, NULL);
+            print_colored(AST_COLOR_KEYWORD, "if\n");
             break;
 
         case ASTNODE_WHILE:
-            print_ast_value("while", COLOR_RED, NULL, NULL);
+            print_colored(AST_COLOR_KEYWORD, "while\n");
             break;
 
         case ASTNODE_RETURN:
-            print_ast_value("return", COLOR_RED, NULL, NULL);
+            print_colored(AST_COLOR_KEYWORD, "return\n");
             break;
 
         case ASTNODE_BINOP: {
             ExprBinOp *binop = &root->expr_binop;
-            print_ast_value(tokenkind_to_string(binop->op.kind), COLOR_PURPLE, NULL, NULL);
+
+            const char *op = NULL;
+            switch (binop->kind) {
+                case BINOP_ADD: op = "add"; break;
+                case BINOP_SUB: op = "sub"; break;
+                case BINOP_MUL: op = "mul"; break;
+                case BINOP_DIV: op = "div"; break;
+                default:        PANIC("unknown binop kind");
+            }
+
+            print_colored(AST_COLOR_OPERATION, "%s\n", NON_NULL(op));
+
         } break;
+
+        case ASTNODE_CALL:
+            print_colored(AST_COLOR_OPERATION, "call\n");
+            break;
 
         case ASTNODE_UNARYOP: {
             ExprUnaryOp *unaryop = &root->expr_unaryop;
-            print_ast_value(tokenkind_to_string(unaryop->op.kind), COLOR_PURPLE, NULL, NULL);
+
+            const char *op = NULL;
+            switch (unaryop->kind) {
+                case UNARYOP_MINUS: op = "minus"; break;
+                case UNARYOP_NEG:   op = "neg";   break;
+                default:            PANIC("unknown unaryop kind");
+            }
+
+            print_colored(AST_COLOR_OPERATION, "%s\n", NON_NULL(op));
+
         } break;
 
-        case ASTNODE_CALL: {
-            print_ast_value(
-                "call",
-                COLOR_BLUE,
-                NULL,
-                NULL
-            );
+        case ASTNODE_ASSIGN: {
+            ExprAssignment *assign = &root->expr_assign;
+
+            print_colored(AST_COLOR_OPERATION, "assign");
+            print_colored(COLOR_GRAY, " (%s)\n", assign->identifier.value);
+
         } break;
+
+
 
         case ASTNODE_PROCEDURE: {
             StmtProc *func = &root->stmt_proc;
@@ -395,14 +427,12 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
             print_ast_value(tokenkind_to_string(tok->kind), COLOR_RED, tok->value, NULL);
         } break;
 
-        default:
-            assert(!"Unexpected Node Kind");
-            break;
+        default: PANIC("unexpected node kind");
     }
 }
 
 void parser_print_ast(AstNode *root, int spacing) {
-    parser_traverse_ast(root, parser_print_ast_callback, &spacing);
+    parser_traverse_ast(root, parser_print_ast_callback, (void*) &spacing);
 }
 
 static AstNode *rule_program(Parser *p);
