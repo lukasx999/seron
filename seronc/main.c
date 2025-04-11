@@ -202,23 +202,9 @@ static void parse_args(int argc, char **argv) {
 
 
 
-// TODO: semcheck
-//  - using return in procedure
-//  - no ifs/whiles in global scope
 // TODO: synchronizing parser / typechecker
-// TODO: change Token in ast to Token*
-// TODO: pointers (and addrof)
-// TODO: show compilation time diff
-// TODO: merge parser and grammar
-// TODO: ABI: spill arguments onto stack
-// TODO: char literal
-// TODO: id into tokenlist instead of pointer for ast
-// TODO: replace ast traversals with parser_query_ast
-// TODO: parser_map_ast() designated initializer array: map from enum to function pointer
-// TODO: rework errors/warnings with tokens
-// TODO: resolve codegen grouping conflict with push() like chibicc
-// TODO: resolve variables in identifier primary rule, so no symboltable is needed for codegen
-// TODO: linked list as symboltable
+// TODO: get tokens from FILE* stream
+
 
 
 void test_lexer(void) {

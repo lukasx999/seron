@@ -94,6 +94,11 @@ static inline Token parser_advance(Parser *p) {
     return old;
 }
 
+// TODO: use this instead of parser_alloc()
+static inline void *parser_new_node(Parser *p) {
+    return NON_NULL(arena_alloc(p->arena, sizeof(AstNode)));
+}
+
 // Convenience function that allows us to change the allocator easily
 static inline void *parser_alloc(Parser *p, size_t size) {
     return arena_alloc(p->arena, size);
@@ -138,12 +143,18 @@ static inline bool parser_is_at_end(const Parser *p) {
     return parser_match_token(p, TOK_EOF);
 }
 
-// TODO: add pre and post traversal callbacks
-void parser_traverse_ast(AstNode *root, AstCallback callback, void *args) {
+void parser_traverse_ast(
+    AstNode    *root,
+    AstCallback callback_pre,
+    AstCallback callback_post,
+    void       *args
+) {
     NON_NULL(root);
 
     static int depth = 0;
-    callback(root, depth, args);
+
+    if (callback_pre != NULL)
+        callback_pre(root, depth, args);
 
     switch (root->kind) {
 
@@ -152,14 +163,14 @@ void parser_traverse_ast(AstNode *root, AstCallback callback, void *args) {
             AstNodeList list = root->block.stmts;
 
             for (size_t i=0; i < list.size; ++i)
-                parser_traverse_ast(list.items[i], callback, args);
+                parser_traverse_ast(list.items[i], callback_pre, callback_post, args);
 
             depth--;
         } break;
 
         case ASTNODE_ASSIGN: {
             depth++;
-            parser_traverse_ast(root->expr_assign.value, callback, args);
+            parser_traverse_ast(root->expr_assign.value, callback_pre, callback_post, args);
             depth--;
         } break;
 
@@ -167,11 +178,11 @@ void parser_traverse_ast(AstNode *root, AstCallback callback, void *args) {
             depth++;
 
             ExprCall *call = &root->expr_call;
-            parser_traverse_ast(call->callee, callback, args);
+            parser_traverse_ast(call->callee, callback_pre, callback_post, args);
 
             AstNodeList list = call->args;
             for (size_t i=0; i < list.size; ++i)
-                parser_traverse_ast(list.items[i], callback, args);
+                parser_traverse_ast(list.items[i], callback_pre, callback_post, args);
 
             depth--;
         } break;
@@ -179,8 +190,8 @@ void parser_traverse_ast(AstNode *root, AstCallback callback, void *args) {
         case ASTNODE_WHILE: {
             depth++;
             StmtWhile *while_ = &root->stmt_while;
-            parser_traverse_ast(while_->condition, callback, args);
-            parser_traverse_ast(while_->body, callback, args);
+            parser_traverse_ast(while_->condition, callback_pre, callback_post, args);
+            parser_traverse_ast(while_->body, callback_pre, callback_post, args);
             depth--;
         } break;
 
@@ -188,7 +199,7 @@ void parser_traverse_ast(AstNode *root, AstCallback callback, void *args) {
             depth++;
             StmtReturn *return_ = &root->stmt_return;
             if (return_->expr != NULL)
-                parser_traverse_ast(return_->expr, callback, args);
+                parser_traverse_ast(return_->expr, callback_pre, callback_post, args);
             depth--;
         } break;
 
@@ -196,18 +207,18 @@ void parser_traverse_ast(AstNode *root, AstCallback callback, void *args) {
             depth++;
 
             StmtIf *if_ = &root->stmt_if;
-            parser_traverse_ast(if_->condition, callback, args);
-            parser_traverse_ast(if_->then_body, callback, args);
+            parser_traverse_ast(if_->condition, callback_pre, callback_post, args);
+            parser_traverse_ast(if_->then_body, callback_pre, callback_post, args);
 
             if (if_->else_body != NULL)
-                parser_traverse_ast(if_->else_body, callback, args);
+                parser_traverse_ast(if_->else_body, callback_pre, callback_post, args);
 
             depth--;
         } break;
 
         case ASTNODE_GROUPING:
             depth++;
-            parser_traverse_ast(root->expr_grouping.expr, callback, args);
+            parser_traverse_ast(root->expr_grouping.expr, callback_pre, callback_post, args);
             depth--;
             break;
 
@@ -216,7 +227,7 @@ void parser_traverse_ast(AstNode *root, AstCallback callback, void *args) {
 
             AstNode *body = root->stmt_proc.body;
             if (body != NULL)
-                parser_traverse_ast(body, callback, args);
+                parser_traverse_ast(body, callback_pre, callback_post, args);
 
             depth--;
             break;
@@ -225,22 +236,22 @@ void parser_traverse_ast(AstNode *root, AstCallback callback, void *args) {
             depth++;
             StmtVarDecl *vardecl = &root->stmt_vardecl;
             if (vardecl->value != NULL)
-                parser_traverse_ast(vardecl->value, callback, args);
+                parser_traverse_ast(vardecl->value, callback_pre, callback_post, args);
             depth--;
         } break;
 
         case ASTNODE_BINOP: {
             depth++;
             ExprBinOp *binop = &root->expr_binop;
-            parser_traverse_ast(binop->lhs, callback, args);
-            parser_traverse_ast(binop->rhs, callback, args);
+            parser_traverse_ast(binop->lhs, callback_pre, callback_post, args);
+            parser_traverse_ast(binop->rhs, callback_pre, callback_post, args);
             depth--;
         } break;
 
         case ASTNODE_UNARYOP: {
             depth++;
             ExprUnaryOp *unaryop = &root->expr_unaryop;
-            parser_traverse_ast(unaryop->node, callback, args);
+            parser_traverse_ast(unaryop->node, callback_pre, callback_post, args);
             depth--;
         } break;
 
@@ -248,6 +259,9 @@ void parser_traverse_ast(AstNode *root, AstCallback callback, void *args) {
 
         default: PANIC("unexpected node kind");
     }
+
+    if (callback_post != NULL)
+        callback_post(root, depth, args);
 
 }
 
@@ -258,44 +272,63 @@ typedef struct {
 } Query;
 
 static void query_callback(AstNode *node, int depth, void *args) {
-    Query *query = (Query*) args;
+    Query *query = args;
 
     if (node->kind == query->kind)
         query->fn(node, depth, query->user_args);
 }
 
-void parser_query_ast(AstNode *root, AstCallback fn, AstNodeKind kind, void *args) {
-    Query q = { fn, kind, args };
-    parser_traverse_ast(root, query_callback, (void*) &q);
+void parser_query_ast(
+    AstNode    *root,
+    AstCallback fn_pre,
+    AstCallback fn_post,
+    AstNodeKind kind,
+    void       *args
+) {
+    Query pre  = { fn_pre,  kind, args };
+    Query post = { fn_post, kind, args };
+    parser_traverse_ast(root, query_callback, NULL, (void*) &pre);
+    parser_traverse_ast(root, NULL, query_callback, (void*) &post);
 }
-
 
 
 typedef struct {
-    AstCallback *fns;
+    AstDispatchEntry *table;
     size_t size;
     void *user_args;
+    bool pre; // else post order traversal
 } DispatchTable;
 
 static void dispatch_callback(AstNode *root, int depth, void *args) {
-    DispatchTable table = *(DispatchTable*) args;
+    DispatchTable *dt = args;
 
-    AstNodeKind kind = root->kind;
-    if (kind >= table.size) return;
+    for (size_t i=0; i < dt->size; ++i) {
 
-    AstCallback fn = table.fns[kind];
-    if (fn != NULL)
-        fn(root, depth, table.user_args);
+        AstDispatchEntry *entry = &dt->table[i];
+
+        AstCallback fn = dt->pre
+            ? entry->fn_pre
+            : entry->fn_post;
+
+        if (root->kind == entry->kind) {
+            if (fn != NULL)
+                fn(root, depth, dt->user_args);
+        }
+
+    }
 
 }
 
-// this function uses the astnode kind as an index into an array of
-// callbacks, effectively making it a table 
-// it may use more memory than an array, but lookup is a lot faster, as
-// the node kind can be used for indexing, instread of linear search
-void parser_dispatch_ast(AstNode *root, AstCallback *table, size_t table_size, void *args) {
-    DispatchTable t = { table, table_size, args };
-    parser_traverse_ast(root, dispatch_callback, (void*) &t);
+void parser_dispatch_ast(
+    AstNode          *root,
+    AstDispatchEntry *table,
+    size_t            table_size,
+    void             *args
+) {
+    DispatchTable pre =  { table, table_size, args, true  };
+    DispatchTable post = { table, table_size, args, false };
+    parser_traverse_ast(root, dispatch_callback, NULL, (void*) &pre);
+    parser_traverse_ast(root, NULL, dispatch_callback, (void*) &post);
 }
 
 
@@ -432,7 +465,7 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
 }
 
 void parser_print_ast(AstNode *root, int spacing) {
-    parser_traverse_ast(root, parser_print_ast_callback, (void*) &spacing);
+    parser_traverse_ast(root, parser_print_ast_callback, NULL, (void*) &spacing);
 }
 
 static AstNode *rule_program(Parser *p);

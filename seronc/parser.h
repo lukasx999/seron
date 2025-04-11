@@ -143,14 +143,18 @@ typedef void (*AstCallback)(AstNode *node, int depth, void *args);
 
 
 // Call the given callback function for every node in the AST
-void parser_traverse_ast(AstNode *root, AstCallback callback, void *args);
+void parser_traverse_ast(AstNode *root, AstCallback callback_pre, AstCallback callback_post, void *args);
 
 // Call the given callback function for every node of kind `kind` in the AST
-void parser_query_ast(AstNode *root, AstCallback fn, AstNodeKind kind, void *args);
+void parser_query_ast(AstNode *root, AstCallback fn_pre, AstCallback fn_post, AstNodeKind kind, void *args);
 
-// Call the given callback functions for their equivalent AST Node in the dispatch table
-// The table is an array, where the index corresponds to the Node kind
-void parser_dispatch_ast(AstNode *root, AstCallback *table, size_t table_size, void *args);
+typedef struct {
+    AstNodeKind kind;
+    AstCallback fn_pre;
+    AstCallback fn_post;
+} AstDispatchEntry;
+
+void parser_dispatch_ast(AstNode *root, AstDispatchEntry *table, size_t table_size, void *args);
 
 void parser_print_ast(AstNode *root, int spacing);
 

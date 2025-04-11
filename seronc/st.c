@@ -9,15 +9,21 @@
 #include "lib/util.h"
 #include "lib/arena.h"
 
+// typedef struct {
+// } Symboltable;
 
 Hashtable *head = NULL;
 
-static inline void symboltable_push(Hashtable *ht) {
+static void symboltable_insert(const char *key, Symbol value) {
+    hashtable_insert(head, key, value);
+}
+
+static void symboltable_push(Hashtable *ht) {
     ht->parent = head;
     head = ht;
 }
 
-static inline void symboltable_pop(void) {
+static void symboltable_pop(void) {
     head = head->parent;
 }
 
@@ -27,7 +33,7 @@ static void vardecl(AstNode *root, UNUSED int _depth, UNUSED void *_args) {
 
     StmtVarDecl *vardecl = &root->stmt_vardecl;
     const char *ident = vardecl->identifier.value;
-    // hashtable_insert(head, ident, i++);
+    symboltable_insert(ident, i++);
 
 }
 
@@ -45,11 +51,19 @@ static void block(AstNode *root, UNUSED int _depth, UNUSED void *_args) {
 
 }
 
+
+static void block_post(UNUSED AstNode *_root, UNUSED int _depth, UNUSED void *_args) {
+    symboltable_pop();
+}
+
+
+
+
 void symboltable(AstNode *root) {
 
-    AstCallback table[] = {
-        [ASTNODE_VARDECL] = vardecl,
-        [ASTNODE_BLOCK] = block,
+    AstDispatchEntry table[] = {
+        { ASTNODE_BLOCK,   block,   block_post },
+        { ASTNODE_VARDECL, vardecl, NULL       },
     };
 
     parser_dispatch_ast(root, table, ARRAY_LEN(table), NULL);

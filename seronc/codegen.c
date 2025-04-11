@@ -265,9 +265,6 @@ static void cond(const StmtIf *cond) {
 static void while_(const StmtWhile *loop) {
 
     int lbl = gen.label_count++;
-    emit(loop->condition);
-    // TODO: rdi might get overridden by body
-    gen_write("mov rdi, rax");
 
     // WHILE
     gen_write("jmp .cond_%d", lbl);
@@ -277,6 +274,7 @@ static void while_(const StmtWhile *loop) {
     emit(loop->body);
 
     // END
+    emit(loop->condition);
     gen_write(".cond_%lu:", lbl);
     gen_write("cmp rax, 0");
     gen_write("jne .while_%lu", lbl);
