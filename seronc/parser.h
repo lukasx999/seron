@@ -76,7 +76,7 @@ typedef struct {
 } Block;
 
 typedef struct {
-    Token op, identifier;
+    Token op, ident;
     AstNode *body; // NULL if declaration
     Type type;     // type is holding function signature
     int stack_size;
@@ -98,8 +98,8 @@ typedef struct {
 } StmtReturn;
 
 typedef struct {
-    Token op, identifier;
-    AstNode *value; // NULL if declaration
+    Token op, ident;
+    AstNode *init; // NULL if declaration
     Type type;
 } StmtVarDecl;
 

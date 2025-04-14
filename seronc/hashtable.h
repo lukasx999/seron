@@ -9,11 +9,9 @@
 #include <stdbool.h>
 
 #include "lib/util.h"
+#include "lib/arena.h"
 
 
-
-
-typedef struct AstNode AstNode;
 
 
 
@@ -28,7 +26,7 @@ typedef struct {
 
 // TODO: maybe reuse for structs
 typedef struct {
-    Param params[MAX_ARG_COUNT]; // TODO: uses shit ton of memory
+    Param params[MAX_ARG_COUNT];
     size_t params_count;
     Type *returntype; // heap-allocated
 } ProcSignature;
@@ -45,8 +43,6 @@ typedef enum {
 struct Type {
     TypeKind kind;
     bool mutable;
-    // This union contains additional information for complex types,
-    // such as functions, pointers and user-defined types
     union {
         ProcSignature type_signature;
         Type *type_pointee;
@@ -70,12 +66,15 @@ static inline const char *typekind_to_string(TypeKind type) {
 
 
 
+#define MAXLEN_IDENT 50
 
-
-typedef int Symbol;
+typedef struct {
+    int offset;
+    // TODO: type information
+} Symbol;
 
 typedef struct HashtableEntry {
-    const char *key;
+    char key[MAXLEN_IDENT];
     struct HashtableEntry *next;
     Symbol value;
 } HashtableEntry;
@@ -85,15 +84,15 @@ typedef struct Hashtable {
     size_t size;
     HashtableEntry **buckets;
     struct Hashtable *parent;
+    Arena *arena;
 } Hashtable;
 
-void hashtable_init(Hashtable *ht, size_t size);
+void hashtable_init(Hashtable *ht, size_t size, Arena *arena);
 void hashtable_destroy(Hashtable *ht);
 /* returns -1 if key already exists, else 0 */
 int hashtable_insert(Hashtable *ht, const char *key, Symbol value);
 /* returns NULL if the key does not exist */
 Symbol *hashtable_get(const Hashtable *ht, const char *key);
-void hashtable_print(const Hashtable *ht);
 
 
 #endif // _HASHTABLE_H

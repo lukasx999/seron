@@ -7,6 +7,7 @@
 #include "lexer.h"
 #include "util.h"
 #include "main.h"
+#define UTIL_COLORS
 #include "lib/util.h"
 
 

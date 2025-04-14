@@ -6,11 +6,15 @@
 #include <stdbool.h>
 #include <stdarg.h>
 
+#include "lib/arena.h"
+#define UTIL_COLORS
+#include "lib/util.h"
+
 #include "util.h"
 #include "lexer.h"
 #include "parser.h"
-#include "lib/arena.h"
-#include "lib/util.h"
+#include "hashtable.h"
+#include "symboltable.h"
 
 
 #define SENTINEL TOK_INVALID
@@ -75,12 +79,11 @@ static UnaryOpKind unaryop_from_token(TokenKind kind) {
     }
 }
 
-
-
 typedef struct {
     Arena *arena;
     Token tok;
     LexerState lexer;
+    Symboltable st;
 } Parser;
 
 static inline Token parser_tok(const Parser *p) {
@@ -235,8 +238,8 @@ void parser_traverse_ast(
         case ASTNODE_VARDECL: {
             depth++;
             StmtVarDecl *vardecl = &root->stmt_vardecl;
-            if (vardecl->value != NULL)
-                parser_traverse_ast(vardecl->value, callback_pre, callback_post, args);
+            if (vardecl->init != NULL)
+                parser_traverse_ast(vardecl->init, callback_pre, callback_post, args);
             depth--;
         } break;
 
@@ -441,7 +444,7 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
 
         case ASTNODE_PROCEDURE: {
             StmtProc *func = &root->stmt_proc;
-            print_ast_value(tokenkind_to_string(func->op.kind), COLOR_RED, func->identifier.value, NULL);
+            print_ast_value(tokenkind_to_string(func->op.kind), COLOR_RED, func->ident.value, NULL);
         } break;
 
         case ASTNODE_VARDECL: {
@@ -449,7 +452,7 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
             print_ast_value(
                 tokenkind_to_string(vardecl->op.kind),
                 COLOR_RED,
-                vardecl->identifier.value,
+                vardecl->ident.value,
                 typekind_to_string(vardecl->type.kind)
             );
         } break;
@@ -476,6 +479,8 @@ AstNode *parse(const char *src, Arena *arena) {
         .arena    = arena,
         .lexer    = { .src = src },
     };
+
+    symboltable_init(&parser.st, arena);
 
     parser_advance(&parser); // get first token
     return rule_program(&parser);
@@ -782,7 +787,7 @@ static AstNode *rule_vardecl(Parser *p) {
     Token op = parser_advance(p);
 
     parser_expect_token(p, TOK_IDENTIFIER);
-    Token identifier = parser_advance(p);
+    Token ident = parser_advance(p);
 
     Type type = rule_util_type(p);
     AstNode *value = NULL;
@@ -800,11 +805,13 @@ static AstNode *rule_vardecl(Parser *p) {
     AstNode *vardecl      = parser_alloc(p, sizeof(AstNode));
     vardecl->kind         = ASTNODE_VARDECL;
     vardecl->stmt_vardecl = (StmtVarDecl) {
-        .op         = op,
-        .identifier = identifier,
-        .type       = type,
-        .value      = value,
+        .op    = op,
+        .ident = ident,
+        .type  = type,
+        .init  = value,
     };
+
+    symboltable_insert(&p->st, ident.value, type);
 
     return vardecl;
 }
@@ -819,7 +826,7 @@ static AstNode *rule_block(Parser *p) {
     node->kind    = ASTNODE_BLOCK;
     node->block   = (Block) {
         .stmts       = { 0 },
-        .symboltable = NULL,
+        .symboltable = symboltable_push(&p->st),
     };
 
     astnodelist_init(&node->block.stmts, p->arena);
@@ -835,6 +842,8 @@ static AstNode *rule_block(Parser *p) {
         if (stmt != NULL)
             astnodelist_append(&node->block.stmts, stmt);
     }
+
+    symboltable_pop(&p->st);
 
     parser_advance(p);
     return node;
@@ -930,14 +939,14 @@ static AstNode *rule_stmt(Parser *p) {
     rule_exprstmt(p);
 }
 
-static AstNode *rule_procedure(Parser *p) {
+static AstNode *rule_proc(Parser *p) {
     // <procedure> ::= "proc" IDENTIFIER <paramlist> <type> <block>
 
     assert(parser_match_token(p, TOK_KW_FUNCTION));
     Token op = parser_advance(p);
 
     parser_expect_token(p, TOK_IDENTIFIER);
-    Token identifier = parser_advance(p);
+    Token ident = parser_advance(p);
 
     ProcSignature sig = { 0 };
     rule_util_paramlist(p, &sig);
@@ -955,6 +964,8 @@ static AstNode *rule_procedure(Parser *p) {
         .type_signature = sig,
     };
 
+    symboltable_proc(&p->st);
+
     AstNode *body = parser_match_token(p, TOK_SEMICOLON)
         ? parser_advance(p), NULL
         : rule_block(p);
@@ -964,8 +975,9 @@ static AstNode *rule_procedure(Parser *p) {
     proc->stmt_proc = (StmtProc) {
         .op         = op,
         .body       = body,
-        .identifier = identifier,
+        .ident      = ident,
         .type       = type,
+        .stack_size = p->st.stack,
     };
 
     return proc;
@@ -975,25 +987,29 @@ static AstNode *rule_declaration(Parser *p) {
     // <declaration> ::= <procedure> | <vardecl>
 
     return
-        parser_match_token(p, TOK_KW_FUNCTION) ? rule_procedure(p) :
+        parser_match_token(p, TOK_KW_FUNCTION) ? rule_proc(p) :
         parser_match_token(p, TOK_KW_VARDECL)  ? rule_vardecl  (p) :
     (compiler_message(MSG_ERROR, "Expected declaration"), exit(EXIT_FAILURE), NULL);
     // TODO: synchronize parser
 }
 
 static AstNode *rule_program(Parser *p) {
+    // TODO: refactor this rule
     // <program> ::= <declaration>*
 
     AstNode *node = parser_alloc(p, sizeof(AstNode));
     node->kind    = ASTNODE_BLOCK;
     node->block   = (Block) {
         .stmts       = { 0 },
-        .symboltable = NULL,
+        .symboltable = symboltable_push(&p->st),
     };
+
     astnodelist_init(&node->block.stmts, p->arena);
 
     while (!parser_is_at_end(p))
         astnodelist_append(&node->block.stmts, rule_declaration(p));
+
+    symboltable_pop(&p->st);
 
     return node;
 }

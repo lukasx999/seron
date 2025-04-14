@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -Wextra -ggdb -std=c11 -pedantic # -fsanitize=address,undefined
+CFLAGS=-Wall -Wextra -ggdb -std=c11 -pedantic -fsanitize=address,undefined
 
 BIN=seronc
 
@@ -10,6 +10,7 @@ lexer.h       \
 parser.h      \
 codegen.h     \
 hashtable.h   \
+symboltable.h \
 
 SOURCES=	  \
 lexer.o       \
@@ -17,7 +18,7 @@ parser.o      \
 codegen.o     \
 util.o        \
 hashtable.o   \
-st.o   \
+symboltable.o \
 
 all: compiler
 
@@ -29,7 +30,8 @@ test: compiler
 	@echo TEST test/main.srn
 	@./seronc ./test/test.srn -cv --asmdoc
 
-	@$(CC) $(CFLAGS) -o test/test test/test.c test/test.o
+	# @$(CC) $(CFLAGS) -o test/test test/test.c test/test.o
+	@$(CC) -o test/test test/test.c test/test.o
 	@./test/test
 
 %.o: %.c Makefile $(DEPS)

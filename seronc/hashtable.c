@@ -13,52 +13,41 @@ static size_t hash(size_t size, const char *key) {
     return sum % size;
 }
 
-static HashtableEntry *new_entry(const char *key, Symbol value) {
-    HashtableEntry *entry = NON_NULL(malloc(sizeof(HashtableEntry)));
-    entry->key   = key;
-    entry->value = value;
-    entry->next  = NULL;
+static HashtableEntry *new_entry(Arena *arena, const char *key, Symbol value) {
+
+    HashtableEntry *entry = NON_NULL(arena_alloc(arena, sizeof(HashtableEntry)));
+    *entry = (HashtableEntry) {
+        .value = value,
+        .next  = NULL,
+    };
+    strncpy(entry->key, key, ARRAY_LEN(entry->key));
 
     return entry;
 }
 
-void hashtable_init(Hashtable *ht, size_t size) {
+void hashtable_init(Hashtable *ht, size_t size, Arena *arena) {
     *ht = (Hashtable) {
         .size     = size,
         .buckets  = NULL,
         .parent   = NULL,
+        .arena    = arena,
     };
 
-    ht->buckets = NON_NULL(malloc(ht->size * sizeof(HashtableEntry*)));
+    ht->buckets = NON_NULL(arena_alloc(ht->arena, ht->size * sizeof(HashtableEntry*)));
 
     for (size_t i=0; i < ht->size; ++i)
         ht->buckets[i] = NULL;
 }
 
-void hashtable_destroy(Hashtable *ht) {
-    for (size_t i=0; i < ht->size; ++i) {
-        HashtableEntry *entry = ht->buckets[i];
-
-        while (entry != NULL) {
-            HashtableEntry *next = entry->next;
-            free(entry);
-            entry = next;
-        }
-
-    }
-
-    free(ht->buckets);
-    ht->buckets = NULL;
-}
-
 int hashtable_insert(Hashtable *ht, const char *key, Symbol value) {
-    assert(ht != NULL);
+
+    NON_NULL(ht);
 
     size_t index = hash(ht->size, key);
     HashtableEntry *current = ht->buckets[index];
 
     if (current == NULL) {
-        ht->buckets[index] = new_entry(key, value);
+        ht->buckets[index] = new_entry(ht->arena, key, value);
         return 0;
     }
 
@@ -67,7 +56,7 @@ int hashtable_insert(Hashtable *ht, const char *key, Symbol value) {
             return -1;
 
         if (current->next == NULL) {
-            current->next = new_entry(key, value);
+            current->next = new_entry(ht->arena, key, value);
             return 0;
         }
 
@@ -78,6 +67,9 @@ int hashtable_insert(Hashtable *ht, const char *key, Symbol value) {
 }
 
 Symbol *hashtable_get(const Hashtable *ht, const char *key) {
+
+    NON_NULL(ht);
+
     size_t index = hash(ht->size, key);
     HashtableEntry *current = ht->buckets[index];
 
@@ -92,26 +84,5 @@ Symbol *hashtable_get(const Hashtable *ht, const char *key) {
     }
 
     return NULL;
-
-}
-
-static inline void stringify_symbol(const Symbol *sym, char *buf, size_t buf_size) {
-    snprintf(buf, buf_size, "%d", *sym);
-}
-
-void hashtable_print(const Hashtable *ht) {
-
-    for (size_t i=0; i < ht->size; ++i) {
-        HashtableEntry *current = ht->buckets[i];
-
-        while (current != NULL) {
-            char buf[512] = { 0 };
-            stringify_symbol(&current->value, buf, ARRAY_LEN(buf));
-            printf("[%s]: %s\n", current->key, buf);
-            current = current->next;
-        }
-
-    }
-
 
 }

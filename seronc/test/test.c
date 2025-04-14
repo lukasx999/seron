@@ -16,6 +16,8 @@
 // Exported functions from ./main.srn
 int literals_11(void);
 int cond(void);
+int variable(void);
+int complex(void);
 
 int main(void) {
     int passcount = 0, testcount = 0;
@@ -23,6 +25,8 @@ int main(void) {
 
     test(literals_11(), 11);
     test(cond(), 45);
+    test(variable(), 50);
+    test(complex(), 28);
 
     printf("\n%d out of %d tests passed\n", passcount, testcount);
     return passcount != testcount;

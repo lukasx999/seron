@@ -10,6 +10,7 @@
 #include "lexer.h"
 #include "main.h"
 #include "parser.h"
+#include "symboltable.h"
 #include "lib/util.h"
 
 
@@ -29,7 +30,7 @@ typedef enum {
 size_t get_type_size(TypeKind type) {
     switch (type) {
         case TYPE_CHAR: return 1;
-        case TYPE_INT:  return 4;
+        case TYPE_INT:  return 8;
         default:        PANIC("unknown type");
     }
 }
@@ -37,7 +38,7 @@ size_t get_type_size(TypeKind type) {
 UNUSED static const char *typekind_get_size_operand(TypeKind type) {
     switch (type) {
         case TYPE_CHAR: return "byte";
-        case TYPE_INT:  return "dword";
+        case TYPE_INT:  return "qword";
         default:        PANIC("unknown type");
     }
 }
@@ -119,6 +120,7 @@ UNUSED static const char *abi_get_register(int arg_n, TypeKind type) {
 struct Gen {
     FILE *file;
     int label_count;
+    Hashtable *scope;
 } gen = { 0 };
 
 static void gen_init(const char *out_file) {
@@ -148,7 +150,7 @@ static void gen_write(const char *fmt, ...) {
 static void emit(AstNode *node);
 
 static void proc(const StmtProc *proc) {
-    const char *ident  = proc->identifier.value;
+    const char *ident  = proc->ident.value;
     const ProcSignature *sig = &proc->type.type_signature;
     (void) sig;
     // TODO: ABI
@@ -180,11 +182,14 @@ static void return_(const StmtReturn *ret) {
 }
 
 static void block(const Block *block) {
+    Hashtable *old_scope = gen.scope;
+    gen.scope = block->symboltable;
 
     AstNodeList list = block->stmts;
-
     for (size_t i=0; i < list.size; ++i)
         emit(list.items[i]);
+
+    gen.scope = old_scope;
 }
 
 static void unaryop(const ExprUnaryOp *unaryop) {
@@ -217,16 +222,23 @@ static void binop(const ExprBinOp *binop) {
 
 static void literal(const ExprLiteral *literal) {
 
+    const char *str = literal->op.value;
+
     switch (literal->kind) {
 
         case LITERAL_NUMBER: {
-            int num = atoll(literal->op.value);
+            int num = atoll(str);
             typekind_get_subregister(REG_RAX, TYPE_INT);
             gen_write("mov rax, %d", num);
         } break;
 
         case LITERAL_IDENT: {
-            TODO("ident literal");
+            Symbol *sym = symboltable_lookup(gen.scope, str);
+            if (sym == NULL) {
+                compiler_message(MSG_ERROR, "Variable `%s` does not exist in the current scope", str);
+                exit(EXIT_FAILURE);
+            }
+            gen_write("mov rax, [rbp-%d]", sym->offset);
         } break;
 
         default: PANIC("unknown operation");
@@ -281,6 +293,17 @@ static void while_(const StmtWhile *loop) {
 
 }
 
+static void vardecl(const StmtVarDecl *decl) {
+
+    if (decl->init == NULL) return;
+
+    emit(decl->init);
+    // TODO: maybe include symbol info in astnode itself?
+    Symbol *sym = NON_NULL(symboltable_lookup(gen.scope, decl->ident.value));
+    gen_write("mov [rbp-%d], rax", sym->offset);
+
+}
+
 static void emit(AstNode *node) {
     NON_NULL(node);
 
@@ -289,6 +312,7 @@ static void emit(AstNode *node) {
         case ASTNODE_GROUPING:  grouping (&node->expr_grouping);  break;
         case ASTNODE_PROCEDURE: proc     (&node->stmt_proc);      break;
         case ASTNODE_RETURN:    return_  (&node->stmt_return);    break;
+        case ASTNODE_VARDECL:   vardecl  (&node->stmt_vardecl);   break;
         case ASTNODE_IF:        cond     (&node->stmt_if);        break;
         case ASTNODE_WHILE:     while_   (&node->stmt_while);     break;
         case ASTNODE_BINOP:     binop    (&node->expr_binop);     break;

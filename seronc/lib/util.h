@@ -1,6 +1,5 @@
-#pragma once
-#ifndef __UTIL_H
-#define __UTIL_H
+#ifndef ___UTIL_H
+#define ___UTIL_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,7 +13,10 @@
 
 #define __STDC23 __STDC_VERSION__ >= 202000
 #define __STDC11 __STDC_VERSION__ == 201112L
+#define __STDC99 // TODO:
 
+
+#ifdef UTIL_COLORS
 
 #define COLOR_RED           "\33[31m"
 #define COLOR_BLUE          "\33[34m"
@@ -33,6 +35,16 @@
 #define COLOR_STRIKETHROUGH "\33[9m"
 #define COLOR_END           "\33[0m"
 
+#endif // UTIL_COLORS
+
+
+#ifdef __STDC11
+
+#define NORETURN noreturn
+#else
+#define NORETURN __attribute((noreturn))
+
+#endif // __STDC11
 
 
 noreturn static inline void _impl_panic(
@@ -45,7 +57,7 @@ noreturn static inline void _impl_panic(
     va_list va;
     va_start(va, fmt);
 
-    fprintf(stderr, "Panicked at (%s: %s: %d)\n", file, func, line);
+    fprintf(stderr, "Panicked at %s: %s: %d\n", file, func, line);
     vfprintf(stderr, fmt, va);
     fprintf(stderr, "\n");
 
@@ -115,6 +127,9 @@ static inline void *_impl_non_null(
 #define DISCARD(value) \
     ((void) (value))
 
+#define NO_DISCARD \
+    __attribute__((warn_unused_result))
+
 
 
 #if __STDC23 || defined(VERSION_I_DONT_CARE)
@@ -160,4 +175,4 @@ static inline void *_impl_non_null(
 
 
 
-#endif // __UTIL_H
+#endif // ___UTIL_H

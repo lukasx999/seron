@@ -146,7 +146,7 @@ static void builtin_inlineasm(ExprCall *call, Symboltable *scope) {
 // }
 
 static void procedure(StmtProc *proc) {
-    const char *ident  = proc->identifier.value;
+    const char *ident  = proc->idetn.value;
     ProcSignature *sig = &proc->type.type_signature;
 
     if (proc->body == NULL) {

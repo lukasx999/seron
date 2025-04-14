@@ -6,14 +6,8 @@ _start:
 push rbp
 mov rbp, rsp
 
-mov rax, 10
-mov rdi, 2
-imul rax, rdi
+mov rax, [rbp-4]
+
 
 mov rsp, rbp
 pop rbp
-
-
-mov rax, 60
-mov rdi, 0
-syscall

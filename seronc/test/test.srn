@@ -7,12 +7,22 @@ proc foo(a int, b int) {
 }
 
 proc cond() int {
-
-    #let foo int = 2;
+    let foo int = 1;
 
     if 1 {
         return 45;
     } else {
         return 123;
     }
+}
+
+proc variable() int {
+    let foo int = 45;
+    return foo + 5;
+}
+
+proc complex() int {
+    let a int = 1 + (2+3) * 5;
+    let b int = 6 / 2 - 1;
+    return a + b;
 }
