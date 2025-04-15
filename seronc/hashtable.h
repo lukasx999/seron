@@ -13,20 +13,22 @@
 
 
 
+#define MAX_IDENT_LEN 64
+
 
 
 typedef struct Type Type;
 
 typedef struct {
     Type *type; // heap-allocated
-    const char *ident;
+    char ident[MAX_IDENT_LEN];
 } Param;
 
-#define MAX_ARG_COUNT 255
+#define MAX_PARAM_COUNT 255
 
 // TODO: maybe reuse for structs
 typedef struct {
-    Param params[MAX_ARG_COUNT];
+    Param params[MAX_PARAM_COUNT];
     size_t params_count;
     Type *returntype; // heap-allocated
 } ProcSignature;
@@ -63,18 +65,22 @@ static inline const char *typekind_to_string(TypeKind type) {
 
 
 
-
-
-
-#define MAXLEN_IDENT 50
+typedef enum {
+    SYMBOL_VARIABLE,
+    SYMBOL_PARAMETER,
+    SYMBOL_PROCEDURE,
+} SymbolKind;
 
 typedef struct {
-    int offset;
-    // TODO: type information
+    SymbolKind kind;
+    Type type;
+    union {
+        int offset; // var/param
+    };
 } Symbol;
 
 typedef struct HashtableEntry {
-    char key[MAXLEN_IDENT];
+    char key[MAX_IDENT_LEN];
     struct HashtableEntry *next;
     Symbol value;
 } HashtableEntry;

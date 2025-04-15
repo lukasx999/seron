@@ -35,7 +35,7 @@ size_t get_type_size(TypeKind type) {
     }
 }
 
-UNUSED static const char *typekind_get_size_operand(TypeKind type) {
+UNUSED static const char *size_op(TypeKind type) {
     switch (type) {
         case TYPE_CHAR: return "byte";
         case TYPE_INT:  return "qword";
@@ -43,7 +43,7 @@ UNUSED static const char *typekind_get_size_operand(TypeKind type) {
     }
 }
 
-static const char *typekind_get_subregister(Register reg, TypeKind type) {
+static const char *subregister(Register reg, TypeKind type) {
     switch (reg) {
 
         case REG_RAX: switch (type) {
@@ -92,22 +92,30 @@ static const char *typekind_get_subregister(Register reg, TypeKind type) {
     }
 }
 
-UNUSED static const char *abi_get_register(int arg_n, TypeKind type) {
+UNUSED static const char *get_abi_register(int arg_n, TypeKind type) {
     assert(arg_n != 0);
 
-    /* x86_64-linux ABI */
-    /* first 6 arguments are stored in registers, the rest goes onto the stack */
+    // x86_64-linux ABI
+    // first 6 arguments are stored in registers, the rest goes on the stack
 
     if (arg_n > 6)
         return NULL;
 
+    (void) type;
     const char *registers[] = {
-        [1] = typekind_get_subregister(REG_RDI, type),
-        [2] = typekind_get_subregister(REG_RSI, type),
-        [3] = typekind_get_subregister(REG_RDX, type),
-        [4] = typekind_get_subregister(REG_RCX, type),
-        [5] = typekind_get_subregister(REG_R8, type),
-        [6] = typekind_get_subregister(REG_R9, type),
+        // TODO: subregs
+        // [1] = typekind_get_subregister(REG_RDI, type),
+        // [2] = typekind_get_subregister(REG_RSI, type),
+        // [3] = typekind_get_subregister(REG_RDX, type),
+        // [4] = typekind_get_subregister(REG_RCX, type),
+        // [5] = typekind_get_subregister(REG_R8, type),
+        // [6] = typekind_get_subregister(REG_R9, type),
+        [1] = "rdi",
+        [2] = "rsi",
+        [3] = "rdx",
+        [4] = "rcx",
+        [5] = "r8",
+        [6] = "r9",
     };
 
     return registers[arg_n];
@@ -149,11 +157,35 @@ static void gen_write(const char *fmt, ...) {
 
 static void emit(AstNode *node);
 
+
+
+static void call(const ExprCall *call) {
+
+    // TODO: emit callee
+    const char *ident  = call->callee->expr_literal.op.value;
+    Symbol *sym        = NON_NULL(symboltable_lookup(gen.scope, ident));
+    ProcSignature *sig = &sym->type.type_signature;
+
+    const AstNodeList *list = &call->args;
+    for (size_t i=0; i < list->size; ++i) {
+
+        const char *reg = get_abi_register(i+1, sig->params[i].type->kind);
+
+        emit(list->items[i]);
+
+        if (reg == NULL)
+            gen_write("push rax");
+        else
+            gen_write("mov %s, rax", reg);
+
+    }
+
+    gen_write("call %s", ident);
+}
+
 static void proc(const StmtProc *proc) {
     const char *ident  = proc->ident.value;
     const ProcSignature *sig = &proc->type.type_signature;
-    (void) sig;
-    // TODO: ABI
 
     if (proc->body == NULL) {
         gen_write("extern %s", ident);
@@ -165,6 +197,20 @@ static void proc(const StmtProc *proc) {
     gen_write("push rbp");
     gen_write("mov rbp, rsp");
     gen_write("sub rsp, %lu", proc->stack_size);
+
+    for (size_t i=0; i < sig->params_count; ++i) {
+
+        const Param *param = &sig->params[i];
+        const char *reg = get_abi_register(i+1, param->type->kind);
+
+        Symbol *sym = NON_NULL(symboltable_lookup(proc->symboltable, param->ident));
+
+        if (reg == NULL)
+            gen_write("pop qword [rbp-%d]", sym->offset);
+        else
+            gen_write("mov [rbp-%d], %s", sym->offset, reg);
+
+    }
 
     emit(proc->body);
 
@@ -231,7 +277,7 @@ static void literal(const ExprLiteral *literal) {
 
         case LITERAL_NUMBER: {
             int num = atoll(str);
-            typekind_get_subregister(REG_RAX, TYPE_INT);
+            subregister(REG_RAX, TYPE_INT);
             gen_write("mov rax, %d", num);
         } break;
 
@@ -239,11 +285,21 @@ static void literal(const ExprLiteral *literal) {
             Symbol *sym = symboltable_lookup(gen.scope, str);
 
             if (sym == NULL) {
-                compiler_message(MSG_ERROR, "Variable `%s` does not exist in the current scope", str);
+                compiler_message(MSG_ERROR, "Symbol `%s` does not exist in the current scope", str);
                 exit(EXIT_FAILURE);
             }
 
-            gen_write("mov rax, [rbp-%d]", sym->offset);
+            switch (sym->kind) {
+                case SYMBOL_VARIABLE:
+                case SYMBOL_PARAMETER:
+                    gen_write("mov rax, [rbp-%d]", sym->offset);
+                    break;
+
+                case SYMBOL_PROCEDURE:
+                    gen_write("mov rax, %s", str);
+                    break;
+            }
+
         } break;
 
         default: PANIC("unknown operation");
@@ -303,8 +359,27 @@ static void vardecl(const StmtVarDecl *decl) {
     if (decl->init == NULL) return;
 
     emit(decl->init);
-    // TODO: maybe include symbol info in astnode itself?
     Symbol *sym = NON_NULL(symboltable_lookup(gen.scope, decl->ident.value));
+    gen_write("mov [rbp-%d], rax", sym->offset);
+
+}
+
+static void assign(const ExprAssignment *assign) {
+
+    const char *ident = assign->identifier.value;
+
+    Symbol *sym = symboltable_lookup(gen.scope, ident);
+    if (sym == NULL) {
+        compiler_message(MSG_ERROR, "Symbol `%s` does not exist in the current scope", ident);
+        exit(EXIT_FAILURE);
+    }
+
+    if (sym->kind != SYMBOL_VARIABLE && sym->kind != SYMBOL_PARAMETER) {
+        compiler_message(MSG_ERROR, "Invalid assignment target");
+        exit(EXIT_FAILURE);
+    }
+
+    emit(assign->value);
     gen_write("mov [rbp-%d], rax", sym->offset);
 
 }
@@ -316,8 +391,10 @@ static void emit(AstNode *node) {
         case ASTNODE_BLOCK:     block    (&node->block);          break;
         case ASTNODE_GROUPING:  grouping (&node->expr_grouping);  break;
         case ASTNODE_PROCEDURE: proc     (&node->stmt_proc);      break;
+        case ASTNODE_CALL:      call     (&node->expr_call);      break;
         case ASTNODE_RETURN:    return_  (&node->stmt_return);    break;
         case ASTNODE_VARDECL:   vardecl  (&node->stmt_vardecl);   break;
+        case ASTNODE_ASSIGN:    assign   (&node->expr_assign);    break;
         case ASTNODE_IF:        cond     (&node->stmt_if);        break;
         case ASTNODE_WHILE:     while_   (&node->stmt_while);     break;
         case ASTNODE_BINOP:     binop    (&node->expr_binop);     break;

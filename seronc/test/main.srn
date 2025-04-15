@@ -1,18 +1,16 @@
+proc putchar(c int) int;
+
+proc foo(a int, b int, c int) int{
+    return a + b + c;
+}
+
 
 proc main() int {
 
-    let foo int = 45;
-    let bar int;
-    let baz int = 45;
-    foo;
-    bar;
-    baz;
-
-    if 1 {
-        1+2;
-    } else {
-        3+4;
-    }
+    #foo(1, 2, 3);
+    let c int = 65;
+    c = c + 1;
+    putchar(c);
 
     return 0;
 }

@@ -19,7 +19,8 @@ int cond(void);
 int variable(void);
 int complex(void);
 int early_return(void);
-int add(int a, int b);
+int add(int, int, int, int, int, int);
+int spill(int, int, int, int, int, int, int, int);
 
 int main(void) {
     int passcount = 0, testcount = 0;
@@ -30,7 +31,10 @@ int main(void) {
     test(variable(), 50);
     test(complex(), 28);
     test(early_return(), 1);
-    test(add(1, 2), 3);
+    test(add(0, 0, 0, 0, 0, 0), 0);
+    test(add(1, 2, -2, 3, -3, 1), 2);
+    // test(spill(0, 0, 0, 0, 0, 0, 0, 0), 0); // TODO:
+
 
     printf("\n%d out of %d tests passed\n", passcount, testcount);
     return passcount != testcount;

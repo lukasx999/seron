@@ -15,7 +15,6 @@ typedef struct {
 } Symboltable;
 
 void symboltable_init(Symboltable *st, Arena *arena);
-int symboltable_insert(Symboltable *st, const char *key, Type type);
 // returns the newly allocated hashtable
 NO_DISCARD Hashtable *symboltable_push(Symboltable *st);
 void symboltable_pop(Symboltable *st);

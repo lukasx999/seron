@@ -301,7 +301,6 @@ int main(int argc, char **argv) {
 
     }
 
-    // symboltable_list_destroy(&symboltable);
     arena_free(&arena);
     free(file);
 

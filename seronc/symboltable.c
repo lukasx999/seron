@@ -23,17 +23,6 @@ Symbol *symboltable_lookup(Hashtable *current, const char *key) {
     return NULL;
 }
 
-int symboltable_insert(Symboltable *st, const char *key, Type type) {
-
-    st->stack += get_type_size(type.kind);
-
-    Symbol sym = {
-        .offset = st->stack,
-    };
-
-    return hashtable_insert(st->head, key, sym);
-}
-
 // returns the newly allocated hashtable
 NO_DISCARD Hashtable *symboltable_push(Symboltable *st) {
 
@@ -65,19 +54,64 @@ void block_post(UNUSED AstNode *_node, UNUSED int _depth, void *args) {
 void vardecl(AstNode *node, UNUSED int _depth, void *args) {
     Symboltable *st = args;
     StmtVarDecl *vardecl = &node->stmt_vardecl;
-    symboltable_insert(st, vardecl->ident.value, vardecl->type);
+
+    st->stack += get_type_size(vardecl->type.kind);
+
+    Symbol sym = {
+        .kind = SYMBOL_VARIABLE,
+        .offset = st->stack,
+    };
+
+    hashtable_insert(st->head, vardecl->ident.value, sym);
 }
 
-void proc_pre(UNUSED AstNode *_node, UNUSED int _depth, void *args) {
-    // TODO: insert proc params
+void proc_pre(AstNode *node, UNUSED int _depth, void *args) {
     Symboltable *st = args;
-    st->stack = 0;
+    StmtProc *proc = &node->stmt_proc;
+
+    Symbol sym = {
+        .kind = SYMBOL_PROCEDURE,
+        .type = proc->type,
+    };
+
+    hashtable_insert(st->head, proc->ident.value, sym);
+
+    if (proc->body != NULL) {
+        st->stack = 0;
+    }
+
 }
 
 void proc_post(AstNode *node, UNUSED int _depth, void *args) {
+
     Symboltable *st = args;
     StmtProc *proc = &node->stmt_proc;
+
+    if (proc->body == NULL) return;
+
+
+    assert(proc->body->kind == ASTNODE_BLOCK);
+    proc->symboltable = proc->body->block.symboltable;
+
+
+    ProcSignature *sig = &proc->type.type_signature;
+
+    for (size_t i=0; i < sig->params_count; ++i) {
+        Param *param = &sig->params[i];
+
+        st->stack += get_type_size(param->type->kind);
+
+        Symbol sym = {
+            .kind   = SYMBOL_PARAMETER,
+            .type   = *param->type,
+            .offset = st->stack,
+        };
+
+        hashtable_insert(proc->symboltable, param->ident, sym);
+    }
+
     proc->stack_size = st->stack;
+
 }
 
 void symboltable_build(AstNode *root, Arena *arena) {

@@ -60,7 +60,7 @@ typedef struct {
 
 typedef struct {
     Token        op;
-    AstNode     *callee; // NULL if builtin
+    AstNode     *callee;
     AstNodeList  args;
 } ExprCall;
 
@@ -76,10 +76,11 @@ typedef struct {
 } Block;
 
 typedef struct {
-    Token op, ident;
-    AstNode *body; // NULL if declaration
-    Type type;     // type is holding function signature
-    int stack_size;
+    Token      op, ident;
+    AstNode   *body;        // NULL if declaration
+    Type       type;        // type is holding function signature
+    Hashtable *symboltable; // for convenience
+    int        stack_size;
 } StmtProc;
 
 typedef struct {

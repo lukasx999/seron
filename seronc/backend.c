@@ -83,30 +83,30 @@ static void builtin_inlineasm(ExprCall *call, Symboltable *scope) {
 // }
 
 
-// static Symbol ast_call(ExprCall *call, Symboltable *scope) {
-//
-//     if (call->builtin == BUILTIN_ASM) {
-//         builtin_inlineasm(call, scope);
-//         return (Symbol) {
-//             .type = (Type) { .kind = TYPE_INVALID },
-//         };
-//     }
-//     assert(call->builtin == BUILTIN_NONE);
-//
-//
-//     AstNodeList list = call->args;
-//
-//     size_t symbols_i = 0;
-//     Symbol *symbols = alloca(list.size * sizeof(Symbol));
-//
-//     for (size_t i=0; i < list.size; ++i)
-//         symbols[symbols_i++] = traverse_ast(list.items[i], scope);
-//
-//     assert(symbols_i == list.size);
-//
-//     Symbol callee = traverse_ast(call->callee, scope);
-//     return gen_call(&codegen, callee, symbols, list.size);
-// }
+static Symbol ast_call(ExprCall *call, Symboltable *scope) {
+
+    if (call->builtin == BUILTIN_ASM) {
+        builtin_inlineasm(call, scope);
+        return (Symbol) {
+            .type = (Type) { .kind = TYPE_INVALID },
+        };
+    }
+    assert(call->builtin == BUILTIN_NONE);
+
+
+    AstNodeList list = call->args;
+
+    size_t symbols_i = 0;
+    Symbol *symbols = alloca(list.size * sizeof(Symbol));
+
+    for (size_t i=0; i < list.size; ++i)
+        symbols[symbols_i++] = traverse_ast(list.items[i], scope);
+
+    assert(symbols_i == list.size);
+
+    Symbol callee = traverse_ast(call->callee, scope);
+    return gen_call(&codegen, callee, symbols, list.size);
+}
 
 // static void ast_if(StmtIf *if_, Symboltable *scope) {
 //     Symbol cond = traverse_ast(if_->condition, scope);

@@ -542,15 +542,24 @@ static void rule_util_paramlist(Parser *p, ProcSignature *sig) {
         Type *type = parser_alloc(p, sizeof(Type));
         *type = rule_util_type(p);
 
-        if (sig->params_count >= MAX_ARG_COUNT) {
-            compiler_message_tok(MSG_ERROR, tok, "Procedures may not have more than %lu arguments", MAX_ARG_COUNT);
+        if (sig->params_count >= MAX_PARAM_COUNT) {
+            compiler_message_tok(MSG_ERROR, tok, "Procedures may not have more than %d parameters!", MAX_PARAM_COUNT);
             exit(EXIT_FAILURE);
         }
 
-        sig->params[sig->params_count++] = (Param) {
-            .ident = tok.value,
+        Param param = {
+            .ident = { 0 },
             .type  = type,
         };
+
+        if (strlen(tok.value) > MAX_IDENT_LEN) {
+            compiler_message_tok(MSG_ERROR, tok, "Identifiers cannot be longer than %d characters!", MAX_IDENT_LEN);
+            exit(EXIT_FAILURE);
+        }
+
+        strncpy(param.ident, tok.value, ARRAY_LEN(param.ident));
+
+        sig->params[sig->params_count++] = param;
 
         if (parser_match_token(p, TOK_COMMA)) {
             parser_advance(p);
@@ -715,7 +724,7 @@ static AstNode *rule_term(Parser *p) {
     return lhs;
 }
 
-static AstNode *rule_assignment(Parser *p) {
+static AstNode *rule_assign(Parser *p) {
     // <assignment> ::= IDENTIFIER "=" <assignment> | <term>
 
     AstNode *expr = rule_term(p);
@@ -735,7 +744,7 @@ static AstNode *rule_assignment(Parser *p) {
     // AstNode is not needed anymore, since we know its an identifier
     Token ident = expr->expr_literal.op;
 
-    AstNode *value = rule_assignment(p);
+    AstNode *value = rule_assign(p);
 
     AstNode *node     = parser_alloc(p, sizeof(AstNode));
     node->kind        = ASTNODE_ASSIGN;
@@ -751,7 +760,7 @@ static AstNode *rule_assignment(Parser *p) {
 
 static AstNode *rule_expr(Parser *p) {
     // <expression> ::= <assignment>
-    return rule_assignment(p);
+    return rule_assign(p);
 }
 
 

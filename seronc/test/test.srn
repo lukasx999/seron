@@ -32,6 +32,19 @@ proc early_return() int {
     return 5;
 }
 
-proc add(a int, b int) int {
-    return a + b;
+proc add(a int, b int, c int, d int, e int, f int) int {
+    return a + b + c + d + e + f;
+}
+
+proc spill(
+  a int,
+  b int,
+  c int,
+  d int,
+  e int,
+  f int,
+  g int,
+  h int
+  ) int {
+    return a + b + c + d + e + f + g + h;
 }
