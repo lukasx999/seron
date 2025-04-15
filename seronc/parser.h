@@ -145,9 +145,6 @@ typedef void (*AstCallback)(AstNode *node, int depth, void *args);
 // Call the given callback function for every node in the AST
 void parser_traverse_ast(AstNode *root, AstCallback callback_pre, AstCallback callback_post, void *args);
 
-// Call the given callback function for every node of kind `kind` in the AST
-void parser_query_ast(AstNode *root, AstCallback fn_pre, AstCallback fn_post, AstNodeKind kind, void *args);
-
 typedef struct {
     AstNodeKind kind;
     AstCallback fn_pre;

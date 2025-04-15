@@ -14,7 +14,6 @@
 #include "lexer.h"
 #include "parser.h"
 #include "hashtable.h"
-#include "symboltable.h"
 
 
 #define SENTINEL TOK_INVALID
@@ -83,7 +82,6 @@ typedef struct {
     Arena *arena;
     Token tok;
     LexerState lexer;
-    Symboltable st;
 } Parser;
 
 static inline Token parser_tok(const Parser *p) {
@@ -268,57 +266,48 @@ void parser_traverse_ast(
 
 }
 
-typedef struct {
-    AstCallback fn;
-    AstNodeKind kind;
-    void *user_args;
-} Query;
 
-static void query_callback(AstNode *node, int depth, void *args) {
-    Query *query = args;
-
-    if (node->kind == query->kind)
-        query->fn(node, depth, query->user_args);
-}
-
-void parser_query_ast(
-    AstNode    *root,
-    AstCallback fn_pre,
-    AstCallback fn_post,
-    AstNodeKind kind,
-    void       *args
-) {
-    Query pre  = { fn_pre,  kind, args };
-    Query post = { fn_post, kind, args };
-    parser_traverse_ast(root, query_callback, NULL, (void*) &pre);
-    parser_traverse_ast(root, NULL, query_callback, (void*) &post);
-}
 
 
 typedef struct {
     AstDispatchEntry *table;
     size_t size;
     void *user_args;
-    bool pre; // else post order traversal
 } DispatchTable;
 
-static void dispatch_callback(AstNode *root, int depth, void *args) {
-    DispatchTable *dt = args;
+static AstDispatchEntry *get_dispatch_entry(AstNode *node, DispatchTable *dt) {
 
     for (size_t i=0; i < dt->size; ++i) {
-
         AstDispatchEntry *entry = &dt->table[i];
-
-        AstCallback fn = dt->pre
-            ? entry->fn_pre
-            : entry->fn_post;
-
-        if (root->kind == entry->kind) {
-            if (fn != NULL)
-                fn(root, depth, dt->user_args);
-        }
-
+        if (node->kind == entry->kind)
+            return entry;
     }
+
+    return NULL;
+
+}
+
+static void dispatch_callback_pre(AstNode *root, int depth, void *args) {
+    DispatchTable *dt = args;
+
+    AstDispatchEntry *entry = get_dispatch_entry(root, dt);
+    if (entry == NULL) return;
+
+    AstCallback fn = entry->fn_pre;
+    if (fn != NULL)
+        fn(root, depth, dt->user_args);
+
+}
+
+static void dispatch_callback_post(AstNode *root, int depth, void *args) {
+    DispatchTable *dt = args;
+
+    AstDispatchEntry *entry = get_dispatch_entry(root, dt);
+    if (entry == NULL) return;
+
+    AstCallback fn = entry->fn_post;
+    if (fn != NULL)
+        fn(root, depth, dt->user_args);
 
 }
 
@@ -328,10 +317,10 @@ void parser_dispatch_ast(
     size_t            table_size,
     void             *args
 ) {
-    DispatchTable pre =  { table, table_size, args, true  };
-    DispatchTable post = { table, table_size, args, false };
-    parser_traverse_ast(root, dispatch_callback, NULL, (void*) &pre);
-    parser_traverse_ast(root, NULL, dispatch_callback, (void*) &post);
+
+    DispatchTable dt = { table, table_size, args };
+    parser_traverse_ast(root, dispatch_callback_pre, dispatch_callback_post, (void*) &dt);
+
 }
 
 
@@ -479,8 +468,6 @@ AstNode *parse(const char *src, Arena *arena) {
         .arena    = arena,
         .lexer    = { .src = src },
     };
-
-    symboltable_init(&parser.st, arena);
 
     parser_advance(&parser); // get first token
     return rule_program(&parser);
@@ -811,8 +798,6 @@ static AstNode *rule_vardecl(Parser *p) {
         .init  = value,
     };
 
-    symboltable_insert(&p->st, ident.value, type);
-
     return vardecl;
 }
 
@@ -823,11 +808,8 @@ static AstNode *rule_block(Parser *p) {
     Token brace = parser_advance(p);
 
     AstNode *node = parser_alloc(p, sizeof(AstNode));
-    node->kind    = ASTNODE_BLOCK;
-    node->block   = (Block) {
-        .stmts       = { 0 },
-        .symboltable = symboltable_push(&p->st),
-    };
+    node->kind  = ASTNODE_BLOCK;
+    node->block = (Block) { 0 };
 
     astnodelist_init(&node->block.stmts, p->arena);
 
@@ -842,8 +824,6 @@ static AstNode *rule_block(Parser *p) {
         if (stmt != NULL)
             astnodelist_append(&node->block.stmts, stmt);
     }
-
-    symboltable_pop(&p->st);
 
     parser_advance(p);
     return node;
@@ -964,8 +944,6 @@ static AstNode *rule_proc(Parser *p) {
         .type_signature = sig,
     };
 
-    symboltable_proc(&p->st);
-
     AstNode *body = parser_match_token(p, TOK_SEMICOLON)
         ? parser_advance(p), NULL
         : rule_block(p);
@@ -977,7 +955,6 @@ static AstNode *rule_proc(Parser *p) {
         .body       = body,
         .ident      = ident,
         .type       = type,
-        .stack_size = p->st.stack,
     };
 
     return proc;
@@ -999,17 +976,12 @@ static AstNode *rule_program(Parser *p) {
 
     AstNode *node = parser_alloc(p, sizeof(AstNode));
     node->kind    = ASTNODE_BLOCK;
-    node->block   = (Block) {
-        .stmts       = { 0 },
-        .symboltable = symboltable_push(&p->st),
-    };
+    node->block   = (Block) { 0 };
 
     astnodelist_init(&node->block.stmts, p->arena);
 
     while (!parser_is_at_end(p))
         astnodelist_append(&node->block.stmts, rule_declaration(p));
-
-    symboltable_pop(&p->st);
 
     return node;
 }

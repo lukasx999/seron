@@ -26,3 +26,12 @@ proc complex() int {
     let b int = 6 / 2 - 1;
     return a + b;
 }
+
+proc early_return() int {
+    return 1;
+    return 5;
+}
+
+proc add(a int, b int) int {
+    return a + b;
+}

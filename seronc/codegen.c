@@ -168,6 +168,7 @@ static void proc(const StmtProc *proc) {
 
     emit(proc->body);
 
+    gen_write(".return:");
     gen_write("mov rsp, rbp");
     gen_write("pop rbp");
     gen_write("ret");
@@ -175,10 +176,12 @@ static void proc(const StmtProc *proc) {
 }
 
 static void return_(const StmtReturn *ret) {
-    // TODO: early return
-    if (ret->expr != NULL) {
+
+    if (ret->expr != NULL)
         emit(ret->expr);
-    }
+
+    gen_write("jmp .return");
+
 }
 
 static void block(const Block *block) {
@@ -234,10 +237,12 @@ static void literal(const ExprLiteral *literal) {
 
         case LITERAL_IDENT: {
             Symbol *sym = symboltable_lookup(gen.scope, str);
+
             if (sym == NULL) {
                 compiler_message(MSG_ERROR, "Variable `%s` does not exist in the current scope", str);
                 exit(EXIT_FAILURE);
             }
+
             gen_write("mov rax, [rbp-%d]", sym->offset);
         } break;
 

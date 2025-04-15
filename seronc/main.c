@@ -18,7 +18,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "codegen.h"
-#include "hashtable.h"
+#include "symboltable.h"
 #include "main.h"
 #include "lib/util.h"
 
@@ -280,17 +280,15 @@ int main(int argc, char **argv) {
     if (compiler_config.opts.dump_tokens)
         lexer_print_tokens(file);
 
-    Arena parser_arena = { 0 };
-    arena_init(&parser_arena);
+    Arena arena = { 0 };
+    arena_init(&arena);
 
-    AstNode *node_root = parse(file, &parser_arena);
+    AstNode *node_root = parse(file, &arena);
 
     if (compiler_config.opts.dump_ast)
         parser_print_ast(node_root, 2);
 
-    // SymboltableList symboltable = symboltable_list_construct(node_root, 5);
-    // if (compiler_config.opts.dump_symboltable)
-    //     symboltable_list_print(&symboltable);
+    symboltable_build(node_root, &arena);
 
     // check_types(node_root);
     codegen(node_root);
@@ -304,7 +302,7 @@ int main(int argc, char **argv) {
     }
 
     // symboltable_list_destroy(&symboltable);
-    arena_free(&parser_arena);
+    arena_free(&arena);
     free(file);
 
     return EXIT_SUCCESS;

@@ -2,6 +2,7 @@
 #define _SYMBOLTABLE_H
 
 #include "hashtable.h"
+#include "parser.h"
 #include "lib/arena.h"
 #include "lib/util.h"
 
@@ -16,11 +17,11 @@ typedef struct {
 void symboltable_init(Symboltable *st, Arena *arena);
 int symboltable_insert(Symboltable *st, const char *key, Type type);
 // returns the newly allocated hashtable
-void symboltable_proc(Symboltable *st);
 NO_DISCARD Hashtable *symboltable_push(Symboltable *st);
 void symboltable_pop(Symboltable *st);
 // returns NULL if key was not found
 Symbol *symboltable_lookup(Hashtable *current, const char *key);
+void symboltable_build(AstNode *root, Arena *arena);
 
 
 

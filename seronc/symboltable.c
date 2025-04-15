@@ -23,10 +23,6 @@ Symbol *symboltable_lookup(Hashtable *current, const char *key) {
     return NULL;
 }
 
-void symboltable_proc(Symboltable *st) {
-    st->stack = 0;
-}
-
 int symboltable_insert(Symboltable *st, const char *key, Type type) {
 
     st->stack += get_type_size(type.kind);
@@ -51,4 +47,50 @@ NO_DISCARD Hashtable *symboltable_push(Symboltable *st) {
 
 void symboltable_pop(Symboltable *st) {
     st->head = st->head->parent;
+}
+
+
+
+void block_pre(AstNode *node, UNUSED int _depth, void *args) {
+    Symboltable *st = args;
+    Block *block = &node->block;
+    block->symboltable = symboltable_push(st);
+}
+
+void block_post(UNUSED AstNode *_node, UNUSED int _depth, void *args) {
+    Symboltable *st = args;
+    symboltable_pop(st);
+}
+
+void vardecl(AstNode *node, UNUSED int _depth, void *args) {
+    Symboltable *st = args;
+    StmtVarDecl *vardecl = &node->stmt_vardecl;
+    symboltable_insert(st, vardecl->ident.value, vardecl->type);
+}
+
+void proc_pre(UNUSED AstNode *_node, UNUSED int _depth, void *args) {
+    // TODO: insert proc params
+    Symboltable *st = args;
+    st->stack = 0;
+}
+
+void proc_post(AstNode *node, UNUSED int _depth, void *args) {
+    Symboltable *st = args;
+    StmtProc *proc = &node->stmt_proc;
+    proc->stack_size = st->stack;
+}
+
+void symboltable_build(AstNode *root, Arena *arena) {
+
+    Symboltable st = { 0 };
+    symboltable_init(&st, arena);
+
+    AstDispatchEntry table[] = {
+        { ASTNODE_BLOCK,     block_pre, block_post },
+        { ASTNODE_VARDECL,   vardecl,   NULL       },
+        { ASTNODE_PROCEDURE, proc_pre,  proc_post  },
+    };
+
+    parser_dispatch_ast(root, table, ARRAY_LEN(table), (void*) &st);
+
 }

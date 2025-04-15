@@ -18,6 +18,8 @@ int literals_11(void);
 int cond(void);
 int variable(void);
 int complex(void);
+int early_return(void);
+int add(int a, int b);
 
 int main(void) {
     int passcount = 0, testcount = 0;
@@ -27,6 +29,8 @@ int main(void) {
     test(cond(), 45);
     test(variable(), 50);
     test(complex(), 28);
+    test(early_return(), 1);
+    test(add(1, 2), 3);
 
     printf("\n%d out of %d tests passed\n", passcount, testcount);
     return passcount != testcount;
