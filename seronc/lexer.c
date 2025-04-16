@@ -44,6 +44,7 @@ const char *tokenkind_to_string(TokenKind tok) {
         [TOK_TYPE_VOID]   = "void",
         [TOK_TYPE_CHAR]   = "char",
         [TOK_TYPE_INT]    = "int",
+        [TOK_TYPE_LONG]   = "long",
         [TOK_EOF]         = "eof",
     };
     assert(ARRAY_LEN(repr) == TOKENKIND_COUNT);
@@ -70,6 +71,7 @@ static TokenKind get_kw(const char *str) {
     match_kw(str, "void")   ? TOK_TYPE_VOID   :
     match_kw(str, "char")   ? TOK_TYPE_CHAR   :
     match_kw(str, "int")    ? TOK_TYPE_INT    :
+    match_kw(str, "long")   ? TOK_TYPE_LONG   :
 
     TOK_IDENTIFIER; // no keyword found? must be an identifier!
 }

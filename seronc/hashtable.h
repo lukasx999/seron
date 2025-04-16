@@ -24,44 +24,38 @@ typedef struct {
     char ident[MAX_IDENT_LEN];
 } Param;
 
+
 #define MAX_PARAM_COUNT 255
 
-// TODO: maybe reuse for structs
+
 typedef struct {
     Param params[MAX_PARAM_COUNT];
     size_t params_count;
     Type *returntype; // heap-allocated
 } ProcSignature;
 
+// TODO: put this somewhere else
 typedef enum {
-    TYPE_INVALID, // used for error checking
+    TYPE_INVALID,
+
     TYPE_VOID,
     TYPE_CHAR,
     TYPE_INT,
-    TYPE_FUNCTION,
+    TYPE_LONG,
     TYPE_POINTER,
+    TYPE_FUNCTION,
 } TypeKind;
 
 struct Type {
     TypeKind kind;
-    bool mutable;
     union {
         ProcSignature type_signature;
         Type *type_pointee;
     };
 };
 
-static inline const char *typekind_to_string(TypeKind type) {
-    switch (type) {
-        case TYPE_CHAR:     return "char";    break;
-        case TYPE_INT:      return "int";     break;
-        case TYPE_POINTER:  return "pointer"; break;
-        case TYPE_VOID:     return "void";    break;
-        case TYPE_FUNCTION: return "proc";    break;
-        default:            PANIC("unknown type");
-    }
-}
-
+const char *stringify_typekind(TypeKind type);
+// TODO: recursively stringify type
 
 
 

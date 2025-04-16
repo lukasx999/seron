@@ -2,6 +2,17 @@
 #include "lib/util.h"
 
 
+const char *stringify_typekind(TypeKind type) {
+    switch (type) {
+        case TYPE_CHAR:     return "char";    break;
+        case TYPE_INT:      return "int";     break;
+        case TYPE_POINTER:  return "pointer"; break;
+        case TYPE_VOID:     return "void";    break;
+        case TYPE_FUNCTION: return "proc";    break;
+        default:            PANIC("unknown type");
+    }
+}
+
 
 static size_t hash(size_t size, const char *key) {
     // sum up the ascii representation of the string

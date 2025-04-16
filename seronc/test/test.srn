@@ -48,3 +48,40 @@ proc spill(
   ) int {
     return a + b + c + d + e + f + g + h;
 }
+
+proc loop(step int) int {
+    let acc int = 0;
+    let iters int = 5;
+
+    while iters {
+        iters = iters - 1;
+        acc = acc + step;
+    }
+
+    return acc;
+
+}
+
+proc loop2(iters int, step int) int {
+    let acc int = 0;
+    while iters {
+        iters = iters - 1;
+        acc = acc + step;
+    }
+    return acc;
+}
+
+proc inc(num int) int {
+    num = num + 1;
+    return num;
+}
+
+proc pointer(p *int) int {
+    return *p;
+}
+
+#proc incchar(c char) char {
+#    let x char = c;
+#    c = c + 1;
+#    return c;
+#}

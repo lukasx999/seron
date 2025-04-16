@@ -72,9 +72,11 @@ static BinOpKind binop_from_token(TokenKind kind) {
 
 static UnaryOpKind unaryop_from_token(TokenKind kind) {
     switch (kind) {
-        case TOK_MINUS: return UNARYOP_MINUS;
-        case TOK_BANG:  return UNARYOP_NEG;
-        default:        PANIC("unknown tokenkind");
+        case TOK_MINUS:     return UNARYOP_MINUS;
+        case TOK_BANG:      return UNARYOP_NEG;
+        case TOK_AMPERSAND: return UNARYOP_ADDROF;
+        case TOK_ASTERISK:  return UNARYOP_DEREF;
+        default:            PANIC("unknown tokenkind");
     }
 }
 
@@ -412,8 +414,10 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
 
             const char *op = NULL;
             switch (unaryop->kind) {
-                case UNARYOP_MINUS: op = "minus"; break;
-                case UNARYOP_NEG:   op = "neg";   break;
+                case UNARYOP_MINUS:  op = "minus";  break;
+                case UNARYOP_NEG:    op = "neg";    break;
+                case UNARYOP_ADDROF: op = "addrof"; break;
+                case UNARYOP_DEREF:  op = "deref";  break;
                 default:            PANIC("unknown unaryop kind");
             }
 
@@ -429,8 +433,7 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
 
         } break;
 
-
-
+        // TODO: refactor to print_colored()
         case ASTNODE_PROCEDURE: {
             StmtProc *func = &root->stmt_proc;
             print_ast_value(tokenkind_to_string(func->op.kind), COLOR_RED, func->ident.value, NULL);
@@ -438,12 +441,15 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
 
         case ASTNODE_VARDECL: {
             StmtVarDecl *vardecl = &root->stmt_vardecl;
-            print_ast_value(
-                tokenkind_to_string(vardecl->op.kind),
-                COLOR_RED,
+
+            print_colored(AST_COLOR_KEYWORD, "vardecl");
+            print_colored(
+                COLOR_GRAY,
+                " (%s: %s)\n",
                 vardecl->ident.value,
-                typekind_to_string(vardecl->type.kind)
+                stringify_typekind(vardecl->type.kind)
             );
+
         } break;
 
         case ASTNODE_LITERAL: {
@@ -481,22 +487,37 @@ static AstNode *rule_stmt(Parser *p);
 
 static Type rule_util_type(Parser *p) {
     // <type> ::=
+    //        | "*" <type>
     //        | "int"
     //        | "void"
     //        | "char"
 
-    Token tok = parser_advance(p);
-    TypeKind kind = type_from_token(tok.kind);
-
-    if (kind == TYPE_INVALID)
-        compiler_message_tok(MSG_ERROR, tok, "Unknown type `%s`", tok.value);
-
-    Type type = {
-        .kind = kind,
-        .mutable = false,
+    Type ty = {
+        .kind = TYPE_INVALID,
     };
 
-    return type;
+    if (parser_match_token(p, TOK_ASTERISK)) {
+        parser_advance(p);
+
+        ty.kind = TYPE_POINTER;
+        ty.type_pointee = parser_alloc(p, sizeof(Type));
+        *ty.type_pointee = rule_util_type(p);
+
+    } else {
+
+        Token tok = parser_advance(p);
+        ty.kind = type_from_token(tok.kind);
+
+        if (ty.kind == TYPE_INVALID) {
+            compiler_message_tok(MSG_ERROR, tok, "Unknown type `%s`", tok.value);
+            exit(EXIT_FAILURE);
+        }
+
+    }
+
+    assert(ty.kind != TYPE_INVALID);
+
+    return ty;
 }
 
 static AstNodeList rule_util_arglist(Parser *p) {
@@ -655,10 +676,29 @@ static AstNode *rule_call(Parser *p) {
     return call;
 }
 
-static AstNode *rule_unary(Parser *p) {
-    // <unary> ::= ( "!" | "-" ) <unary> | <call>
+// static AstNode *rule_unary(Parser *p) {
+//     // <unary> ::= ( "!" | "-" ) <unary> | <call>
+//
+//     if (!parser_match_tokens(p, TOK_MINUS, TOK_BANG, SENTINEL))
+//         return rule_call(p);
+//
+//     Token op           = parser_advance(p);
+//     AstNode *node      = parser_alloc(p, sizeof(AstNode));
+//     node->kind         = ASTNODE_UNARYOP;
+//     node->expr_unaryop = (ExprUnaryOp) {
+//         .op   = op,
+//         .kind = unaryop_from_token(op.kind),
+//         .node = rule_unary(p),
+//     };
+//
+//     return node;
+//
+// }
 
-    if (!parser_match_tokens(p, TOK_MINUS, TOK_BANG, SENTINEL))
+static AstNode *rule_unary(Parser *p) {
+    // <unary> ::= ( "&" | "*" | "!" | "-" ) <unary> | <call>
+
+    if (!parser_match_tokens(p, TOK_MINUS, TOK_BANG, TOK_AMPERSAND, TOK_ASTERISK, SENTINEL))
         return rule_call(p);
 
     Token op           = parser_advance(p);

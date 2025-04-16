@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdint.h>
 #include <stdbool.h>
 #include <assert.h>
 
@@ -21,6 +22,11 @@ int complex(void);
 int early_return(void);
 int add(int, int, int, int, int, int);
 int spill(int, int, int, int, int, int, int, int);
+int loop(int step);
+int inc(int);
+int loop2(int, int);
+// char incchar(char);
+int pointer(int*);
 
 int main(void) {
     int passcount = 0, testcount = 0;
@@ -33,8 +39,14 @@ int main(void) {
     test(early_return(), 1);
     test(add(0, 0, 0, 0, 0, 0), 0);
     test(add(1, 2, -2, 3, -3, 1), 2);
-    // test(spill(0, 0, 0, 0, 0, 0, 0, 0), 0); // TODO:
-
+    test(spill(0, 0, 0, 0, 0, 0, 0, 0), 0);
+    test(spill(1, 2, 3, 4, 5, 6, 7, 8), 36);
+    test(loop(2), 10);
+    test(inc(2), 3);
+    test(loop2(10, 3), 30);
+    // test(incchar('A'), 'B');
+    int x = 45;
+    test(pointer(&x), 45);
 
     printf("\n%d out of %d tests passed\n", passcount, testcount);
     return passcount != testcount;

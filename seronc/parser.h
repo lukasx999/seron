@@ -50,6 +50,8 @@ typedef struct {
 typedef enum {
     UNARYOP_MINUS,
     UNARYOP_NEG,
+    UNARYOP_ADDROF,
+    UNARYOP_DEREF,
 } UnaryOpKind;
 
 typedef struct {

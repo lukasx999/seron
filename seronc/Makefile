@@ -26,12 +26,15 @@ compiler: main.o $(SOURCES)
 	@$(CC) $(CFLAGS) $^ -o $(BIN)
 	@echo LINK $^
 
+# Remove me!
+some: some.asm
+	nasm -felf64 $< -gdwarf && ld some.o
+
 test: compiler
 	@echo TEST test/main.srn
-	@./seronc ./test/test.srn -cv --asmdoc
+	@./seronc ./test/test.srn -cv
 
-	# @$(CC) $(CFLAGS) -o test/test test/test.c test/test.o
-	@$(CC) -o test/test test/test.c test/test.o
+	@$(CC) $(CFLAGS) -o test/test test/test.c test/test.o
 	@./test/test
 
 %.o: %.c Makefile $(DEPS)

@@ -58,7 +58,8 @@ void vardecl(AstNode *node, UNUSED int _depth, void *args) {
     st->stack += get_type_size(vardecl->type.kind);
 
     Symbol sym = {
-        .kind = SYMBOL_VARIABLE,
+        .kind   = SYMBOL_VARIABLE,
+        .type   = vardecl->type,
         .offset = st->stack,
     };
 

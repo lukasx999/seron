@@ -46,6 +46,7 @@ typedef enum {
     TOK_TYPE_VOID,
     TOK_TYPE_CHAR,
     TOK_TYPE_INT,
+    TOK_TYPE_LONG,
 
     TOK_EOF,
 

@@ -1,16 +1,14 @@
-proc putchar(c int) int;
+proc malloc(size int) *void;
+proc free(ptr *void);
 
-proc foo(a int, b int, c int) int{
-    return a + b + c;
+proc foo() int {
+    return 45;
 }
-
 
 proc main() int {
 
-    #foo(1, 2, 3);
-    let c int = 65;
-    c = c + 1;
-    putchar(c);
+    let x *int = malloc(8);
+    free(x);
 
     return 0;
 }

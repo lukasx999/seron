@@ -10,9 +10,8 @@ syn keyword srnKeyword
       \ define
       \ return
       \ macro
-      \ byte
+      \ char
       \ int
-      \ size
       \ void
 
 syn match srnOperator "[,.=+-\*/;(){}'`]"
