@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <assert.h>
@@ -27,6 +28,9 @@ int inc(int);
 int loop2(int, int);
 // char incchar(char);
 int pointer(int*);
+void pointer2(int*, int);
+int pointer_double(int**);
+int *alloc(int);
 
 int main(void) {
     int passcount = 0, testcount = 0;
@@ -47,6 +51,15 @@ int main(void) {
     // test(incchar('A'), 'B');
     int x = 45;
     test(pointer(&x), 45);
+    test((pointer2(&x, 123), x), 123);
+
+    int y = 999;
+    int *yp = &y;
+    test(pointer_double(&yp), 999);
+
+    int *z = alloc(45);
+    test(*z, 45);
+    free(z);
 
     printf("\n%d out of %d tests passed\n", passcount, testcount);
     return passcount != testcount;

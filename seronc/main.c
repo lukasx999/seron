@@ -165,7 +165,6 @@ static void parse_args(int argc, char **argv) {
         { "dump-ast",         no_argument, &compiler_config.opts.dump_ast,         1 },
         { "dump-tokens",      no_argument, &compiler_config.opts.dump_tokens,      1 },
         { "dump-symboltable", no_argument, &compiler_config.opts.dump_symboltable, 1 },
-        { "asmdoc",           no_argument, &compiler_config.opts.debug_asm,        1 },
         { "verbose",          no_argument, &compiler_config.opts.verbose,          1 },
         { NULL, 0, NULL, 0 },
     };
@@ -220,13 +219,13 @@ void test_lexer(void) {
         (Token) { .kind = TOK_PLUS },
         (Token) { .kind = TOK_NUMBER, .value = "2" },
         (Token) { .kind = TOK_PLUS },
-        (Token) { .kind = TOK_IDENTIFIER, .value = "_foo123" },
+        (Token) { .kind = TOK_IDENT, .value = "_foo123" },
         (Token) { .kind = TOK_ASTERISK },
         (Token) { .kind = TOK_SLASH },
         (Token) { .kind = TOK_STRING, .value = "str" },
         (Token) { .kind = TOK_ASSIGN },
         (Token) { .kind = TOK_EQUALS },
-        (Token) { .kind = TOK_KW_FUNCTION },
+        (Token) { .kind = TOK_KW_PROC },
         (Token) { .kind = TOK_KW_IF },
         (Token) { .kind = TOK_KW_ELSE },
         (Token) { .kind = TOK_KW_WHILE },
@@ -252,7 +251,7 @@ void test_parser(void) {
 
     assert(root->kind == ASTNODE_BLOCK);
     AstNode *func = *root->block.stmts.items;
-    assert(func->kind == ASTNODE_PROCEDURE);
+    assert(func->kind == ASTNODE_PROC);
 
     AstNode *plus = *func->stmt_proc.body->block.stmts.items;
     assert(plus->kind == ASTNODE_BINOP);

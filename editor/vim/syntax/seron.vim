@@ -12,6 +12,7 @@ syn keyword srnKeyword
       \ macro
       \ char
       \ int
+      \ long
       \ void
 
 syn match srnOperator "[,.=+-\*/;(){}'`]"

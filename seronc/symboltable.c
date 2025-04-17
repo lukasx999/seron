@@ -123,7 +123,7 @@ void symboltable_build(AstNode *root, Arena *arena) {
     AstDispatchEntry table[] = {
         { ASTNODE_BLOCK,     block_pre, block_post },
         { ASTNODE_VARDECL,   vardecl,   NULL       },
-        { ASTNODE_PROCEDURE, proc_pre,  proc_post  },
+        { ASTNODE_PROC, proc_pre,  proc_post  },
     };
 
     parser_dispatch_ast(root, table, ARRAY_LEN(table), (void*) &st);

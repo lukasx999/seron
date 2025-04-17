@@ -66,11 +66,10 @@ typedef struct {
     AstNodeList  args;
 } ExprCall;
 
-// TODO: make assignee an expression, to allow for struct member assignments
 typedef struct {
-    Token op, identifier;
-    AstNode *value;
-} ExprAssignment;
+    Token op;
+    AstNode *value, *target;
+} ExprAssign;
 
 typedef struct {
     AstNodeList stmts;
@@ -113,7 +112,7 @@ typedef enum {
     ASTNODE_UNARYOP,
     ASTNODE_CALL,
     ASTNODE_BLOCK,
-    ASTNODE_PROCEDURE,
+    ASTNODE_PROC,
     ASTNODE_VARDECL,
     ASTNODE_IF,
     ASTNODE_WHILE,
@@ -129,7 +128,7 @@ struct AstNode {
         ExprBinOp      expr_binop;
         ExprUnaryOp    expr_unaryop;
         ExprCall       expr_call;
-        ExprAssignment expr_assign;
+        ExprAssign expr_assign;
         Block          block;
         StmtProc       stmt_proc;
         StmtVarDecl    stmt_vardecl;

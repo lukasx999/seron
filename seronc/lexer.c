@@ -24,7 +24,7 @@ const char *tokenkind_to_string(TokenKind tok) {
         [TOK_SEMICOLON]   = "semicolon",
         [TOK_COMMA]       = "comma",
         [TOK_COLON]       = "colon",
-        [TOK_IDENTIFIER]  = "identifier",
+        [TOK_IDENT]       = "ident",
         [TOK_ASSIGN]      = "assign",
         [TOK_EQUALS]      = "equals",
         [TOK_BANG]        = "bang",
@@ -33,7 +33,7 @@ const char *tokenkind_to_string(TokenKind tok) {
         [TOK_RPAREN]      = "rparen",
         [TOK_LBRACE]      = "lbrace",
         [TOK_RBRACE]      = "rbrace",
-        [TOK_KW_FUNCTION] = "func",
+        [TOK_KW_PROC]     = "proc",
         [TOK_KW_VARDECL]  = "let",
         [TOK_KW_IF]       = "if",
         [TOK_KW_ELSE]     = "else",
@@ -60,7 +60,7 @@ static inline int match_kw(const char *str, const char *kw) {
 static TokenKind get_kw(const char *str) {
     return
 
-    match_kw(str, "proc")   ? TOK_KW_FUNCTION :
+    match_kw(str, "proc")   ? TOK_KW_PROC :
     match_kw(str, "let")    ? TOK_KW_VARDECL  :
     match_kw(str, "if")     ? TOK_KW_IF       :
     match_kw(str, "else")   ? TOK_KW_ELSE     :
@@ -73,7 +73,7 @@ static TokenKind get_kw(const char *str) {
     match_kw(str, "int")    ? TOK_TYPE_INT    :
     match_kw(str, "long")   ? TOK_TYPE_LONG   :
 
-    TOK_IDENTIFIER; // no keyword found? must be an identifier!
+    TOK_IDENT; // no keyword found? must be an identifier!
 }
 
 static inline void copy_slice_to_buf(char *buf, const char *start, const char *end) {
@@ -208,7 +208,7 @@ Token lexer_next(LexerState *s) {
                 const char *start = s->src;
                 while (isalpha(*++s->src) || *s->src == '_' || isdigit(*s->src));
 
-                if ((tok.kind = get_kw(start)) == TOK_IDENTIFIER)
+                if ((tok.kind = get_kw(start)) == TOK_IDENT)
                     copy_slice_to_buf(tok.value, start, s->src);
 
 

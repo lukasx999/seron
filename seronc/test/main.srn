@@ -1,14 +1,25 @@
-proc malloc(size int) *void;
-proc free(ptr *void);
-
-proc foo() int {
-    return 45;
-}
+proc malloc(size long) *void;
+proc free(p *void);
+proc puts(s *char);
 
 proc main() int {
 
-    let x *int = malloc(8);
-    free(x);
+    let xs *char = malloc(4 * 1);
+    *xs = 102;
+
+    let xs1 *char = xs+1;
+    *xs1 = 111;
+
+    let xs2 *char = xs+2;
+    *xs2 = 111;
+
+    let nul *char = xs+4;
+    *nul = 0;
+
+    puts(xs);
+
+
+    free(xs);
 
     return 0;
 }

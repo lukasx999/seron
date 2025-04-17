@@ -25,7 +25,6 @@ struct CompilerConfig {
     // options are ints, because `struct option` only accept int pointers
     struct {
         int verbose;
-        int debug_asm;
         int dump_ast;
         int dump_tokens;
         int dump_symboltable;

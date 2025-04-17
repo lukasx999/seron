@@ -30,7 +30,7 @@ static void compare_types(const Type *type, const Type *expected, Token tok) {
 static Type traverse_ast(AstNode *root, Hashtable *scope);
 
 
-static Type ast_assignment(ExprAssignment *assign, Hashtable *scope) {
+static Type ast_assignment(ExprAssign *assign, Hashtable *scope) {
     Type type = traverse_ast(assign->value, scope);
 
     const char *ident = assign->identifier.value;
@@ -91,7 +91,7 @@ static Type ast_literal(ExprLiteral *literal, Hashtable *scope) {
 
     switch (literal->op.kind) {
 
-        case TOK_IDENTIFIER: {
+        case TOK_IDENT: {
             const char *value = literal->op.value;
             Symbol *sym = symboltable_list_lookup(scope, value);
 
@@ -183,7 +183,7 @@ static Type traverse_ast(AstNode *root, Hashtable *scope) {
             return traverse_ast(root->expr_grouping.expr, scope);
             break;
 
-        case ASTNODE_PROCEDURE: {
+        case ASTNODE_PROC: {
             const StmtProc *func = &root->stmt_proc;
             AstNode *body = func->body;
             if (body != NULL)

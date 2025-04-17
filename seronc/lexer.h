@@ -11,7 +11,7 @@
 typedef enum {
     TOK_INVALID, // Used only for error checking and as a sentinel value
 
-    TOK_IDENTIFIER,
+    TOK_IDENT,
     TOK_NUMBER,
     TOK_STRING,
 
@@ -33,7 +33,7 @@ typedef enum {
     TOK_LBRACE,
     TOK_RBRACE,
 
-    TOK_KW_FUNCTION,
+    TOK_KW_PROC,
     TOK_KW_VARDECL,
     TOK_KW_IF,
     TOK_KW_ELSE,

@@ -60,6 +60,9 @@ const char *stringify_typekind(TypeKind type);
 
 
 typedef enum {
+    SYMBOL_INVALID, // invalid symbol, shouldnt be used
+    SYMBOL_NONE,    // temporary value that has a type
+
     SYMBOL_VARIABLE,
     SYMBOL_PARAMETER,
     SYMBOL_PROCEDURE,
@@ -69,7 +72,7 @@ typedef struct {
     SymbolKind kind;
     Type type;
     union {
-        int offset; // var/param
+        int offset; // var / param
     };
 } Symbol;
 

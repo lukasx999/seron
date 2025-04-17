@@ -45,6 +45,7 @@ static void astnodelist_append(AstNodeList *list, AstNode *node) {
 static TypeKind type_from_token(TokenKind kind) {
     switch (kind) {
         case TOK_TYPE_INT:  return TYPE_INT;
+        case TOK_TYPE_LONG: return TYPE_LONG;
         case TOK_TYPE_CHAR: return TYPE_CHAR;
         case TOK_TYPE_VOID: return TYPE_VOID;
         default:            return TYPE_INVALID;
@@ -54,7 +55,7 @@ static TypeKind type_from_token(TokenKind kind) {
 static LiteralKind literal_from_token(TokenKind kind) {
     switch (kind) {
         case TOK_NUMBER:     return LITERAL_NUMBER;
-        case TOK_IDENTIFIER: return LITERAL_IDENT;
+        case TOK_IDENT: return LITERAL_IDENT;
         case TOK_STRING:     return LITERAL_STRING;
         default:             PANIC("unknown tokenkind");
     }
@@ -225,7 +226,7 @@ void parser_traverse_ast(
             depth--;
             break;
 
-        case ASTNODE_PROCEDURE:
+        case ASTNODE_PROC:
             depth++;
 
             AstNode *body = root->stmt_proc.body;
@@ -426,15 +427,14 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
         } break;
 
         case ASTNODE_ASSIGN: {
-            ExprAssignment *assign = &root->expr_assign;
+            // ExprAssign *assign = &root->expr_assign;
 
             print_colored(AST_COLOR_OPERATION, "assign");
-            print_colored(COLOR_GRAY, " (%s)\n", assign->identifier.value);
 
         } break;
 
         // TODO: refactor to print_colored()
-        case ASTNODE_PROCEDURE: {
+        case ASTNODE_PROC: {
             StmtProc *func = &root->stmt_proc;
             print_ast_value(tokenkind_to_string(func->op.kind), COLOR_RED, func->ident.value, NULL);
         } break;
@@ -557,7 +557,7 @@ static void rule_util_paramlist(Parser *p, ProcSignature *sig) {
 
     while (!parser_match_token(p, TOK_RPAREN)) {
 
-        parser_expect_token(p, TOK_IDENTIFIER);
+        parser_expect_token(p, TOK_IDENT);
         Token tok = parser_advance(p);
 
         Type *type = parser_alloc(p, sizeof(Type));
@@ -629,7 +629,7 @@ static AstNode *rule_primary(Parser *p) {
     //           | <grouping>
 
 
-    if (parser_match_tokens(p, TOK_NUMBER, TOK_IDENTIFIER, TOK_STRING, SENTINEL)) {
+    if (parser_match_tokens(p, TOK_NUMBER, TOK_IDENT, TOK_STRING, SENTINEL)) {
 
         Token tok = parser_tok(p);
 
@@ -675,25 +675,6 @@ static AstNode *rule_call(Parser *p) {
 
     return call;
 }
-
-// static AstNode *rule_unary(Parser *p) {
-//     // <unary> ::= ( "!" | "-" ) <unary> | <call>
-//
-//     if (!parser_match_tokens(p, TOK_MINUS, TOK_BANG, SENTINEL))
-//         return rule_call(p);
-//
-//     Token op           = parser_advance(p);
-//     AstNode *node      = parser_alloc(p, sizeof(AstNode));
-//     node->kind         = ASTNODE_UNARYOP;
-//     node->expr_unaryop = (ExprUnaryOp) {
-//         .op   = op,
-//         .kind = unaryop_from_token(op.kind),
-//         .node = rule_unary(p),
-//     };
-//
-//     return node;
-//
-// }
 
 static AstNode *rule_unary(Parser *p) {
     // <unary> ::= ( "&" | "*" | "!" | "-" ) <unary> | <call>
@@ -765,7 +746,7 @@ static AstNode *rule_term(Parser *p) {
 }
 
 static AstNode *rule_assign(Parser *p) {
-    // <assignment> ::= IDENTIFIER "=" <assignment> | <term>
+    // <assign> ::= <expr> "=" <assign> | <term>
 
     AstNode *expr = rule_term(p);
 
@@ -774,24 +755,14 @@ static AstNode *rule_assign(Parser *p) {
 
     Token op = parser_advance(p);
 
-    bool is_literal = expr->kind == ASTNODE_LITERAL;
-    bool is_ident   = expr->expr_literal.op.kind == TOK_IDENTIFIER;
-    if (!(is_literal && is_ident)) {
-        compiler_message_tok(MSG_ERROR, parser_tok(p), "Invalid assignment target");
-        exit(EXIT_FAILURE);
-    }
-
-    // AstNode is not needed anymore, since we know its an identifier
-    Token ident = expr->expr_literal.op;
-
     AstNode *value = rule_assign(p);
 
     AstNode *node     = parser_alloc(p, sizeof(AstNode));
     node->kind        = ASTNODE_ASSIGN;
-    node->expr_assign = (ExprAssignment) {
-        .op         = op,
-        .value      = value,
-        .identifier = ident,
+    node->expr_assign = (ExprAssign) {
+        .op     = op,
+        .target = expr,
+        .value  = value,
     };
 
     return node;
@@ -822,7 +793,7 @@ static AstNode *rule_vardecl(Parser *p) {
     assert(parser_match_token(p, TOK_KW_VARDECL));
     Token op = parser_advance(p);
 
-    parser_expect_token(p, TOK_IDENTIFIER);
+    parser_expect_token(p, TOK_IDENT);
     Token ident = parser_advance(p);
 
     Type type = rule_util_type(p);
@@ -971,10 +942,10 @@ static AstNode *rule_stmt(Parser *p) {
 static AstNode *rule_proc(Parser *p) {
     // <procedure> ::= "proc" IDENTIFIER <paramlist> <type> <block>
 
-    assert(parser_match_token(p, TOK_KW_FUNCTION));
+    assert(parser_match_token(p, TOK_KW_PROC));
     Token op = parser_advance(p);
 
-    parser_expect_token(p, TOK_IDENTIFIER);
+    parser_expect_token(p, TOK_IDENT);
     Token ident = parser_advance(p);
 
     ProcSignature sig = { 0 };
@@ -998,7 +969,7 @@ static AstNode *rule_proc(Parser *p) {
         : rule_block(p);
 
     AstNode *proc = parser_alloc(p, sizeof(AstNode));
-    proc->kind = ASTNODE_PROCEDURE;
+    proc->kind = ASTNODE_PROC;
     proc->stmt_proc = (StmtProc) {
         .op         = op,
         .body       = body,
@@ -1013,7 +984,7 @@ static AstNode *rule_declaration(Parser *p) {
     // <declaration> ::= <procedure> | <vardecl>
 
     return
-        parser_match_token(p, TOK_KW_FUNCTION) ? rule_proc(p) :
+        parser_match_token(p, TOK_KW_PROC) ? rule_proc(p) :
         parser_match_token(p, TOK_KW_VARDECL)  ? rule_vardecl  (p) :
     (compiler_message(MSG_ERROR, "Expected declaration"), exit(EXIT_FAILURE), NULL);
     // TODO: synchronize parser

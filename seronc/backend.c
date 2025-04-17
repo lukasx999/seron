@@ -201,7 +201,7 @@ static void traverse_ast(AstNode *node) {
             block(&node->block);
             break;
 
-        case ASTNODE_PROCEDURE:
+        case ASTNODE_PROC:
             procedure(&node->stmt_proc);
             break;
 
