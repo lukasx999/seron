@@ -1,3 +1,4 @@
+#define _DEFAULT_SOURCE // isascii()
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,7 +16,7 @@
 const char *tokenkind_to_string(TokenKind tok) {
     const char *repr[] = {
         [TOK_INVALID]     = "invalid",
-        [TOK_NUMBER]      = "number",
+        [TOK_NUMBER]      = "num",
         [TOK_STRING]      = "string",
         [TOK_PLUS]        = "plus",
         [TOK_MINUS]       = "minus",
@@ -45,6 +46,7 @@ const char *tokenkind_to_string(TokenKind tok) {
         [TOK_TYPE_CHAR]   = "char",
         [TOK_TYPE_INT]    = "int",
         [TOK_TYPE_LONG]   = "long",
+        [TOK_CHAR]        = "char",
         [TOK_EOF]         = "eof",
     };
     assert(ARRAY_LEN(repr) == TOKENKIND_COUNT);
@@ -179,6 +181,26 @@ Token lexer_next(LexerState *s) {
             }
             break;
 
+        case '\'':
+            tok.kind = TOK_CHAR;
+            s->src++;
+
+            char c = *s->src++;
+
+            if (!isascii(c)) {
+                compiler_message(MSG_ERROR, "invalid character literal");
+                exit(EXIT_FAILURE);
+            }
+
+            snprintf(tok.value, ARRAY_LEN(tok.value), "%d", c);
+
+            if (*s->src++ != '\'') {
+                compiler_message(MSG_ERROR, "unterminated character literal");
+                exit(EXIT_FAILURE);
+            }
+
+            break;
+
         case '"':
             tok.kind = TOK_STRING;
             const char *start = s->src + 1;
@@ -200,7 +222,11 @@ Token lexer_next(LexerState *s) {
 
                 tok.kind = TOK_NUMBER;
                 const char *start = s->src;
+
                 while (isdigit(*++s->src));
+
+                if (*s->src == 'L') s->src++;
+
                 copy_slice_to_buf(tok.value, start, s->src);
 
             } else if (isalpha(*s->src) || *s->src == '_') {

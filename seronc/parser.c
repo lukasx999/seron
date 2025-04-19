@@ -54,10 +54,11 @@ static TypeKind type_from_token(TokenKind kind) {
 
 static LiteralKind literal_from_token(TokenKind kind) {
     switch (kind) {
-        case TOK_NUMBER:     return LITERAL_NUMBER;
-        case TOK_IDENT: return LITERAL_IDENT;
-        case TOK_STRING:     return LITERAL_STRING;
-        default:             PANIC("unknown tokenkind");
+        case TOK_NUMBER: return LITERAL_NUMBER;
+        case TOK_CHAR:   return LITERAL_CHAR;
+        case TOK_IDENT:  return LITERAL_IDENT;
+        case TOK_STRING: return LITERAL_STRING;
+        default:         PANIC("unknown tokenkind");
     }
 }
 
@@ -624,12 +625,13 @@ static AstNode *rule_grouping(Parser *p) {
 static AstNode *rule_primary(Parser *p) {
     // <primary> ::=
     //           | NUMBER
+    //           | CHAR
     //           | IDENTIFIER
     //           | STRING
     //           | <grouping>
 
 
-    if (parser_match_tokens(p, TOK_NUMBER, TOK_IDENT, TOK_STRING, SENTINEL)) {
+    if (parser_match_tokens(p, TOK_NUMBER, TOK_CHAR, TOK_IDENT, TOK_STRING, SENTINEL)) {
 
         Token tok = parser_tok(p);
 

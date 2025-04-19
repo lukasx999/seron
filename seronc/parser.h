@@ -21,6 +21,7 @@ typedef struct {
 
 typedef enum {
     LITERAL_NUMBER,
+    LITERAL_CHAR,
     LITERAL_IDENT,
     LITERAL_STRING,
 } LiteralKind;

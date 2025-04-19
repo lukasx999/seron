@@ -14,7 +14,6 @@
 #include "lib/util.h"
 
 
-static bool deref = false;
 
 typedef enum {
     REG_INVALID,
@@ -173,6 +172,7 @@ static void gen_write(const char *fmt, ...) {
 
 
 
+static void emit_addr(AstNode *node);
 static Symbol emit(AstNode *node);
 
 
@@ -287,12 +287,10 @@ static void proc(const StmtProc *proc) {
 }
 
 static void return_(const StmtReturn *ret) {
-
     if (ret->expr != NULL)
         emit(ret->expr);
 
     gen_write("jmp .return");
-
 }
 
 static void block(const Block *block) {
@@ -304,6 +302,21 @@ static void block(const Block *block) {
         emit(list.items[i]);
 
     gen.scope = old_scope;
+}
+
+static void unaryop_addr(const ExprUnaryOp *unaryop) {
+
+    emit(unaryop->node);
+
+    switch (unaryop->kind) {
+
+        case UNARYOP_DEREF:
+            // address is already in rax, do nothing
+            break;
+
+        default: PANIC("unknown operation");
+    }
+
 }
 
 static Symbol unaryop(const ExprUnaryOp *unaryop) {
@@ -318,7 +331,6 @@ static Symbol unaryop(const ExprUnaryOp *unaryop) {
             break;
 
         case UNARYOP_DEREF: {
-            deref = true;
             gen_write("mov %s, [rax]", rax);
         } break;
 
@@ -380,45 +392,71 @@ static Symbol binop(const ExprBinOp *binop) {
 
 }
 
-static Symbol literal(const ExprLiteral *literal) {
+static Symbol *literal_ident(const char *str, bool addr) {
+
+    Symbol *sym = symboltable_lookup(gen.scope, str);
+
+    if (sym == NULL) {
+        compiler_message(MSG_ERROR, "Symbol `%s` does not exist in the current scope", str);
+        exit(EXIT_FAILURE);
+    }
+
+    switch (sym->kind) {
+        case SYMBOL_VARIABLE:
+        case SYMBOL_PARAMETER:
+            if (addr)
+                gen_write("lea rax, [rbp-%d]", sym->offset);
+            else
+                gen_write("mov %s, [rbp-%d]", subregister(REG_RAX, sym->type.kind), sym->offset);
+            break;
+
+        case SYMBOL_PROCEDURE:
+            gen_write("mov rax, %s", str);
+            break;
+
+        default: PANIC("invalid symbol");
+    }
+
+    return sym;
+}
+
+static void literal_addr(const ExprLiteral *literal) {
 
     const char *str = literal->op.value;
 
     switch (literal->kind) {
 
+        case LITERAL_IDENT:
+            literal_ident(str, true);
+            break;
+
+        default: PANIC("unknown operation");
+    }
+
+}
+
+static Symbol literal(const ExprLiteral *literal) {
+
+    const char *str = literal->op.value;
+
+    switch (literal->kind) {
+        // TODO: string literal
+
+        case LITERAL_CHAR:
         case LITERAL_NUMBER: {
-            TypeKind type = TYPE_LONG;
-            const char *rax = subregister(REG_RAX, type);
-            int num = atoll(str);
-            gen_write("mov %s, %d", rax, num);
+
+            // FIXME: find a better way to do this
+            bool is_long = str[strlen(str)-1] == 'L';
+            bool is_char = literal->kind == LITERAL_CHAR;
+            TypeKind type = is_long ? TYPE_LONG : is_char ? TYPE_CHAR : TYPE_INT;
+
+            gen_write("mov %s, %d", subregister(REG_RAX, type), atoll(str));
             return create_symbol_temp((Type) { .kind = type });
         } break;
 
-        case LITERAL_IDENT: {
-            Symbol *sym = symboltable_lookup(gen.scope, str);
-
-            if (sym == NULL) {
-                compiler_message(MSG_ERROR, "Symbol `%s` does not exist in the current scope", str);
-                exit(EXIT_FAILURE);
-            }
-
-            switch (sym->kind) {
-                case SYMBOL_VARIABLE:
-                case SYMBOL_PARAMETER: {
-                    const char *rax = subregister(REG_RAX, sym->type.kind);
-                    gen_write("mov %s, [rbp-%d]", rax, sym->offset);
-                } break;
-
-                case SYMBOL_PROCEDURE:
-                    gen_write("mov rax, %s", str);
-                    break;
-
-                default: PANIC("invalid symbol");
-            }
-
-            return *sym;
-
-        } break;
+        case LITERAL_IDENT:
+            return *literal_ident(str, false);
+            break;
 
         default: PANIC("unknown operation");
     }
@@ -490,26 +528,27 @@ static void vardecl(const StmtVarDecl *decl) {
 
 static Symbol assign(const ExprAssign *assign) {
 
-    Symbol target = emit(assign->target);
+    emit_addr(assign->target);
+    gen_write("push rax");
     Symbol value = emit(assign->value);
 
-    // TODO: address should be emitted
-
-    // TODO:
-    // assert(target.kind == SYMBOL_VARIABLE || target.kind == SYMBOL_PARAMETER);
-
-    const char *rax = subregister(REG_RAX, value.type.kind);
-
-    if (deref) {
-        // remove pointer indirection
-        gen_write("mov rdi, [rbp-%d]", target.offset, rax);
-        gen_write("mov [rdi], %s", rax);
-        deref = false;
-    } else {
-        gen_write("mov [rbp-%d], %s", target.offset, rax);
-    }
+    gen_write("pop rdi");
+    gen_write("mov [rdi], %s", subregister(REG_RAX, value.type.kind));
 
     return create_symbol_temp(value.type);
+
+}
+
+// get address of lvalue
+static void emit_addr(AstNode *node) {
+    NON_NULL(node);
+
+    switch (node->kind) {
+        case ASTNODE_UNARYOP:   unaryop_addr(&node->expr_unaryop); break;
+        case ASTNODE_LITERAL:   literal_addr(&node->expr_literal); break;
+        default:                PANIC("unexpected node kind");
+    }
+
 
 }
 
@@ -517,18 +556,18 @@ static Symbol emit(AstNode *node) {
     NON_NULL(node);
 
     switch (node->kind) {
-        case ASTNODE_BLOCK:     block           (&node->block);          break;
-        case ASTNODE_WHILE:     while_          (&node->stmt_while);     break;
-        case ASTNODE_PROC:      proc            (&node->stmt_proc);      break;
-        case ASTNODE_RETURN:    return_         (&node->stmt_return);    break;
-        case ASTNODE_VARDECL:   vardecl         (&node->stmt_vardecl);   break;
-        case ASTNODE_IF:        cond            (&node->stmt_if);        break;
-        case ASTNODE_GROUPING:  return grouping (&node->expr_grouping);  break;
-        case ASTNODE_ASSIGN:    return assign   (&node->expr_assign);    break;
-        case ASTNODE_BINOP:     return binop    (&node->expr_binop);     break;
-        case ASTNODE_CALL:      return call     (&node->expr_call);      break;
-        case ASTNODE_UNARYOP:   return unaryop  (&node->expr_unaryop);   break;
-        case ASTNODE_LITERAL:   return literal  (&node->expr_literal);   break;
+        case ASTNODE_BLOCK:     block           (&node->block);         break;
+        case ASTNODE_WHILE:     while_          (&node->stmt_while);    break;
+        case ASTNODE_PROC:      proc            (&node->stmt_proc);     break;
+        case ASTNODE_RETURN:    return_         (&node->stmt_return);   break;
+        case ASTNODE_VARDECL:   vardecl         (&node->stmt_vardecl);  break;
+        case ASTNODE_IF:        cond            (&node->stmt_if);       break;
+        case ASTNODE_GROUPING:  return grouping (&node->expr_grouping); break;
+        case ASTNODE_ASSIGN:    return assign   (&node->expr_assign);   break;
+        case ASTNODE_BINOP:     return binop    (&node->expr_binop);    break;
+        case ASTNODE_CALL:      return call     (&node->expr_call);     break;
+        case ASTNODE_UNARYOP:   return unaryop  (&node->expr_unaryop);  break;
+        case ASTNODE_LITERAL:   return literal  (&node->expr_literal);  break;
         default:                PANIC("unexpected node kind");
     }
 

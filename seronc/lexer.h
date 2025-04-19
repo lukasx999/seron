@@ -13,6 +13,7 @@ typedef enum {
 
     TOK_IDENT,
     TOK_NUMBER,
+    TOK_CHAR,
     TOK_STRING,
 
     TOK_PLUS,
