@@ -1,0 +1,13 @@
+session_name: seron
+start_directory: ~/code/repos/seron/seronc
+windows:
+  - window_name: src
+    focus: true
+    start_directory: src
+    panes:
+      - blank
+
+  - window_name: run
+    layout: main-vertical
+    panes:
+      - focus: true
