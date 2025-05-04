@@ -448,7 +448,10 @@ static Symbol literal(const ExprLiteral *literal) {
             // FIXME: find a better way to do this
             bool is_long = str[strlen(str)-1] == 'L';
             bool is_char = literal->kind == LITERAL_CHAR;
-            TypeKind type = is_long ? TYPE_LONG : is_char ? TYPE_CHAR : TYPE_INT;
+            TypeKind type =
+                is_long ? TYPE_LONG :
+                is_char ? TYPE_CHAR :
+                TYPE_INT;
 
             gen_write("mov %s, %d", subregister(REG_RAX, type), atoll(str));
             return create_symbol_temp((Type) { .kind = type });
