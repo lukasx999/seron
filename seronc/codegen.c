@@ -392,7 +392,7 @@ static Symbol binop(const ExprBinOp *binop) {
 
 }
 
-static Symbol *literal_ident(const char *str, bool addr) {
+static Symbol literal_ident(const char *str, bool addr) {
 
     Symbol *sym = symboltable_lookup(gen.scope, str);
 
@@ -417,7 +417,7 @@ static Symbol *literal_ident(const char *str, bool addr) {
         default: PANIC("invalid symbol");
     }
 
-    return sym;
+    return *sym;
 }
 
 static void literal_addr(const ExprLiteral *literal) {
@@ -455,7 +455,7 @@ static Symbol literal(const ExprLiteral *literal) {
         } break;
 
         case LITERAL_IDENT:
-            return *literal_ident(str, false);
+            return literal_ident(str, false);
             break;
 
         default: PANIC("unknown operation");

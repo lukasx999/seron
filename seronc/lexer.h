@@ -56,7 +56,6 @@ typedef enum {
 
 const char *tokenkind_to_string(TokenKind tok);
 
-// TODO: given the source string, calculate column position lazily based on start position
 typedef struct {
     TokenKind kind;
     char value[BUFSIZ]; // only holds value for literals, otherwise: ""

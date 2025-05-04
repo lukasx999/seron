@@ -124,7 +124,7 @@ static bool parser_match_tokens(const Parser *p, ...) {
         }
     }
 
-    assert(!"unreachable");
+    UNREACHABLE();
 }
 
 // checks if the current token is of the supplied kind

@@ -274,6 +274,7 @@ int main(int argc, char **argv) {
 
     parse_args(argc, argv);
 
+    // TODO: let the lexer use the FILE* stream directly
     char *file = read_file(compiler_config.filename.raw);
 
     if (compiler_config.opts.dump_tokens)
