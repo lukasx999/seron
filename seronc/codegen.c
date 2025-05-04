@@ -544,9 +544,9 @@ static void emit_addr(AstNode *node) {
     NON_NULL(node);
 
     switch (node->kind) {
-        case ASTNODE_UNARYOP:   unaryop_addr(&node->expr_unaryop); break;
-        case ASTNODE_LITERAL:   literal_addr(&node->expr_literal); break;
-        default:                PANIC("unexpected node kind");
+        case ASTNODE_UNARYOP: unaryop_addr(&node->expr_unaryop); break;
+        case ASTNODE_LITERAL: literal_addr(&node->expr_literal); break;
+        default:              PANIC("unexpected node kind");
     }
 
 

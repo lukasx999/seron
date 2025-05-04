@@ -282,15 +282,15 @@ int main(int argc, char **argv) {
     Arena arena = { 0 };
     arena_init(&arena);
 
-    AstNode *node_root = parse(file, &arena);
+    AstNode *root = parse(file, &arena);
 
     if (compiler_config.opts.dump_ast)
-        parser_print_ast(node_root, 2);
+        parser_print_ast(root, 2);
 
-    symboltable_build(node_root, &arena);
+    symboltable_build(root, &arena);
 
     // check_types(node_root);
-    codegen(node_root);
+    codegen(root);
 
     if (!compiler_config.opts.compile_only) {
         assemble();
