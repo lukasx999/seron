@@ -31,6 +31,7 @@ typedef enum {
 
 NO_DISCARD size_t get_type_size(TypeKind type) {
     switch (type) {
+        case TYPE_FUNCTION:
         case TYPE_LONG:
         case TYPE_POINTER: return 8;
         case TYPE_INT:     return 4;
@@ -176,37 +177,6 @@ static void emit_addr(AstNode *node);
 static Symbol emit(AstNode *node);
 
 
-
-// static Type call(const ExprCall *call) {
-//
-//     // TODO: emit callee
-//     const char *ident  = call->callee->expr_literal.op.value;
-//     Symbol *sym        = NON_NULL(symboltable_lookup(gen.scope, ident));
-//     ProcSignature *sig = &sym->type.type_signature;
-//
-//     const AstNodeList *list = &call->args;
-//     for (size_t i=0; i < list->size; ++i) {
-//
-//         TypeKind type = sig->params[i].type->kind;
-//         const char *reg = abi_register_str(i+1, type);
-//
-//         emit(list->items[i]);
-//
-//         if (reg == NULL) {
-//             gen_write("push rax");
-//
-//         } else {
-//             const char *rax = subregister(REG_RAX, type);
-//             gen_write("mov %s, %s", reg, rax);
-//
-//         }
-//
-//     }
-//
-//     gen_write("call %s", ident);
-//     return *sig->returntype;
-// }
-
 static Symbol call(const ExprCall *call) {
 
     Symbol sym = emit(call->callee);
@@ -232,6 +202,7 @@ static Symbol call(const ExprCall *call) {
 
     }
 
+    // this weird stuff has to be done in order for function pointers to work
     gen_write("pop rax");
     gen_write("call rax");
     return (Symbol) {
@@ -351,7 +322,7 @@ static Symbol unaryop(const ExprUnaryOp *unaryop) {
             }
 
             // TODO:
-            assert(sym->kind == SYMBOL_VARIABLE || sym->kind == SYMBOL_PARAMETER);
+            // assert(sym->kind == SYMBOL_VARIABLE || sym->kind == SYMBOL_PARAMETER);
 
             gen_write("lea rax, [rbp-%d]", sym->offset);
 
@@ -435,6 +406,15 @@ static void literal_addr(const ExprLiteral *literal) {
 
 }
 
+static TypeKind type_from_number_literal_suffix(char suffix) {
+    switch (suffix) {
+        case 'L': return TYPE_LONG;
+        case 'B': return TYPE_CHAR;
+        default:  return TYPE_INVALID;
+    }
+}
+
+// TODO: consider only returning Type instead of Symbol
 static Symbol literal(const ExprLiteral *literal) {
 
     const char *str = literal->op.value;
@@ -442,16 +422,16 @@ static Symbol literal(const ExprLiteral *literal) {
     switch (literal->kind) {
         // TODO: string literal
 
-        case LITERAL_CHAR:
+        case LITERAL_CHAR: {
+            gen_write("mov %s, %d", subregister(REG_RAX, TYPE_CHAR), str[0]);
+            return create_symbol_temp((Type) { .kind = TYPE_CHAR });
+        } break;
+
         case LITERAL_NUMBER: {
 
-            // FIXME: find a better way to do this
-            bool is_long = str[strlen(str)-1] == 'L';
-            bool is_char = literal->kind == LITERAL_CHAR;
-            TypeKind type =
-                is_long ? TYPE_LONG :
-                is_char ? TYPE_CHAR :
-                TYPE_INT;
+            TypeKind type = type_from_number_literal_suffix(LASTCHAR(str));
+            if (type == TYPE_INVALID)
+                type = TYPE_INT;
 
             gen_write("mov %s, %d", subregister(REG_RAX, type), atoll(str));
             return create_symbol_temp((Type) { .kind = type });

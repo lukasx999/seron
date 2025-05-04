@@ -485,41 +485,7 @@ AstNode *parse(const char *src, Arena *arena) {
 // forward-declarations, as some rules have cyclic dependencies
 static AstNode *rule_expr(Parser *p);
 static AstNode *rule_stmt(Parser *p);
-
-static Type rule_util_type(Parser *p) {
-    // <type> ::=
-    //        | "*" <type>
-    //        | "int"
-    //        | "void"
-    //        | "char"
-
-    Type ty = {
-        .kind = TYPE_INVALID,
-    };
-
-    if (parser_match_token(p, TOK_ASTERISK)) {
-        parser_advance(p);
-
-        ty.kind = TYPE_POINTER;
-        ty.type_pointee = parser_alloc(p, sizeof(Type));
-        *ty.type_pointee = rule_util_type(p);
-
-    } else {
-
-        Token tok = parser_advance(p);
-        ty.kind = type_from_token(tok.kind);
-
-        if (ty.kind == TYPE_INVALID) {
-            compiler_message_tok(MSG_ERROR, tok, "Unknown type `%s`", tok.value);
-            exit(EXIT_FAILURE);
-        }
-
-    }
-
-    assert(ty.kind != TYPE_INVALID);
-
-    return ty;
-}
+static Type rule_util_type(Parser *p);
 
 static AstNodeList rule_util_arglist(Parser *p) {
     // <arglist> ::= "(" ( <expr> ("," <expr>)* )? ")"
@@ -598,6 +564,56 @@ static void rule_util_paramlist(Parser *p, ProcSignature *sig) {
     parser_advance(p);
 
 }
+
+static Type rule_util_type(Parser *p) {
+    // <type> ::=
+    //        | "*" <type>
+    //        | "int"
+    //        | "void"
+    //        | "char"
+    //        | "proc" <paramlist> <type>
+
+    Type ty = {
+        .kind = TYPE_INVALID,
+    };
+
+    if (parser_match_token(p, TOK_ASTERISK)) {
+        parser_advance(p);
+
+        ty.kind = TYPE_POINTER;
+        ty.type_pointee = parser_alloc(p, sizeof(Type));
+        *ty.type_pointee = rule_util_type(p);
+
+    } else {
+
+        Token tok = parser_advance(p);
+
+        // TODO: refactor
+        if (tok.kind == TOK_KW_PROC) {
+            ty.kind = TYPE_FUNCTION;
+            rule_util_paramlist(p, &ty.type_signature);
+
+            ty.type_signature.returntype = parser_alloc(p, sizeof(Type));
+            *ty.type_signature.returntype = rule_util_type(p);
+        }
+        else {
+            ty.kind = type_from_token(tok.kind);
+        }
+
+
+        if (ty.kind == TYPE_INVALID) {
+            compiler_message_tok(MSG_ERROR, tok, "Unknown type `%s`", tok.value);
+            exit(EXIT_FAILURE);
+        }
+
+    }
+
+    assert(ty.kind != TYPE_INVALID);
+
+    return ty;
+}
+
+
 
 static AstNode *rule_grouping(Parser *p) {
     // <grouping> ::= "(" <expression> ")"

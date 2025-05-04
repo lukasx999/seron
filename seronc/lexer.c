@@ -192,7 +192,7 @@ Token lexer_next(LexerState *s) {
                 exit(EXIT_FAILURE);
             }
 
-            snprintf(tok.value, ARRAY_LEN(tok.value), "%d", c);
+            tok.value[0] = c;
 
             if (*s->src++ != '\'') {
                 compiler_message(MSG_ERROR, "unterminated character literal");
@@ -225,7 +225,7 @@ Token lexer_next(LexerState *s) {
 
                 while (isdigit(*++s->src));
 
-                if (*s->src == 'L') s->src++;
+                if (*s->src == 'L' || *s->src == 'B') s->src++;
 
                 copy_slice_to_buf(tok.value, start, s->src);
 

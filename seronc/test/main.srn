@@ -4,6 +4,9 @@ proc puts(s *char);
 
 proc main() int {
 
+    let x proc(s *char) void = puts;
+    let y proc(s *char) void = x;
+
     let xs *char = malloc(50);
     *(xs+0L)  = 'H';
     *(xs+1L)  = 'e';
@@ -21,6 +24,8 @@ proc main() int {
     *(xs+13L) = 0;
 
 
+    x(xs);
+    y(xs);
 
     puts(xs);
 
