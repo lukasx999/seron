@@ -1,35 +1,45 @@
 proc malloc(size int) *void;
 proc free(p *void);
 proc puts(s *char);
+proc putchar(c char);
 
 proc main() int {
 
-    let x proc(s *char) void = puts;
-    let y proc(s *char) void = x;
-
-    let xs *char = malloc(50);
-    *(xs+0L)  = 'H';
-    *(xs+1L)  = 'e';
-    *(xs+2L)  = 'l';
-    *(xs+3L)  = 'l';
-    *(xs+4L)  = 'o';
-    *(xs+5L)  = ',';
-    *(xs+6L)  = ' ';
-    *(xs+7L)  = 'W';
-    *(xs+8L)  = 'o';
-    *(xs+9L)  = 'r';
-    *(xs+10L) = 'l';
-    *(xs+11L) = 'd';
-    *(xs+12L) = '!';
-    *(xs+13L) = 0;
+    let x int = 65;
+    let p *int = &x;
+    *p = 66;
+    putchar(x);
 
 
-    x(xs);
-    y(xs);
-
-    puts(xs);
-
-    free(xs);
+    #let x proc(s *char) void = puts;
+    #let y proc(s *char) void = x;
+    #
+    #let i int = 45;
+    #let p *int = &i;
+    #
+    #let xs *char = malloc(50);
+    #*(xs+0L)  = 'H';
+    #*(xs+1L)  = 'e';
+    #*(xs+2L)  = 'l';
+    #*(xs+3L)  = 'l';
+    #*(xs+4L)  = 'o';
+    #*(xs+5L)  = ',';
+    #*(xs+6L)  = ' ';
+    #*(xs+7L)  = 'W';
+    #*(xs+8L)  = 'o';
+    #*(xs+9L)  = 'r';
+    #*(xs+10L) = 'l';
+    #*(xs+11L) = 'd';
+    #*(xs+12L) = '!';
+    #*(xs+13L) = 0;
+    #
+    #
+    #x(xs);
+    #y(xs);
+    #
+    #puts(xs);
+    #
+    #free(xs);
 
     return 0;
 }

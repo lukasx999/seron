@@ -31,12 +31,12 @@ typedef enum {
 
 NO_DISCARD size_t get_type_size(TypeKind type) {
     switch (type) {
-        case TYPE_FUNCTION:
+        case TYPE_PROCEDURE:
         case TYPE_LONG:
         case TYPE_POINTER: return 8;
         case TYPE_INT:     return 4;
         case TYPE_CHAR:    return 1;
-        default:        PANIC("unknown type");
+        default:           PANIC("unknown type");
     }
 }
 
@@ -53,7 +53,7 @@ NO_DISCARD static const char *subregister(Register reg, TypeKind type) {
     switch (reg) {
 
         case REG_RAX: switch (type) {
-            case TYPE_FUNCTION:
+            case TYPE_PROCEDURE:
             case TYPE_LONG:
             case TYPE_POINTER: return "rax";
             case TYPE_INT:     return "eax";
@@ -62,7 +62,7 @@ NO_DISCARD static const char *subregister(Register reg, TypeKind type) {
         } break;
 
         case REG_RDI: switch (type) {
-            case TYPE_FUNCTION:
+            case TYPE_PROCEDURE:
             case TYPE_LONG:
             case TYPE_POINTER: return "rdi";
             case TYPE_INT:     return "edi";
@@ -173,7 +173,7 @@ static void gen_write(const char *fmt, ...) {
 
 
 
-static void emit_addr(AstNode *node);
+static Symbol emit_addr(AstNode *node);
 static Symbol emit(AstNode *node);
 
 
@@ -275,57 +275,45 @@ static void block(const Block *block) {
     gen.scope = old_scope;
 }
 
-static void unaryop_addr(const ExprUnaryOp *unaryop) {
+static Symbol unaryop_addr(const ExprUnaryOp *unaryop) {
 
-    emit(unaryop->node);
+    Symbol sym = emit(unaryop->node);
 
     switch (unaryop->kind) {
 
         case UNARYOP_DEREF:
-            // address is already in rax, do nothing
+            // address is already in rax, do nothing.
             break;
 
         default: PANIC("unknown operation");
     }
 
+    return sym;
+
 }
 
 static Symbol unaryop(const ExprUnaryOp *unaryop) {
-    Symbol node = emit(unaryop->node);
 
-    const char *rax = subregister(REG_RAX, node.type.kind);
+    Symbol node = { 0 };
 
     switch (unaryop->kind) {
 
-        case UNARYOP_MINUS:
+        case UNARYOP_MINUS: {
+            node = emit(unaryop->node);
+            const char *rax = subregister(REG_RAX, node.type.kind);
             gen_write("imul %s, -1", rax);
-            break;
+        } break;
 
         case UNARYOP_DEREF: {
+            node = emit(unaryop->node);
+            const char *rax = subregister(REG_RAX, node.type.kind);
             gen_write("mov %s, [rax]", rax);
         } break;
 
         case UNARYOP_ADDROF: {
-            // TODO: use symbol->kind for this
-            bool is_literal = unaryop->node->kind == ASTNODE_LITERAL;
-            bool is_ident = unaryop->node->expr_literal.kind == LITERAL_IDENT;
-            if (!(is_ident && is_literal)) {
-                compiler_message(MSG_ERROR, "Cannot take address of an rvalue");
-                exit(EXIT_FAILURE);
-            }
-
-            const char *ident = unaryop->node->expr_literal.op.value;
-            Symbol *sym = symboltable_lookup(gen.scope, ident);
-            if (sym == NULL) {
-                compiler_message(MSG_ERROR, "Unknown identifier `%s`", ident);
-                exit(EXIT_FAILURE);
-            }
-
-            // TODO:
-            // assert(sym->kind == SYMBOL_VARIABLE || sym->kind == SYMBOL_PARAMETER);
-
-            gen_write("lea rax, [rbp-%d]", sym->offset);
-
+            emit_addr(unaryop->node);
+            // TODO: refactor
+            return create_symbol_temp((Type) { .kind = TYPE_POINTER });
         } break;
 
         default: PANIC("unknown operation");
@@ -391,14 +379,14 @@ static Symbol literal_ident(const char *str, bool addr) {
     return *sym;
 }
 
-static void literal_addr(const ExprLiteral *literal) {
+static Symbol literal_addr(const ExprLiteral *literal) {
 
     const char *str = literal->op.value;
 
     switch (literal->kind) {
 
         case LITERAL_IDENT:
-            literal_ident(str, true);
+            return literal_ident(str, true);
             break;
 
         default: PANIC("unknown operation");
@@ -414,7 +402,6 @@ static TypeKind type_from_number_literal_suffix(char suffix) {
     }
 }
 
-// TODO: consider only returning Type instead of Symbol
 static Symbol literal(const ExprLiteral *literal) {
 
     const char *str = literal->op.value;
@@ -501,10 +488,11 @@ static void vardecl(const StmtVarDecl *decl) {
 
     if (decl->init == NULL) return;
 
+    const char *ident = decl->ident.value;
     Symbol init = emit(decl->init);
-    Symbol *sym = NON_NULL(symboltable_lookup(gen.scope, decl->ident.value));
+    Symbol *sym = NON_NULL(symboltable_lookup(gen.scope, ident));
     const char *rax = subregister(REG_RAX, init.type.kind);
-    gen_write("mov [rbp-%d], %s", sym->offset, rax);
+    gen_write("mov [rbp-%d], %s ; %s", sym->offset, rax, ident);
 
 }
 
@@ -523,15 +511,14 @@ static Symbol assign(const ExprAssign *assign) {
 }
 
 // get address of lvalue
-static void emit_addr(AstNode *node) {
+static Symbol emit_addr(AstNode *node) {
     NON_NULL(node);
 
     switch (node->kind) {
-        case ASTNODE_UNARYOP: unaryop_addr(&node->expr_unaryop); break;
-        case ASTNODE_LITERAL: literal_addr(&node->expr_literal); break;
+        case ASTNODE_UNARYOP: return unaryop_addr(&node->expr_unaryop); break;
+        case ASTNODE_LITERAL: return literal_addr(&node->expr_literal); break;
         default:              PANIC("unexpected node kind");
     }
-
 
 }
 

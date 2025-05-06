@@ -43,7 +43,7 @@ typedef enum {
     TYPE_INT,
     TYPE_LONG,
     TYPE_POINTER,
-    TYPE_FUNCTION,
+    TYPE_PROCEDURE,
 } TypeKind;
 
 struct Type {

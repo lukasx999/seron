@@ -588,15 +588,14 @@ static Type rule_util_type(Parser *p) {
 
         Token tok = parser_advance(p);
 
-        // TODO: refactor
         if (tok.kind == TOK_KW_PROC) {
-            ty.kind = TYPE_FUNCTION;
+            ty.kind = TYPE_PROCEDURE;
             rule_util_paramlist(p, &ty.type_signature);
 
             ty.type_signature.returntype = parser_alloc(p, sizeof(Type));
             *ty.type_signature.returntype = rule_util_type(p);
-        }
-        else {
+
+        } else {
             ty.kind = type_from_token(tok.kind);
         }
 
@@ -978,7 +977,7 @@ static AstNode *rule_proc(Parser *p) {
         *sig.returntype = rule_util_type(p);
 
     Type type = {
-        .kind = TYPE_FUNCTION,
+        .kind = TYPE_PROCEDURE,
         .type_signature = sig,
     };
 

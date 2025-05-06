@@ -28,7 +28,7 @@ typedef enum {
     TYPE_VOID,
     TYPE_CHAR,
     TYPE_INT,
-    TYPE_FUNCTION,
+    TYPE_PROCEDURE,
     TYPE_POINTER,
 } TypeKind;
 
