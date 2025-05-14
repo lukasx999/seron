@@ -8,6 +8,7 @@ proc main() int {
     let x int = 65;
     let p *int = &x;
     *p = 66;
+    let y int = *p;
     putchar(x);
 
     let str *char = "foo";

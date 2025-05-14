@@ -39,11 +39,9 @@
 
 
 #ifdef __STDC11
-
 #define NORETURN noreturn
 #else
 #define NORETURN __attribute((noreturn))
-
 #endif // __STDC11
 
 
@@ -127,17 +125,28 @@ static inline void *_impl_non_null(
 #define DISCARD(value) \
     ((void) (value))
 
+#if __STDC23
+#define NO_DISCARD \
+[[nodiscard]]
+#else
 #define NO_DISCARD \
     __attribute__((warn_unused_result))
+#endif // __STDC23
 
 #define CLAMP(value, min, max) \
-    (assert(min <= max), (value) > (max) ? (max) : (value) < (min) ? (min) : (value))
+    (assert(min <= max),       \
+    (value) > (max) ? (max) : (value) < (min) ? (min) : (value))
 
 #define LAST(xs) \
     ((xs)[ARRAY_LEN((xs))-1])
 
 #define LASTCHAR(str) \
     ((str)[strlen((str))-1])
+
+#define LERP(a, b, t) \
+    ((a) + (t) * ((b) - (a)))
+
+#define NOP()
 
 
 
