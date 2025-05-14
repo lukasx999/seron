@@ -42,6 +42,7 @@ NO_DISCARD size_t get_type_size(TypeKind type) {
 
 NO_DISCARD static const char *size_op(TypeKind type) {
     switch (type) {
+        case TYPE_POINTER:
         case TYPE_LONG: return "qword";
         case TYPE_INT:  return "dword";
         case TYPE_CHAR: return "byte";
@@ -77,6 +78,8 @@ NO_DISCARD static const char *subregister(Register reg, TypeKind type) {
         } break;
 
         case REG_RDX: switch (type) {
+            case TYPE_POINTER:
+            case TYPE_LONG: return "rdx";
             case TYPE_INT:  return "edx";
             case TYPE_CHAR: return "dl";
             default: PANIC("unknown type");
@@ -135,21 +138,13 @@ NO_DISCARD static const char *abi_register_str(int argnum, TypeKind type) {
 
 
 
-static Symbol create_symbol_temp(Type type) {
-    return (Symbol) {
-        .kind = SYMBOL_NONE,
-        .type = type,
-    };
-}
-
-
-
-
 
 struct Gen {
-    char buffer_data[5000];
-    char buffer_text[5000];
+    // TODO: dynamic array
+    char buffer_data[50000];
+    char buffer_text[50000];
     int label_count;
+    int data_count;
     Hashtable *scope;
 } gen = { 0 };
 
@@ -288,26 +283,32 @@ static void block(const Block *block) {
 
 static Type unaryop_addr(const ExprUnaryOp *unaryop) {
 
-    Type ty = emit(unaryop->node);
-    // TODO: return correct type (pointer)
-
     switch (unaryop->kind) {
 
-        case UNARYOP_DEREF:
-            NOP();
+        case UNARYOP_DEREF: {
+            // not using emit_addr(), as the operand must already be a pointer
+            return emit(unaryop->node);
             // address is already in rax, do nothing.
             break;
+        }
 
         default: PANIC("unknown operation");
     }
 
-    return ty;
+    UNREACHABLE();
 
 }
 
 static Type unaryop(const ExprUnaryOp *unaryop) {
 
     switch (unaryop->kind) {
+
+        case UNARYOP_NEG: {
+            Type ty = emit(unaryop->node);
+            gen_write("cmp %s, 0", subregister(REG_RAX, ty.kind));
+            gen_write("sete %s", subregister(REG_RAX, ty.kind));
+            return ty;
+        } break;
 
         case UNARYOP_MINUS: {
             Type ty = emit(unaryop->node);
@@ -418,11 +419,14 @@ static Type literal(const ExprLiteral *literal) {
     switch (literal->kind) {
         case LITERAL_STRING: {
 
-            gen_write_data("string:");
+            gen_write_data("string_%d:", gen.data_count);
             gen_write_data("db \"%s\", 0", str);
+
+            gen_write("mov rax, string_%d", gen.data_count);
+            gen.data_count++;
+
             // TODO: pointee info
             return (Type) { .kind = TYPE_POINTER };
-
         } break;
 
         case LITERAL_CHAR: {
@@ -507,12 +511,7 @@ static void vardecl(const StmtVarDecl *decl) {
     const char *ident = decl->ident.value;
     Type init = emit(decl->init);
     Symbol *sym = NON_NULL(symboltable_lookup(gen.scope, ident));
-    gen_write(
-        "mov [rbp-%d], %s ; %s",
-        sym->offset,
-        subregister(REG_RAX, init.kind),
-        ident
-    );
+    gen_write("mov [rbp-%d], %s ; %s", sym->offset, subregister(REG_RAX, init.kind), ident);
 
 }
 

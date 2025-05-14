@@ -114,6 +114,7 @@ static void link_cc(void) {
         "cc",
         "-no-pie", // TODO: possibly insecure?
         "-lc",
+        "-lraylib",
         obj,
         "-o", (char*) bin,
         NULL
