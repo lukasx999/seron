@@ -581,8 +581,8 @@ static Type rule_util_type(Parser *p) {
         parser_advance(p);
 
         ty.kind = TYPE_POINTER;
-        ty.type_pointee = parser_alloc(p, sizeof(Type));
-        *ty.type_pointee = rule_util_type(p);
+        ty.pointee = parser_alloc(p, sizeof(Type));
+        *ty.pointee = rule_util_type(p);
 
     } else {
 
@@ -590,10 +590,10 @@ static Type rule_util_type(Parser *p) {
 
         if (tok.kind == TOK_KW_PROC) {
             ty.kind = TYPE_PROCEDURE;
-            rule_util_paramlist(p, &ty.type_signature);
+            rule_util_paramlist(p, &ty.signature);
 
-            ty.type_signature.returntype = parser_alloc(p, sizeof(Type));
-            *ty.type_signature.returntype = rule_util_type(p);
+            ty.signature.returntype = parser_alloc(p, sizeof(Type));
+            *ty.signature.returntype = rule_util_type(p);
 
         } else {
             ty.kind = type_from_token(tok.kind);
@@ -978,7 +978,7 @@ static AstNode *rule_proc(Parser *p) {
 
     Type type = {
         .kind = TYPE_PROCEDURE,
-        .type_signature = sig,
+        .signature = sig,
     };
 
     AstNode *body = parser_match_token(p, TOK_SEMICOLON)
@@ -1008,7 +1008,6 @@ static AstNode *rule_declaration(Parser *p) {
 }
 
 static AstNode *rule_program(Parser *p) {
-    // TODO: refactor this rule
     // <program> ::= <declaration>*
 
     AstNode *node = parser_alloc(p, sizeof(AstNode));

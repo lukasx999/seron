@@ -147,7 +147,7 @@ static Symbol ast_call(ExprCall *call, Symboltable *scope) {
 
 static void procedure(StmtProc *proc) {
     const char *ident  = proc->idetn.value;
-    ProcSignature *sig = &proc->type.type_signature;
+    ProcSignature *sig = &proc->type.signature;
 
     if (proc->body == NULL) {
         gen_procedure_extern(&codegen, ident);

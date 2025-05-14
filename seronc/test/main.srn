@@ -10,6 +10,9 @@ proc main() int {
     *p = 66;
     putchar(x);
 
+    let str *char = "foo";
+
+
 
     #let x proc(s *char) void = puts;
     #let y proc(s *char) void = x;

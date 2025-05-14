@@ -28,24 +28,22 @@ typedef enum {
     TYPE_VOID,
     TYPE_CHAR,
     TYPE_INT,
+    TYPE_LONG,
     TYPE_PROCEDURE,
     TYPE_POINTER,
 } TypeKind;
 
 struct Type {
     TypeKind kind;
-    bool mutable;
     // This union contains additional information for complex types,
     // such as functions, pointers and user-defined types
     union {
-        ProcSignature type_signature;
-        Type *type_pointee;
+        ProcSignature signature;
+        Type *pointee;
     };
 };
 
 const char *typekind_to_string(TypeKind type);
-
-void check_types(AstNode *root);
 
 
 

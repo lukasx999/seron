@@ -49,8 +49,8 @@ typedef enum {
 struct Type {
     TypeKind kind;
     union {
-        ProcSignature type_signature;
-        Type *type_pointee;
+        ProcSignature signature;
+        Type *pointee;
     };
 };
 

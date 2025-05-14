@@ -143,35 +143,49 @@ static Symbol create_symbol_temp(Type type) {
 }
 
 
+
+
+
 struct Gen {
-    FILE *file;
+    char buffer_data[5000];
+    char buffer_text[5000];
     int label_count;
     Hashtable *scope;
 } gen = { 0 };
 
-static void gen_init(const char *out_file) {
+static void gen_write_to_file(const char *path) {
 
-    gen.file = fopen(out_file, "w");
-    if (gen.file == NULL) {
-        compiler_message(MSG_ERROR, "Failed to open output file %s", out_file);
+    FILE *f = fopen(path, "w");
+    if (f == NULL) {
+        compiler_message(MSG_ERROR, "Failed to open output file %s", path);
         exit(EXIT_FAILURE);
     }
 
-}
+    fprintf(f, "section .data\n%s", gen.buffer_data);
+    fprintf(f, "section .text\n%s", gen.buffer_text);
 
-static void gen_destroy(void) {
-    fclose(gen.file);
+    fclose(f);
 }
 
 static void gen_write(const char *fmt, ...) {
     va_list va;
     va_start(va, fmt);
-    vfprintf(gen.file, fmt, va);
-    fprintf(gen.file, "\n");
+    char buf[500] = { 0 };
+    vsnprintf(buf, ARRAY_LEN(buf), fmt, va);
+    strcat(buf, "\n");
+    strcat(gen.buffer_text, buf);
     va_end(va);
 }
 
-
+static void gen_write_data(const char *fmt, ...) {
+    va_list va;
+    va_start(va, fmt);
+    char buf[500] = { 0 };
+    vsnprintf(buf, ARRAY_LEN(buf), fmt, va);
+    strcat(buf, "\n");
+    strcat(gen.buffer_data, buf);
+    va_end(va);
+}
 
 static Symbol emit_addr(AstNode *node);
 static Symbol emit(AstNode *node);
@@ -181,7 +195,7 @@ static Symbol call(const ExprCall *call) {
 
     Symbol sym = emit(call->callee);
     gen_write("push rax");
-    ProcSignature *sig = &sym.type.type_signature;
+    ProcSignature *sig = &sym.type.signature;
 
     const AstNodeList *list = &call->args;
     for (size_t i=0; i < list->size; ++i) {
@@ -213,7 +227,7 @@ static Symbol call(const ExprCall *call) {
 
 static void proc(const StmtProc *proc) {
     const char *ident  = proc->ident.value;
-    const ProcSignature *sig = &proc->type.type_signature;
+    const ProcSignature *sig = &proc->type.signature;
 
     if (proc->body == NULL) {
         gen_write("extern %s", ident);
@@ -333,12 +347,6 @@ static Symbol binop(const ExprBinOp *binop) {
     const char *rax = subregister(REG_RAX, lhs.type.kind);
     gen_write("pop rdi");
 
-    // if (rhs.kind != lhs.kind) {
-    //     // TODO: print type names
-    //     compiler_message(MSG_ERROR, "Incompatible types");
-    //     exit(EXIT_FAILURE);
-    // }
-
     switch (binop->kind) {
         case BINOP_ADD: gen_write("add %s, %s", rax, rdi); break;
         case BINOP_SUB: gen_write("sub %s, %s", rax, rdi); break;
@@ -407,7 +415,13 @@ static Symbol literal(const ExprLiteral *literal) {
     const char *str = literal->op.value;
 
     switch (literal->kind) {
-        // TODO: string literal
+        case LITERAL_STRING: {
+
+            gen_write_data("string:");
+            gen_write_data("db \"%s\", 0", str);
+            return (Symbol) { .kind = SYMBOL_NONE, .type = (Type) { .kind = TYPE_POINTER } };
+
+        } break;
 
         case LITERAL_CHAR: {
             gen_write("mov %s, %d", subregister(REG_RAX, TYPE_CHAR), str[0]);
@@ -546,7 +560,6 @@ static Symbol emit(AstNode *node) {
 }
 
 void codegen(AstNode *root) {
-    gen_init(compiler_config.filename.asm_);
     emit(root);
-    gen_destroy();
+    gen_write_to_file(compiler_config.filename.asm_);
 }

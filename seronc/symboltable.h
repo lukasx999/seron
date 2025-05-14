@@ -11,15 +11,15 @@
 typedef struct {
     Hashtable *head;
     Arena *arena;
-    int stack;
+    int stack_size;
 } Symboltable;
 
 void symboltable_init(Symboltable *st, Arena *arena);
 // returns the newly allocated hashtable
-NO_DISCARD Hashtable *symboltable_push(Symboltable *st);
+Hashtable *symboltable_push(Symboltable *st);
 void symboltable_pop(Symboltable *st);
 // returns NULL if key was not found
-Symbol *symboltable_lookup(Hashtable *current, const char *key);
+NO_DISCARD Symbol *symboltable_lookup(Hashtable *current, const char *key);
 void symboltable_build(AstNode *root, Arena *arena);
 
 
