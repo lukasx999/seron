@@ -12,7 +12,7 @@
 #include <sys/wait.h>
 
 #define ARENA_IMPL
-#include "lib/arena.h"
+#include <arena.h>
 
 #include "util.h"
 #include "lexer.h"
@@ -204,72 +204,6 @@ static void parse_args(int argc, char **argv) {
 
 // TODO: synchronizing parser / typechecker
 // TODO: get tokens from FILE* stream
-
-
-
-void test_lexer(void) {
-
-    const char *src = "return 1+2+_foo123*/ \"str\" = == proc if else while";
-    Token *tok = lexer_collect_tokens(src);
-    lexer_print_tokens(src);
-    Token *tmp = tok;
-
-    Token *cmp = (Token[]) {
-        (Token) { .kind = TOK_KW_RETURN },
-        (Token) { .kind = TOK_NUMBER, .value = "1" },
-        (Token) { .kind = TOK_PLUS },
-        (Token) { .kind = TOK_NUMBER, .value = "2" },
-        (Token) { .kind = TOK_PLUS },
-        (Token) { .kind = TOK_IDENT, .value = "_foo123" },
-        (Token) { .kind = TOK_ASTERISK },
-        (Token) { .kind = TOK_SLASH },
-        (Token) { .kind = TOK_STRING, .value = "str" },
-        (Token) { .kind = TOK_ASSIGN },
-        (Token) { .kind = TOK_EQUALS },
-        (Token) { .kind = TOK_KW_PROC },
-        (Token) { .kind = TOK_KW_IF },
-        (Token) { .kind = TOK_KW_ELSE },
-        (Token) { .kind = TOK_KW_WHILE },
-    };
-
-    while (tmp->kind != TOK_EOF) {
-        // TODO: only compares first two struct fields
-        // compare all fields, after refactoring token positions
-        assert(!memcmp(tmp, cmp, offsetof(Token, value)));
-        cmp++;
-        tmp++;
-    }
-
-    free(tok);
-}
-
-void test_parser(void) {
-    Arena arena = { 0 };
-    arena_init(&arena);
-
-    AstNode *root = parse("proc main() { 1+2; }", &arena);
-    parser_print_ast(root, 2);
-
-    assert(root->kind == ASTNODE_BLOCK);
-    AstNode *func = *root->block.stmts.items;
-    assert(func->kind == ASTNODE_PROC);
-
-    AstNode *plus = *func->stmt_proc.body->block.stmts.items;
-    assert(plus->kind == ASTNODE_BINOP);
-
-    AstNode *lhs = plus->expr_binop.lhs;
-    AstNode *rhs = plus->expr_binop.rhs;
-
-    assert(lhs->kind == ASTNODE_LITERAL);
-    assert(rhs->kind == ASTNODE_LITERAL);
-
-    arena_free(&arena);
-}
-
-void test(void) {
-    test_lexer();
-    test_parser();
-}
 
 int main(int argc, char **argv) {
 

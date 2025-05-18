@@ -6,8 +6,6 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-
-
 typedef enum {
     TOK_INVALID, // Used only for error checking and as a sentinel value
 
@@ -23,8 +21,8 @@ typedef enum {
     TOK_BANG,
 
     TOK_SEMICOLON,
-    TOK_COMMA,
     TOK_COLON,
+    TOK_COMMA,
     TOK_ASSIGN,
     TOK_EQUALS,
     TOK_AMPERSAND,
@@ -57,8 +55,10 @@ typedef enum {
 const char *tokenkind_to_string(TokenKind tok);
 
 typedef struct {
+    // TODO: add integer literal type information
     TokenKind kind;
-    char value[BUFSIZ]; // only holds value for literals, otherwise: ""
+    // TODO: memory usage?
+    char value[BUFSIZ]; // only holds value for literals, otherwise empty
     int pos_line, pos_column;
     size_t pos_absolute, length;
 } Token;

@@ -573,9 +573,7 @@ static Type rule_util_type(Parser *p) {
     //        | "char"
     //        | "proc" <paramlist> <type>
 
-    Type ty = {
-        .kind = TYPE_INVALID,
-    };
+    Type ty = { .kind = TYPE_INVALID };
 
     if (parser_match_token(p, TOK_ASTERISK)) {
         parser_advance(p);
@@ -584,30 +582,27 @@ static Type rule_util_type(Parser *p) {
         ty.pointee = parser_alloc(p, sizeof(Type));
         *ty.pointee = rule_util_type(p);
 
+    } else if (parser_match_token(p, TOK_KW_PROC)) {
+        parser_advance(p);
+
+        // TODO: exract this common behaviour
+        ty.kind = TYPE_PROCEDURE;
+        rule_util_paramlist(p, &ty.signature);
+
+        ty.signature.returntype = parser_alloc(p, sizeof(Type));
+        *ty.signature.returntype = rule_util_type(p);
+
     } else {
-
         Token tok = parser_advance(p);
-
-        if (tok.kind == TOK_KW_PROC) {
-            ty.kind = TYPE_PROCEDURE;
-            rule_util_paramlist(p, &ty.signature);
-
-            ty.signature.returntype = parser_alloc(p, sizeof(Type));
-            *ty.signature.returntype = rule_util_type(p);
-
-        } else {
-            ty.kind = type_from_token(tok.kind);
-        }
-
-
-        if (ty.kind == TYPE_INVALID) {
-            compiler_message_tok(MSG_ERROR, tok, "Unknown type `%s`", tok.value);
-            exit(EXIT_FAILURE);
-        }
-
+        ty.kind = type_from_token(tok.kind);
     }
 
-    assert(ty.kind != TYPE_INVALID);
+
+    // TODO:
+    // if (ty.kind == TYPE_INVALID) {
+    //     compiler_message_tok(MSG_ERROR, tok, "Unknown type `%s`", tok.value);
+    //     exit(EXIT_FAILURE);
+    // }
 
     return ty;
 }

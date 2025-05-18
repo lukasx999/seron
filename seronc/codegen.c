@@ -6,12 +6,13 @@
 #include <stdbool.h>
 #include <alloca.h>
 
+#include <util.h>
+
 #include "util.h"
 #include "lexer.h"
 #include "main.h"
 #include "parser.h"
 #include "symboltable.h"
-#include "lib/util.h"
 
 
 

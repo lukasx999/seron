@@ -19,8 +19,7 @@ proc main() int {
     #let height int = 500;
 
 
-    InitWindow(500, 500, "foo");
-    let z int = 0;
+    #InitWindow(500, 500, "foo");
 
     #while !WindowShouldClose() {
     #    BeginDrawing();
@@ -41,7 +40,7 @@ proc main() int {
     #putchar(x);
 
 
-    #let x proc(s *char) void = puts;
+    let x proc(s *char) void = puts;
     #let y proc(s *char) void = x;
     #
     #let i int = 45;

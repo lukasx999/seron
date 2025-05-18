@@ -5,9 +5,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include <arena.h>
+
 #include "lexer.h"
 #include "hashtable.h"
-#include "lib/arena.h"
 
 
 

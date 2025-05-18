@@ -6,10 +6,11 @@
 #include <assert.h>
 #include <stdbool.h>
 
+#define UTIL_COLORS
+#include <util.h>
+
 #include "util.h"
 #include "lexer.h"
-#define UTIL_COLORS
-#include "lib/util.h"
 
 
 

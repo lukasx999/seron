@@ -1,10 +1,11 @@
 #ifndef _SYMBOLTABLE_H
 #define _SYMBOLTABLE_H
 
+#include <arena.h>
+#include <util.h>
+
 #include "hashtable.h"
 #include "parser.h"
-#include "lib/arena.h"
-#include "lib/util.h"
 
 
 
