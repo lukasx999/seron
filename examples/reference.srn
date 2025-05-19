@@ -4,18 +4,18 @@
 Multi-line comment
 ##
 
-proc f() {}                                 # Procedure
-proc g(a int, b byte) size {}               # Parameters and Returntype
-proc h(x int) int;                          # Procedure Declaration
+proc f() {}                                             # Procedure
+proc g(a: int, b: byte) size {}                         # Parameters and Returntype
+proc h(x: int) int;                                     # Procedure Declaration
 
-proc main() int {                           # Entry point
+proc main() int {                                       # Entry point
 
-    if 1 { ## Then ## } else { ## Else ## } # If Statement
-    while 1 { ## Body ## }                  # While Loop
-    let x int;                              # Variable declaration
-    let y int = 1;                          # Variable definition
-    y = 2;                                  # Assignment
-    { ## Body ## }                          # Block
+    if 1 { ## Then ## } else { ## Else ## }             # If Statement
+    while 1 { ## Body ## }                              # While Loop
+    let x: int;                                         # Variable declaration
+    let y: int = 1;                                     # Variable definition
+    y = 2;                                              # Assignment
+    { ## Body ## }                                      # Block
 
     return 0;
 }
