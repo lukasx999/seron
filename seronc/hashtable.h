@@ -20,6 +20,7 @@
 typedef struct Type Type;
 
 typedef struct {
+    // TODO: remove pointer
     Type *type; // heap-allocated
     char ident[MAX_IDENT_LEN];
 } Param;

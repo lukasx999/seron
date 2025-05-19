@@ -1,0 +1,9 @@
+proc putchar(c: int) void {
+}
+
+proc main() int {
+
+
+
+    return 0;
+}

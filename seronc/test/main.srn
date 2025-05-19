@@ -1,17 +1,20 @@
-proc malloc(size int) *void;
-proc free(p *void);
-proc puts(s *char);
-proc putchar(c char);
-proc InitWindow(width int, height int, title *char);
-proc CloseWindow();
-proc WindowShouldClose() char;
-proc BeginDrawing();
-proc EndDrawing();
-proc ClearBackground(color int);
-proc GetColor(hex int) int;
-proc DrawText(str *char, x int, y int, size int, color int);
+#proc malloc(size: int) *void;
+#proc free(p: *void);
+#proc puts(s: *char);
+#proc putchar(c: char);
+#proc InitWindow(width: int, height: int, title: *char);
+#proc CloseWindow();
+#proc WindowShouldClose() char;
+#proc BeginDrawing();
+#proc EndDrawing();
+#proc ClearBackground(color: int);
+#proc GetColor(hex: int) int;
+#proc DrawText(str: *char, x: int, y: int, size: int, color: int);
 
-proc DrawRectangle(posX int, posY int, width int, height int, color int);
+#proc DrawRectangle(posX: int, posY: int, width: int, height: int, color: int);
+
+proc foo(x: int) void {
+}
 
 proc main() int {
 
@@ -40,7 +43,7 @@ proc main() int {
     #putchar(x);
 
 
-    let x proc(s *char) void = puts;
+    #let x: proc(s: *char) void = puts;
     #let y proc(s *char) void = x;
     #
     #let i int = 45;

@@ -88,15 +88,21 @@ typedef struct {
     LexerState lexer;
 } Parser;
 
-static inline Token parser_tok(const Parser *p) {
+// returns the current token
+static inline Token parser_peek(const Parser *p) {
     return p->tok;
 }
 
-// returns the old token
+// moves one token ahead, and returns the token before
 static inline Token parser_advance(Parser *p) {
     Token old = p->tok;
     p->tok = lexer_next(&p->lexer);
     return old;
+}
+
+// TODO:
+// advance, but only if the current token has the specified kind
+static inline void parser_consume(Parser *p, TokenKind kind) {
 }
 
 // TODO: use this instead of parser_alloc()
@@ -117,7 +123,7 @@ static bool parser_match_tokens(const Parser *p, ...) {
 
     while (1) {
         TokenKind tok = va_arg(va, TokenKind);
-        bool matched = parser_tok(p).kind == tok;
+        bool matched = parser_peek(p).kind == tok;
         if (matched || tok == SENTINEL) {
             va_end(va);
             return matched;
@@ -136,7 +142,7 @@ static inline void parser_expect_token(const Parser *p, TokenKind tokenkind) {
     if (!parser_match_token(p, tokenkind)) {
         compiler_message_tok(
             MSG_ERROR,
-            parser_tok(p),
+            parser_peek(p),
             "Expected %s",
             tokenkind_to_string(tokenkind)
         );
@@ -503,7 +509,7 @@ static AstNodeList rule_util_arglist(Parser *p) {
             parser_advance(p);
 
             if (parser_match_token(p, TOK_RPAREN)) {
-                compiler_message_tok(MSG_ERROR, parser_tok(p),  "Extraneous `,`");
+                compiler_message_tok(MSG_ERROR, parser_peek(p),  "Extraneous `,`");
                 exit(EXIT_FAILURE);
             }
         }
@@ -516,47 +522,52 @@ static AstNodeList rule_util_arglist(Parser *p) {
     return args;
 }
 
+static Param rule_util_param(Parser *p) {
+    // <param> ::= IDENTIFIER ":" <type>
+
+    parser_expect_token(p, TOK_IDENT);
+    Token tok = parser_advance(p);
+
+    parser_expect_token(p, TOK_COLON);
+    parser_advance(p);
+
+    Type *type = parser_alloc(p, sizeof(Type));
+    *type = rule_util_type(p);
+
+    Param param = {
+        .ident = { 0 },
+        .type  = type,
+    };
+
+    if (strlen(tok.value) > MAX_IDENT_LEN) {
+        compiler_message_tok(MSG_ERROR, tok, "Identifiers cannot be longer than %d characters!", MAX_IDENT_LEN);
+        exit(EXIT_FAILURE);
+    }
+
+    strncpy(param.ident, tok.value, ARRAY_LEN(param.ident));
+
+    return param;
+
+}
+
 static void rule_util_paramlist(Parser *p, ProcSignature *sig) {
-    // <paramlist> ::= "(" (IDENTIFIER <type> ("," IDENTIFIER <type>)* )? ")"
+    // <paramlist> ::= "(" (<param> ("," <param>)* )? ")"
 
     parser_expect_token(p, TOK_LPAREN);
     parser_advance(p);
 
     while (!parser_match_token(p, TOK_RPAREN)) {
 
-        parser_expect_token(p, TOK_IDENT);
-        Token tok = parser_advance(p);
+        // TODO:
+        // if (sig->params_count >= MAX_PARAM_COUNT) {
+        //     compiler_message_tok(MSG_ERROR, tok, "Procedures may not have more than %d parameters!", MAX_PARAM_COUNT);
+        //     exit(EXIT_FAILURE);
+        // }
 
-        Type *type = parser_alloc(p, sizeof(Type));
-        *type = rule_util_type(p);
+        sig->params[sig->params_count++] = rule_util_param(p);
 
-        if (sig->params_count >= MAX_PARAM_COUNT) {
-            compiler_message_tok(MSG_ERROR, tok, "Procedures may not have more than %d parameters!", MAX_PARAM_COUNT);
-            exit(EXIT_FAILURE);
-        }
-
-        Param param = {
-            .ident = { 0 },
-            .type  = type,
-        };
-
-        if (strlen(tok.value) > MAX_IDENT_LEN) {
-            compiler_message_tok(MSG_ERROR, tok, "Identifiers cannot be longer than %d characters!", MAX_IDENT_LEN);
-            exit(EXIT_FAILURE);
-        }
-
-        strncpy(param.ident, tok.value, ARRAY_LEN(param.ident));
-
-        sig->params[sig->params_count++] = param;
-
-        if (parser_match_token(p, TOK_COMMA)) {
+        if (parser_match_token(p, TOK_COMMA))
             parser_advance(p);
-
-            if (parser_match_token(p, TOK_RPAREN)) {
-                compiler_message_tok(MSG_ERROR, parser_tok(p), "Extraneous `,`"),
-                exit(EXIT_FAILURE);
-            }
-        }
 
     }
 
@@ -616,7 +627,7 @@ static AstNode *rule_grouping(Parser *p) {
     parser_advance(p);
 
     if (parser_match_token(p, TOK_RPAREN)) {
-        compiler_message_tok(MSG_ERROR, parser_tok(p), "Don't write functional code!");
+        compiler_message_tok(MSG_ERROR, parser_peek(p), "Don't write functional code!");
         exit(EXIT_FAILURE);
     }
 
@@ -643,7 +654,7 @@ static AstNode *rule_primary(Parser *p) {
 
     if (parser_match_tokens(p, TOK_NUMBER, TOK_CHAR, TOK_IDENT, TOK_STRING, SENTINEL)) {
 
-        Token tok = parser_tok(p);
+        Token tok = parser_peek(p);
 
         AstNode *astnode      = parser_alloc(p, sizeof(AstNode));
         astnode->kind         = ASTNODE_LITERAL;
@@ -659,7 +670,7 @@ static AstNode *rule_primary(Parser *p) {
         return rule_grouping(p);
 
     } else {
-        compiler_message_tok(MSG_ERROR, parser_tok(p), "Unexpected Token");
+        compiler_message_tok(MSG_ERROR, parser_peek(p), "Unexpected Token");
         exit(EXIT_FAILURE);
     }
 
@@ -675,7 +686,7 @@ static AstNode *rule_call(Parser *p) {
     if (!parser_match_token(p, TOK_LPAREN))
         return node;
 
-    Token op = parser_tok(p);
+    Token op = parser_peek(p);
 
     AstNode *call   = parser_alloc(p, sizeof(AstNode));
     call->kind      = ASTNODE_CALL;
@@ -800,13 +811,16 @@ static AstNode *rule_exprstmt(Parser *p) {
 }
 
 static AstNode *rule_vardecl(Parser *p) {
-    // <vardecl> ::= "let" <identifier> <type> ("=" <expression>)? ";"
+    // <vardecl> ::= "let" <identifier> ":" <type> ("=" <expression>)? ";"
 
     assert(parser_match_token(p, TOK_KW_VARDECL));
     Token op = parser_advance(p);
 
     parser_expect_token(p, TOK_IDENT);
     Token ident = parser_advance(p);
+
+    parser_expect_token(p, TOK_COLON);
+    parser_advance(p);
 
     Type type = rule_util_type(p);
     AstNode *value = NULL;
