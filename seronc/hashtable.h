@@ -10,6 +10,7 @@
 
 #include "lib/util.h"
 #include "lib/arena.h"
+#include "lexer.h"
 #include "types.h"
 
 

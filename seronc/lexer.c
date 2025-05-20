@@ -90,6 +90,64 @@ void lexer_init(LexerState *state, const char *src) {
     state->src = src;
 }
 
+static void tokenize_string(LexerState *s, Token *tok) {
+
+    tok->kind = TOK_STRING;
+    const char *start = s->src + 1;
+
+    while (*++s->src != '"') {
+        if (*s->src == '\0') {
+            compiler_message(MSG_ERROR, "unterminated string literal: `%s`", start);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    copy_slice_to_buf(tok->value, start, s->src);
+    s->src++; // make src point to the next char, instead of `"`
+
+}
+
+static void tokenize_char(LexerState *s, Token *tok) {
+
+    tok->kind = TOK_CHAR;
+    s->src++;
+
+    char c = *s->src++;
+
+    if (!isascii(c)) {
+        compiler_message(MSG_ERROR, "invalid character literal");
+        exit(EXIT_FAILURE);
+    }
+
+    tok->value[0] = c;
+
+    if (*s->src++ != '\'') {
+        compiler_message(MSG_ERROR, "unterminated character literal");
+        exit(EXIT_FAILURE);
+    }
+
+}
+
+static void tokenize_number(LexerState *s, Token *tok) {
+    tok->kind = TOK_NUMBER;
+    const char *start = s->src;
+
+    while (isdigit(*++s->src));
+
+    if (*s->src == 'L' || *s->src == 'B') s->src++;
+
+    copy_slice_to_buf(tok->value, start, s->src);
+}
+
+static void tokenize_ident(LexerState *s, Token *tok) {
+
+    const char *start = s->src;
+    while (isalpha(*++s->src) || *s->src == '_' || isdigit(*s->src));
+
+    if ((tok->kind = get_kw(start)) == TOK_IDENT)
+        copy_slice_to_buf(tok->value, start, s->src);
+}
+
 Token lexer_next(LexerState *s) {
 
     Token tok = { .kind = TOK_INVALID };
@@ -190,61 +248,20 @@ Token lexer_next(LexerState *s) {
             break;
 
         case '\'':
-            tok.kind = TOK_CHAR;
-            s->src++;
-
-            char c = *s->src++;
-
-            if (!isascii(c)) {
-                compiler_message(MSG_ERROR, "invalid character literal");
-                exit(EXIT_FAILURE);
-            }
-
-            tok.value[0] = c;
-
-            if (*s->src++ != '\'') {
-                compiler_message(MSG_ERROR, "unterminated character literal");
-                exit(EXIT_FAILURE);
-            }
-
+            tokenize_char(s, &tok);
             break;
 
         case '"':
-            tok.kind = TOK_STRING;
-            const char *start = s->src + 1;
-
-            while (*++s->src != '"') {
-                if (*s->src == '\0') {
-                    compiler_message(MSG_ERROR, "unterminated string literal: `%s`", start);
-                    exit(EXIT_FAILURE);
-                }
-            }
-
-            copy_slice_to_buf(tok.value, start, s->src);
-            s->src++; // make src point to the next char, instead of `"`
+            tokenize_string(s, &tok);
             break;
 
         default: {
 
             if (isdigit(*s->src)) {
-
-                tok.kind = TOK_NUMBER;
-                const char *start = s->src;
-
-                while (isdigit(*++s->src));
-
-                if (*s->src == 'L' || *s->src == 'B') s->src++;
-
-                copy_slice_to_buf(tok.value, start, s->src);
+                tokenize_number(s, &tok);
 
             } else if (isalpha(*s->src) || *s->src == '_') {
-
-                const char *start = s->src;
-                while (isalpha(*++s->src) || *s->src == '_' || isdigit(*s->src));
-
-                if ((tok.kind = get_kw(start)) == TOK_IDENT)
-                    copy_slice_to_buf(tok.value, start, s->src);
-
+                tokenize_ident(s, &tok);
 
             } else {
                 compiler_message(MSG_ERROR, "unknown token `%c`", *s->src);

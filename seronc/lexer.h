@@ -6,6 +6,8 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+#define MAX_IDENT_LEN 64
+
 typedef enum {
     TOK_INVALID, // Used only for error checking and as a sentinel value
 

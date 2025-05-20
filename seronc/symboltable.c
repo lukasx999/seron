@@ -8,14 +8,14 @@ void symboltable_init(Symboltable *st, Arena *arena) {
     };
 }
 
-NO_DISCARD Symbol *symboltable_lookup(Hashtable *current, const char *key) {
+NO_DISCARD Symbol *symboltable_lookup(Hashtable *scope, const char *key) {
 
-    NON_NULL(current);
+    NON_NULL(scope);
 
-    while (current != NULL) {
-        Symbol *sym = hashtable_get(current, key);
+    while (scope != NULL) {
+        Symbol *sym = hashtable_get(scope, key);
         if (sym != NULL) return sym;
-        current = current->parent;
+        scope = scope->parent;
     }
 
     return NULL;
@@ -38,18 +38,18 @@ void symboltable_pop(Symboltable *st) {
 
 
 
-void block_pre(AstNode *node, UNUSED int _depth, void *args) {
+static void block_pre(AstNode *node, UNUSED int _depth, void *args) {
     Symboltable *st = args;
     Block *block = &node->block;
     block->symboltable = symboltable_push(st);
 }
 
-void block_post(UNUSED AstNode *_node, UNUSED int _depth, void *args) {
+static void block_post(UNUSED AstNode *_node, UNUSED int _depth, void *args) {
     Symboltable *st = args;
     symboltable_pop(st);
 }
 
-void vardecl(AstNode *node, UNUSED int _depth, void *args) {
+static void vardecl(AstNode *node, UNUSED int _depth, void *args) {
     Symboltable *st = args;
     StmtVarDecl *vardecl = &node->stmt_vardecl;
 
@@ -64,7 +64,7 @@ void vardecl(AstNode *node, UNUSED int _depth, void *args) {
     hashtable_insert(st->head, vardecl->ident.value, sym);
 }
 
-void proc_pre(AstNode *node, UNUSED int _depth, void *args) {
+static void proc_pre(AstNode *node, UNUSED int _depth, void *args) {
     Symboltable *st = args;
     DeclProc *proc = &node->stmt_proc;
 
@@ -81,7 +81,7 @@ void proc_pre(AstNode *node, UNUSED int _depth, void *args) {
 
 }
 
-void proc_post(AstNode *node, UNUSED int _depth, void *args) {
+static void proc_post(AstNode *node, UNUSED int _depth, void *args) {
 
     Symboltable *st = args;
     DeclProc *proc = &node->stmt_proc;

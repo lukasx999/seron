@@ -9,6 +9,7 @@
 
 
 
+// symboltable is a linked list of hashtables
 typedef struct {
     Hashtable *head;
     Arena *arena;
@@ -20,7 +21,7 @@ void symboltable_init(Symboltable *st, Arena *arena);
 Hashtable *symboltable_push(Symboltable *st);
 void symboltable_pop(Symboltable *st);
 // returns NULL if key was not found
-NO_DISCARD Symbol *symboltable_lookup(Hashtable *current, const char *key);
+NO_DISCARD Symbol *symboltable_lookup(Hashtable *scope, const char *key);
 void symboltable_build(AstNode *root, Arena *arena);
 
 

@@ -269,11 +269,10 @@ void parser_traverse_ast(
             depth--;
         } break;
 
-        case ASTNODE_TABLE: {
-            // TODO:
-        } break;
-
-        case ASTNODE_LITERAL: break;
+        case ASTNODE_TABLE:
+        case ASTNODE_LITERAL:
+            NOP()
+            break;
 
         default: PANIC("unexpected node kind");
     }
@@ -628,6 +627,7 @@ static Type rule_util_type(Parser *p) {
     //        | <proc-type>
 
     Type ty = { .kind = TYPE_INVALID };
+    Token tok = parser_peek(p);
 
     if (parser_match_token(p, TOK_ASTERISK)) {
         parser_advance(p);
@@ -639,17 +639,20 @@ static Type rule_util_type(Parser *p) {
     } else if (parser_match_token(p, TOK_KW_PROC)) {
         ty = rule_util_proc_type(p, NULL, NULL);
 
+    } else if (parser_match_token(p, TOK_IDENT)) {
+        // TODO:
+        ty.kind = TYPE_TABLE;
+
     } else {
         Token tok = parser_advance(p);
         ty.kind = type_from_token(tok.kind);
     }
 
 
-    // TODO:
-    // if (ty.kind == TYPE_INVALID) {
-    //     compiler_message_tok(MSG_ERROR, tok, "Unknown type `%s`", tok.value);
-    //     exit(EXIT_FAILURE);
-    // }
+    if (ty.kind == TYPE_INVALID) {
+        compiler_message_tok(MSG_ERROR, tok, "Unknown type `%s`", tok.value);
+        exit(EXIT_FAILURE);
+    }
 
     return ty;
 }

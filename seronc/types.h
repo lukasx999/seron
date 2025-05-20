@@ -3,8 +3,6 @@
 
 #include <stddef.h>
 
-// TODO: move to lexer
-#define MAX_IDENT_LEN 64
 #define MAX_PARAM_COUNT 255
 
 
