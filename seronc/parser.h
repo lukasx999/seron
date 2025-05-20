@@ -21,10 +21,9 @@ typedef struct {
 } AstNodeList;
 
 typedef enum {
-    LITERAL_NUMBER,
-    LITERAL_CHAR,
-    LITERAL_IDENT,
     LITERAL_STRING,
+    LITERAL_NUMBER,
+    LITERAL_IDENT,
 } LiteralKind;
 
 typedef struct {

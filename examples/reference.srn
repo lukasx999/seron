@@ -4,18 +4,27 @@
 Multi-line comment
 ##
 
-proc f() {}                                             # Procedure
-proc g(a: int, b: byte) size {}                         # Parameters and Returntype
+proc f() { }                                            # Procedure, implicit void returntype
+proc g(a: int, b: char) long { }                        # Parameters and Returntype
 proc h(x: int) int;                                     # Procedure Declaration
 
 proc main() int {                                       # Entry point
 
-    if 1 { ## Then ## } else { ## Else ## }             # If Statement
-    while 1 { ## Body ## }                              # While Loop
+    if 1 { } else { }                                   # If Statement
+    while 1 { }                                         # While Loop
+
     let x: int;                                         # Variable declaration
     let y: int = 1;                                     # Variable definition
     y = 2;                                              # Assignment
-    { ## Body ## }                                      # Block
+    { }                                                 # Block
+
+    let a: char = 1C;                                   # Char literal
+    let b: int  = 4I;                                   # Int literal
+    let c: long = 8L;                                   # Long literal
+    a = 'A';                                            # Char literal
+    b = 4;                                              # Default type for literal is int
+
+    let hp: proc(x: int) int = h;                       # Function Pointer
 
     return 0;
 }

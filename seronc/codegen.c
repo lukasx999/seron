@@ -344,7 +344,7 @@ static Type binop(const ExprBinOp *binop) {
     const char *rax = subregister(REG_RAX, lhs.kind);
     gen_write("pop rdi");
 
-    assert(rhs.kind == lhs.kind);
+    // assert(rhs.kind == lhs.kind);
 
     switch (binop->kind) {
         case BINOP_ADD: gen_write("add %s, %s", rax, rdi); break;
@@ -373,6 +373,7 @@ static Type literal_ident(const char *str, bool addr) {
             if (addr) {
                 gen_write("lea rax, [rbp-%d]", sym->offset);
                 return (Type) { .kind = TYPE_POINTER, .pointee = &sym->type };
+
             } else {
                 gen_write("mov %s, [rbp-%d]", subregister(REG_RAX, sym->type.kind), sym->offset);
             }
@@ -392,9 +393,8 @@ static Type literal_addr(const ExprLiteral *literal) {
 
     const char *str = literal->op.value;
 
-    switch (literal->kind) {
-
-        case LITERAL_IDENT:
+    switch (literal->op.kind) {
+        case TOK_LITERAL_IDENT:
             return literal_ident(str, true);
             break;
 
@@ -405,17 +405,25 @@ static Type literal_addr(const ExprLiteral *literal) {
 
 }
 
-static TypeKind type_from_number_literal_suffix(char suffix) {
-    switch (suffix) {
-        case 'L': return TYPE_LONG;
-        case 'B': return TYPE_CHAR;
-        default:  return TYPE_INVALID;
+static TypeKind type_from_token_literal(NumberLiteralType type) {
+
+    switch (type) {
+        case NUMBER_CHAR: return TYPE_CHAR;
+        case NUMBER_LONG: return TYPE_LONG;
+        case NUMBER_ANY:
+        case NUMBER_INT:  return TYPE_INT;
+        default: PANIC("unknown token");
+
     }
+
+    UNREACHABLE();
+
 }
 
 static Type literal(const ExprLiteral *literal) {
 
     const char *str = literal->op.value;
+    int64_t num = literal->op.number;
 
     switch (literal->kind) {
         case LITERAL_STRING: {
@@ -430,18 +438,10 @@ static Type literal(const ExprLiteral *literal) {
             return (Type) { .kind = TYPE_POINTER };
         } break;
 
-        case LITERAL_CHAR: {
-            gen_write("mov %s, %d", subregister(REG_RAX, TYPE_CHAR), str[0]);
-            return (Type) { .kind = TYPE_CHAR };
-        } break;
-
         case LITERAL_NUMBER: {
 
-            TypeKind type = type_from_number_literal_suffix(LASTCHAR(str));
-            if (type == TYPE_INVALID)
-                type = TYPE_INT;
-
-            gen_write("mov %s, %d", subregister(REG_RAX, type), atoll(str));
+            TypeKind type = type_from_token_literal(literal->op.number_type);
+            gen_write("mov %s, %d", subregister(REG_RAX, type), num);
             return (Type) { .kind = type };
         } break;
 

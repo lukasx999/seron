@@ -1,20 +1,21 @@
 #ifndef _LEXER_H
 #define _LEXER_H
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stddef.h>
 #include <stddef.h>
 #include <stdbool.h>
 
 #define MAX_IDENT_LEN 64
+#define MAX_NUMBER_LITERAL_LEN 64
 
 typedef enum {
-    TOK_INVALID, // Used only for error checking and as a sentinel value
+    TOK_INVALID, // used only for error checking and as a sentinel value
 
-    TOK_IDENT,
-    TOK_NUMBER,
-    TOK_CHAR,
-    TOK_STRING,
+    TOK_LITERAL_IDENT,
+    TOK_LITERAL_NUMBER,
+    TOK_LITERAL_STRING,
 
     TOK_PLUS,
     TOK_MINUS,
@@ -43,12 +44,10 @@ typedef enum {
     TOK_KW_RETURN,
     TOK_KW_TABLE,
 
-    TOK_BUILTIN_ASM,
-
-    TOK_TYPE_VOID,
-    TOK_TYPE_CHAR,
-    TOK_TYPE_INT,
-    TOK_TYPE_LONG,
+    TOK_KW_TYPE_VOID,
+    TOK_KW_TYPE_CHAR,
+    TOK_KW_TYPE_INT,
+    TOK_KW_TYPE_LONG,
 
     TOK_EOF,
 
@@ -57,21 +56,30 @@ typedef enum {
 
 const char *tokenkind_to_string(TokenKind tok);
 
+typedef enum {
+    NUMBER_LONG,
+    NUMBER_INT,
+    NUMBER_CHAR,
+    NUMBER_ANY,
+} NumberLiteralType;
+
 typedef struct {
-    // TODO: add integer literal type information
     TokenKind kind;
     // TODO: memory usage?
-    char value[BUFSIZ]; // only holds value for literals, otherwise empty
+    char value[BUFSIZ]; // for strings and identifiers
+    NumberLiteralType number_type;
+    uint64_t number;    // for all kinds of numbers
+
     int pos_line, pos_column;
     size_t pos_absolute, length;
 } Token;
 
 typedef struct {
     const char *src;
-} LexerState;
+} Lexer;
 
-void lexer_init(LexerState *state, const char *src);
-Token lexer_next(LexerState *s);
+void lexer_init(Lexer *state, const char *src);
+Token lexer_next(Lexer *s);
 
 // these functions are very performance heavy, and are only used for
 // debugging and testing purposes, the actual parser should be streaming

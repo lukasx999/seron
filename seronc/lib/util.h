@@ -44,6 +44,9 @@
 #define NORETURN __attribute((noreturn))
 #endif // __STDC11
 
+#define MIN(a, b) \
+    ((a) < (b) ? (a) : (b))
+
 
 noreturn static inline void _impl_panic(
     const char *file,

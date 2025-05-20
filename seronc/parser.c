@@ -13,7 +13,6 @@
 #include "util.h"
 #include "lexer.h"
 #include "parser.h"
-#include "hashtable.h"
 
 
 #define SENTINEL TOK_INVALID
@@ -42,23 +41,22 @@ static void astnodelist_append(AstNodeList *list, AstNode *node) {
     list->items[list->size++] = node;
 }
 
-static TypeKind type_from_token(TokenKind kind) {
+static TypeKind type_from_token_keyword(TokenKind kind) {
     switch (kind) {
-        case TOK_TYPE_INT:  return TYPE_INT;
-        case TOK_TYPE_LONG: return TYPE_LONG;
-        case TOK_TYPE_CHAR: return TYPE_CHAR;
-        case TOK_TYPE_VOID: return TYPE_VOID;
-        default:            return TYPE_INVALID;
+        case TOK_KW_TYPE_INT:  return TYPE_INT;
+        case TOK_KW_TYPE_LONG: return TYPE_LONG;
+        case TOK_KW_TYPE_CHAR: return TYPE_CHAR;
+        case TOK_KW_TYPE_VOID: return TYPE_VOID;
+        default:               return TYPE_INVALID;
     }
 }
 
 static LiteralKind literal_from_token(TokenKind kind) {
     switch (kind) {
-        case TOK_NUMBER: return LITERAL_NUMBER;
-        case TOK_CHAR:   return LITERAL_CHAR;
-        case TOK_IDENT:  return LITERAL_IDENT;
-        case TOK_STRING: return LITERAL_STRING;
-        default:         PANIC("unknown tokenkind");
+        case TOK_LITERAL_IDENT:  return LITERAL_IDENT;
+        case TOK_LITERAL_NUMBER: return LITERAL_NUMBER;
+        case TOK_LITERAL_STRING: return LITERAL_STRING;
+        default:                 PANIC("unknown tokenkind");
     }
 }
 
@@ -85,7 +83,7 @@ static UnaryOpKind unaryop_from_token(TokenKind kind) {
 typedef struct {
     Arena *arena;
     Token tok;
-    LexerState lexer;
+    Lexer lexer;
 } Parser;
 
 // returns the current token
@@ -133,7 +131,8 @@ static inline void parser_expect_token(const Parser *p, TokenKind tokenkind) {
 }
 
 static inline bool parser_token_is_type(Parser *p) {
-    return parser_match_tokens(p, TOK_TYPE_INT, TOK_TYPE_CHAR, TOK_TYPE_LONG, TOK_TYPE_VOID, SENTINEL);
+    // TODO: find a better way of doing this
+    return parser_match_tokens(p, TOK_KW_TYPE_INT, TOK_KW_TYPE_CHAR, TOK_KW_TYPE_LONG, TOK_KW_TYPE_VOID, TOK_ASTERISK, SENTINEL);
 }
 
 static inline bool parser_is_at_end(const Parser *p) {
@@ -157,18 +156,13 @@ static inline Token parser_consume(Parser *p, TokenKind kind) {
 
 
 
-void parser_traverse_ast(
-    AstNode    *root,
-    AstCallback callback_pre,
-    AstCallback callback_post,
-    void       *args
-) {
+void parser_traverse_ast(AstNode *root, AstCallback fn_pre, AstCallback fn_post, void *args) {
     NON_NULL(root);
 
     static int depth = 0;
 
-    if (callback_pre != NULL)
-        callback_pre(root, depth, args);
+    if (fn_pre != NULL)
+        fn_pre(root, depth, args);
 
     switch (root->kind) {
 
@@ -177,14 +171,14 @@ void parser_traverse_ast(
             AstNodeList list = root->block.stmts;
 
             for (size_t i=0; i < list.size; ++i)
-                parser_traverse_ast(list.items[i], callback_pre, callback_post, args);
+                parser_traverse_ast(list.items[i], fn_pre, fn_post, args);
 
             depth--;
         } break;
 
         case ASTNODE_ASSIGN: {
             depth++;
-            parser_traverse_ast(root->expr_assign.value, callback_pre, callback_post, args);
+            parser_traverse_ast(root->expr_assign.value, fn_pre, fn_post, args);
             depth--;
         } break;
 
@@ -192,11 +186,11 @@ void parser_traverse_ast(
             depth++;
 
             ExprCall *call = &root->expr_call;
-            parser_traverse_ast(call->callee, callback_pre, callback_post, args);
+            parser_traverse_ast(call->callee, fn_pre, fn_post, args);
 
             AstNodeList list = call->args;
             for (size_t i=0; i < list.size; ++i)
-                parser_traverse_ast(list.items[i], callback_pre, callback_post, args);
+                parser_traverse_ast(list.items[i], fn_pre, fn_post, args);
 
             depth--;
         } break;
@@ -204,8 +198,8 @@ void parser_traverse_ast(
         case ASTNODE_WHILE: {
             depth++;
             StmtWhile *while_ = &root->stmt_while;
-            parser_traverse_ast(while_->condition, callback_pre, callback_post, args);
-            parser_traverse_ast(while_->body, callback_pre, callback_post, args);
+            parser_traverse_ast(while_->condition, fn_pre, fn_post, args);
+            parser_traverse_ast(while_->body, fn_pre, fn_post, args);
             depth--;
         } break;
 
@@ -213,7 +207,7 @@ void parser_traverse_ast(
             depth++;
             StmtReturn *return_ = &root->stmt_return;
             if (return_->expr != NULL)
-                parser_traverse_ast(return_->expr, callback_pre, callback_post, args);
+                parser_traverse_ast(return_->expr, fn_pre, fn_post, args);
             depth--;
         } break;
 
@@ -221,18 +215,18 @@ void parser_traverse_ast(
             depth++;
 
             StmtIf *if_ = &root->stmt_if;
-            parser_traverse_ast(if_->condition, callback_pre, callback_post, args);
-            parser_traverse_ast(if_->then_body, callback_pre, callback_post, args);
+            parser_traverse_ast(if_->condition, fn_pre, fn_post, args);
+            parser_traverse_ast(if_->then_body, fn_pre, fn_post, args);
 
             if (if_->else_body != NULL)
-                parser_traverse_ast(if_->else_body, callback_pre, callback_post, args);
+                parser_traverse_ast(if_->else_body, fn_pre, fn_post, args);
 
             depth--;
         } break;
 
         case ASTNODE_GROUPING:
             depth++;
-            parser_traverse_ast(root->expr_grouping.expr, callback_pre, callback_post, args);
+            parser_traverse_ast(root->expr_grouping.expr, fn_pre, fn_post, args);
             depth--;
             break;
 
@@ -241,7 +235,7 @@ void parser_traverse_ast(
 
             AstNode *body = root->stmt_proc.body;
             if (body != NULL)
-                parser_traverse_ast(body, callback_pre, callback_post, args);
+                parser_traverse_ast(body, fn_pre, fn_post, args);
 
             depth--;
             break;
@@ -250,22 +244,22 @@ void parser_traverse_ast(
             depth++;
             StmtVarDecl *vardecl = &root->stmt_vardecl;
             if (vardecl->init != NULL)
-                parser_traverse_ast(vardecl->init, callback_pre, callback_post, args);
+                parser_traverse_ast(vardecl->init, fn_pre, fn_post, args);
             depth--;
         } break;
 
         case ASTNODE_BINOP: {
             depth++;
             ExprBinOp *binop = &root->expr_binop;
-            parser_traverse_ast(binop->lhs, callback_pre, callback_post, args);
-            parser_traverse_ast(binop->rhs, callback_pre, callback_post, args);
+            parser_traverse_ast(binop->lhs, fn_pre, fn_post, args);
+            parser_traverse_ast(binop->rhs, fn_pre, fn_post, args);
             depth--;
         } break;
 
         case ASTNODE_UNARYOP: {
             depth++;
             ExprUnaryOp *unaryop = &root->expr_unaryop;
-            parser_traverse_ast(unaryop->node, callback_pre, callback_post, args);
+            parser_traverse_ast(unaryop->node, fn_pre, fn_post, args);
             depth--;
         } break;
 
@@ -277,8 +271,8 @@ void parser_traverse_ast(
         default: PANIC("unexpected node kind");
     }
 
-    if (callback_post != NULL)
-        callback_post(root, depth, args);
+    if (fn_post != NULL)
+        fn_post(root, depth, args);
 
 }
 
@@ -327,16 +321,13 @@ static void dispatch_callback_post(AstNode *root, int depth, void *args) {
 
 }
 
-void parser_dispatch_ast(
-    AstNode          *root,
-    AstDispatchEntry *table,
-    size_t            table_size,
-    void             *args
-) {
-
-    DispatchTable dt = { table, table_size, args };
-    parser_traverse_ast(root, dispatch_callback_pre, dispatch_callback_post, (void*) &dt);
-
+void parser_dispatch_ast(AstNode *root, AstDispatchEntry *table, size_t table_size, void *args) {
+    DispatchTable dt = {
+        .table = table,
+        .size = table_size,
+        .user_args = args,
+    };
+    parser_traverse_ast(root, dispatch_callback_pre, dispatch_callback_post, &dt);
 }
 
 
@@ -367,9 +358,11 @@ static void print_colored(const char *color, const char *fmt, ...) {
     va_end(va);
 }
 
-#define AST_COLOR_KEYWORD COLOR_RED
-#define AST_COLOR_SEMANTIC COLOR_BLUE
+// TODO: refactor
+#define AST_COLOR_KEYWORD   COLOR_RED
+#define AST_COLOR_SEMANTIC  COLOR_BLUE
 #define AST_COLOR_OPERATION COLOR_PURPLE
+#define AST_COLOR_IDENT     COLOR_PURPLE
 
 static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
 
@@ -412,7 +405,7 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
                 case BINOP_SUB: op = "sub"; break;
                 case BINOP_MUL: op = "mul"; break;
                 case BINOP_DIV: op = "div"; break;
-                default:        PANIC("unknown binop kind");
+                default: PANIC("unknown binop");
             }
 
             print_colored(AST_COLOR_OPERATION, "%s\n", NON_NULL(op));
@@ -432,7 +425,7 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
                 case UNARYOP_NEG:    op = "neg";    break;
                 case UNARYOP_ADDROF: op = "addrof"; break;
                 case UNARYOP_DEREF:  op = "deref";  break;
-                default:            PANIC("unknown unaryop kind");
+                default: PANIC("unknown unaryop");
             }
 
             print_colored(AST_COLOR_OPERATION, "%s\n", NON_NULL(op));
@@ -440,28 +433,32 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
         } break;
 
         case ASTNODE_ASSIGN: {
-            // ExprAssign *assign = &root->expr_assign;
-
-            print_colored(AST_COLOR_OPERATION, "assign");
-
+            print_colored(AST_COLOR_OPERATION, "assign\n");
         } break;
 
-        // TODO: refactor to print_colored()
         case ASTNODE_PROC: {
-            DeclProc *func = &root->stmt_proc;
-            print_ast_value(tokenkind_to_string(func->op.kind), COLOR_RED, func->ident.value, NULL);
+            DeclProc *proc = &root->stmt_proc;
+            print_colored(AST_COLOR_KEYWORD, "proc: ");
+            print_colored(AST_COLOR_IDENT, "%s", proc->ident.value);
+            print_colored(COLOR_GRAY, "(");
+
+            ProcSignature *sig = proc->type.signature;
+            for (size_t i=0; i < sig->params_count; ++i) {
+                const char *sep = i == sig->params_count-1 ? "" : ", ";
+                print_colored(AST_COLOR_IDENT, "%s%s", sig->params[i].ident, sep);
+            }
+
+            print_colored(COLOR_GRAY, ")\n");
+
+            // TODO: print param types
         } break;
 
         case ASTNODE_VARDECL: {
             StmtVarDecl *vardecl = &root->stmt_vardecl;
-
-            print_colored(AST_COLOR_KEYWORD, "vardecl");
-            print_colored(
-                COLOR_GRAY,
-                " (%s: %s)\n",
-                vardecl->ident.value,
-                stringify_typekind(vardecl->type.kind)
-            );
+            print_colored(AST_COLOR_KEYWORD, "vardecl: ");
+            print_colored(AST_COLOR_IDENT, "%s\n", vardecl->ident.value);
+            // TODO: print type information
+            // print_colored(AST_COLOR_IDENT, " (%s: %s)\n", vardecl->ident.value, stringify_typekind(vardecl->type.kind));
 
         } break;
 
@@ -476,7 +473,7 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
 }
 
 void parser_print_ast(AstNode *root, int spacing) {
-    parser_traverse_ast(root, parser_print_ast_callback, NULL, (void*) &spacing);
+    parser_traverse_ast(root, parser_print_ast_callback, NULL, &spacing);
 }
 
 static AstNode *rule_program(Parser *p);
@@ -523,7 +520,7 @@ static AstNodeList rule_util_arglist(Parser *p) {
 static Param rule_util_param(Parser *p) {
     // <param> ::= IDENTIFIER ":" <type>
 
-    Token tok = parser_consume(p, TOK_IDENT);
+    Token tok = parser_consume(p, TOK_LITERAL_IDENT);
     parser_consume(p, TOK_COLON);
 
     Param param = {
@@ -598,7 +595,7 @@ static Type rule_util_proc_type(Parser *p, Token *out_ident, Token *out_op) {
         *out_op = op;
 
     if (out_ident != NULL)
-        *out_ident = parser_consume(p, TOK_IDENT);
+        *out_ident = parser_consume(p, TOK_LITERAL_IDENT);
 
     ProcSignature *sig = arena_alloc(p->arena, sizeof(ProcSignature));
     rule_util_paramlist(p, sig);
@@ -639,13 +636,13 @@ static Type rule_util_type(Parser *p) {
     } else if (parser_match_token(p, TOK_KW_PROC)) {
         ty = rule_util_proc_type(p, NULL, NULL);
 
-    } else if (parser_match_token(p, TOK_IDENT)) {
+    } else if (parser_match_token(p, TOK_LITERAL_IDENT)) {
         // TODO:
         ty.kind = TYPE_TABLE;
 
     } else {
         Token tok = parser_advance(p);
-        ty.kind = type_from_token(tok.kind);
+        ty.kind = type_from_token_keyword(tok.kind);
     }
 
 
@@ -688,16 +685,15 @@ static AstNode *rule_primary(Parser *p) {
     //           | STRING
     //           | <grouping>
 
-
-    if (parser_match_tokens(p, TOK_NUMBER, TOK_CHAR, TOK_IDENT, TOK_STRING, SENTINEL)) {
+    if (parser_match_tokens(p, TOK_LITERAL_NUMBER, TOK_LITERAL_IDENT, TOK_LITERAL_STRING, SENTINEL)) {
 
         Token tok = parser_peek(p);
 
         AstNode *astnode      = parser_new_node(p);
         astnode->kind         = ASTNODE_LITERAL;
         astnode->expr_literal = (ExprLiteral) {
+            .op = tok,
             .kind = literal_from_token(tok.kind),
-            .op   = tok,
         };
 
         parser_advance(p);
@@ -852,7 +848,7 @@ static AstNode *rule_vardecl(Parser *p) {
 
     Token op = parser_consume(p, TOK_KW_VARDECL);
 
-    Token ident = parser_consume(p, TOK_IDENT);
+    Token ident = parser_consume(p, TOK_LITERAL_IDENT);
     parser_consume(p, TOK_COLON);
 
     Type type = rule_util_type(p);
@@ -1017,7 +1013,7 @@ static AstNode *rule_table(Parser *p) {
     // <table> ::= "table" IDENTIFIER <fieldlist>
 
     Token op = parser_consume(p, TOK_KW_TABLE);
-    Token ident = parser_consume(p, TOK_IDENT);
+    Token ident = parser_consume(p, TOK_LITERAL_IDENT);
 
     Table *table = arena_alloc(p->arena, sizeof(Table));
     rule_util_fieldlist(p, table);

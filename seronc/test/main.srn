@@ -1,32 +1,19 @@
 proc puts(s: *char);
 proc putchar(c: char);
+proc malloc(size: long) *char;
 
+proc foo(a: int, b: char, c: long) void;
 
-proc foo(x: int) {
-}
 
 proc main() int {
 
+    let size: long = 50L;
+    let xs: *char = malloc(size);
 
-    let c: int = 65;
-    putchar(c);
-    let x: proc(s: *char) = puts;
+    *xs = 'A';
+    *(xs+1L) = 0C;
 
-    #let xs *char = malloc(50);
-    #*(xs+0L)  = 'H';
-    #*(xs+1L)  = 'e';
-    #*(xs+2L)  = 'l';
-    #*(xs+3L)  = 'l';
-    #*(xs+4L)  = 'o';
-    #*(xs+5L)  = ',';
-    #*(xs+6L)  = ' ';
-    #*(xs+7L)  = 'W';
-    #*(xs+8L)  = 'o';
-    #*(xs+9L)  = 'r';
-    #*(xs+10L) = 'l';
-    #*(xs+11L) = 'd';
-    #*(xs+12L) = '!';
-    #*(xs+13L) = 0;
+    puts(xs);
 
     return 0;
 }

@@ -12,46 +12,57 @@
 #include "util.h"
 #include "lexer.h"
 
+#define LITERAL_SUFFIX_LONG 'L'
+#define LITERAL_SUFFIX_CHAR 'C'
+#define LITERAL_SUFFIX_INT  'I'
 
 
 const char *tokenkind_to_string(TokenKind tok) {
     const char *repr[] = {
-        [TOK_INVALID]     = "invalid",
-        [TOK_NUMBER]      = "num",
-        [TOK_STRING]      = "string",
-        [TOK_PLUS]        = "plus",
-        [TOK_MINUS]       = "minus",
-        [TOK_ASTERISK]    = "asterisk",
-        [TOK_SLASH]       = "slash",
-        [TOK_SEMICOLON]   = "semicolon",
-        [TOK_COMMA]       = "comma",
-        [TOK_COLON]       = "colon",
-        [TOK_IDENT]       = "ident",
-        [TOK_ASSIGN]      = "assign",
-        [TOK_EQUALS]      = "equals",
-        [TOK_BANG]        = "bang",
-        [TOK_AMPERSAND]   = "ampersand",
-        [TOK_LPAREN]      = "lparen",
-        [TOK_RPAREN]      = "rparen",
-        [TOK_LBRACE]      = "lbrace",
-        [TOK_RBRACE]      = "rbrace",
-        [TOK_KW_PROC]     = "proc",
-        [TOK_KW_VARDECL]  = "let",
-        [TOK_KW_IF]       = "if",
-        [TOK_KW_ELSE]     = "else",
-        [TOK_KW_ELSIF]    = "elsif",
-        [TOK_KW_WHILE]    = "while",
-        [TOK_KW_RETURN]   = "return",
-        [TOK_BUILTIN_ASM] = "asm",
-        [TOK_TYPE_VOID]   = "void",
-        [TOK_TYPE_CHAR]   = "char",
-        [TOK_TYPE_INT]    = "int",
-        [TOK_TYPE_LONG]   = "long",
-        [TOK_CHAR]        = "char",
-        [TOK_EOF]         = "eof",
+        [TOK_INVALID]        = "invalid",
+        [TOK_LITERAL_NUMBER] = "num",
+        [TOK_LITERAL_STRING] = "string",
+        [TOK_PLUS]           = "plus",
+        [TOK_MINUS]          = "minus",
+        [TOK_ASTERISK]       = "asterisk",
+        [TOK_SLASH]          = "slash",
+        [TOK_SEMICOLON]      = "semicolon",
+        [TOK_COMMA]          = "comma",
+        [TOK_COLON]          = "colon",
+        [TOK_LITERAL_IDENT]  = "ident",
+        [TOK_ASSIGN]         = "assign",
+        [TOK_EQUALS]         = "equals",
+        [TOK_BANG]           = "bang",
+        [TOK_AMPERSAND]      = "ampersand",
+        [TOK_LPAREN]         = "lparen",
+        [TOK_RPAREN]         = "rparen",
+        [TOK_LBRACE]         = "lbrace",
+        [TOK_RBRACE]         = "rbrace",
+        [TOK_KW_PROC]        = "proc",
+        [TOK_KW_VARDECL]     = "let",
+        [TOK_KW_IF]          = "if",
+        [TOK_KW_ELSE]        = "else",
+        [TOK_KW_ELSIF]       = "elsif",
+        [TOK_KW_WHILE]       = "while",
+        [TOK_KW_RETURN]      = "return",
+        [TOK_KW_TYPE_VOID]   = "void",
+        [TOK_KW_TYPE_CHAR]   = "char",
+        [TOK_KW_TYPE_INT]    = "int",
+        [TOK_KW_TYPE_LONG]   = "long",
+        [TOK_EOF]            = "eof",
     };
     assert(ARRAY_LEN(repr) == TOKENKIND_COUNT);
     return repr[tok];
+}
+
+
+// identifier may not have leading digits
+static inline bool is_ident_head(char c) {
+    return isalpha(c) || c == '_';
+}
+
+static inline bool is_ident_tail(char c) {
+    return is_ident_head(c) || isdigit(c);
 }
 
 static inline int match_kw(const char *str, const char *kw) {
@@ -60,10 +71,10 @@ static inline int match_kw(const char *str, const char *kw) {
 
 // str is a slice into the source string, and is therefore not NUL-terminated
 // therefore must not compare more chars than the length of the keyword
-static TokenKind get_kw(const char *str) {
+static TokenKind get_keyword(const char *str) {
     return
 
-    match_kw(str, "proc")   ? TOK_KW_PROC :
+    match_kw(str, "proc")   ? TOK_KW_PROC     :
     match_kw(str, "let")    ? TOK_KW_VARDECL  :
     match_kw(str, "if")     ? TOK_KW_IF       :
     match_kw(str, "else")   ? TOK_KW_ELSE     :
@@ -72,27 +83,23 @@ static TokenKind get_kw(const char *str) {
     match_kw(str, "table")  ? TOK_KW_TABLE    :
     match_kw(str, "return") ? TOK_KW_RETURN   :
 
-    match_kw(str, "asm")    ? TOK_BUILTIN_ASM :
+    match_kw(str, "void")   ? TOK_KW_TYPE_VOID   :
+    match_kw(str, "char")   ? TOK_KW_TYPE_CHAR   :
+    match_kw(str, "int")    ? TOK_KW_TYPE_INT    :
+    match_kw(str, "long")   ? TOK_KW_TYPE_LONG   :
 
-    match_kw(str, "void")   ? TOK_TYPE_VOID   :
-    match_kw(str, "char")   ? TOK_TYPE_CHAR   :
-    match_kw(str, "int")    ? TOK_TYPE_INT    :
-    match_kw(str, "long")   ? TOK_TYPE_LONG   :
-
-    TOK_IDENT; // no keyword found? must be an identifier!
+    TOK_LITERAL_IDENT; // no keyword found? must be an identifier!
 }
 
 static inline void copy_slice_to_buf(char *buf, const char *start, const char *end) {
-    strncpy(buf, start, (size_t) (end - start));
+    // TODO: add tok.value limit via MIN()
+    size_t n = (size_t) (end - start);
+    strncpy(buf, start, n);
 }
 
-void lexer_init(LexerState *state, const char *src) {
-    state->src = src;
-}
+static void tokenize_string(Lexer *s, Token *tok) {
 
-static void tokenize_string(LexerState *s, Token *tok) {
-
-    tok->kind = TOK_STRING;
+    tok->kind = TOK_LITERAL_STRING;
     const char *start = s->src + 1;
 
     while (*++s->src != '"') {
@@ -107,164 +114,195 @@ static void tokenize_string(LexerState *s, Token *tok) {
 
 }
 
-static void tokenize_char(LexerState *s, Token *tok) {
+static void tokenize_char(Lexer *lex, Token *tok) {
 
-    tok->kind = TOK_CHAR;
-    s->src++;
+    tok->kind = TOK_LITERAL_NUMBER;
+    tok->number_type = NUMBER_CHAR;
+    lex->src++;
 
-    char c = *s->src++;
+    char c = *lex->src++;
 
     if (!isascii(c)) {
         compiler_message(MSG_ERROR, "invalid character literal");
         exit(EXIT_FAILURE);
     }
 
-    tok->value[0] = c;
+    // chars are converted to numbers
+    tok->number = c;
 
-    if (*s->src++ != '\'') {
+    if (*lex->src++ != '\'') {
         compiler_message(MSG_ERROR, "unterminated character literal");
         exit(EXIT_FAILURE);
     }
 
 }
 
-static void tokenize_number(LexerState *s, Token *tok) {
-    tok->kind = TOK_NUMBER;
-    const char *start = s->src;
+static void tokenize_number(Lexer *lex, Token *tok) {
 
-    while (isdigit(*++s->src));
+    tok->kind = TOK_LITERAL_NUMBER;
+    tok->number_type = NUMBER_ANY;
+    const char *start = lex->src;
 
-    if (*s->src == 'L' || *s->src == 'B') s->src++;
+    while (isdigit(*++lex->src));
 
-    copy_slice_to_buf(tok->value, start, s->src);
+    switch (*lex->src) {
+
+        case LITERAL_SUFFIX_LONG:
+            tok->number_type = NUMBER_LONG;
+            lex->src++;
+            break;
+
+        case LITERAL_SUFFIX_CHAR:
+            tok->number_type = NUMBER_CHAR;
+            lex->src++;
+            break;
+
+        case LITERAL_SUFFIX_INT:
+            tok->number_type = NUMBER_INT;
+            lex->src++;
+            break;
+
+        default: break;
+    }
+
+    size_t n = lex->src - start;
+    char buf[MAX_NUMBER_LITERAL_LEN] = { 0 };
+    strncpy(buf, start, MIN(n, ARRAY_LEN(buf)));
+
+    tok->number = atoll(buf);
+
 }
 
-static void tokenize_ident(LexerState *s, Token *tok) {
+static void tokenize_ident(Lexer *lex, Token *tok) {
 
-    const char *start = s->src;
-    while (isalpha(*++s->src) || *s->src == '_' || isdigit(*s->src));
+    const char *start = lex->src;
+    while (is_ident_tail(*++lex->src));
 
-    if ((tok->kind = get_kw(start)) == TOK_IDENT)
-        copy_slice_to_buf(tok->value, start, s->src);
+    if ((tok->kind = get_keyword(start)) == TOK_LITERAL_IDENT)
+        copy_slice_to_buf(tok->value, start, lex->src);
 }
 
-Token lexer_next(LexerState *s) {
+void lexer_init(Lexer *lex, const char *src) {
+    lex->src = src;
+}
+
+Token lexer_next(Lexer *lex) {
 
     Token tok = { .kind = TOK_INVALID };
 
-    if (*s->src == '\0') {
+    if (*lex->src == '\0') {
         tok.kind = TOK_EOF;
         return tok;
     }
 
     // TODO: multi-line comments
 
-    switch (*s->src) {
+    switch (*lex->src) {
 
         case '\t':
         case '\r':
         case ' ':
         case '\n':
-            s->src++;
-            return lexer_next(s);
+            lex->src++;
+            return lexer_next(lex);
             break;
 
         case '#':
-            while (*++s->src != '\n');
-            s->src++;
-            return lexer_next(s);
+            while (*++lex->src != '\n');
+            lex->src++;
+            return lexer_next(lex);
             break;
 
         case '+': tok.kind = TOK_PLUS;
-            s->src++;
+            lex->src++;
             break;
 
         case '-':
             tok.kind = TOK_MINUS;
-            s->src++;
+            lex->src++;
             break;
 
         case '*':
             tok.kind = TOK_ASTERISK;
-            s->src++;
+            lex->src++;
             break;
 
         case '/':
             tok.kind = TOK_SLASH;
-            s->src++;
+            lex->src++;
             break;
 
         case '!':
             tok.kind = TOK_BANG;
-            s->src++;
+            lex->src++;
             break;
 
         case '&':
             tok.kind = TOK_AMPERSAND;
-            s->src++;
+            lex->src++;
             break;
 
         case '(':
             tok.kind = TOK_LPAREN;
-            s->src++;
+            lex->src++;
             break;
 
         case ')':
             tok.kind = TOK_RPAREN;
-            s->src++;
+            lex->src++;
             break;
 
         case '{':
             tok.kind = TOK_LBRACE;
-            s->src++;
+            lex->src++;
             break;
 
         case '}':
             tok.kind = TOK_RBRACE;
-            s->src++;
+            lex->src++;
             break;
 
         case ';':
             tok.kind = TOK_SEMICOLON;
-            s->src++;
+            lex->src++;
             break;
 
         case ',':
             tok.kind = TOK_COMMA;
-            s->src++;
+            lex->src++;
             break;
 
         case ':':
             tok.kind = TOK_COLON;
-            s->src++;
+            lex->src++;
             break;
 
         case '=':
             tok.kind = TOK_ASSIGN;
-            if (*++s->src == '=') {
+            if (*++lex->src == '=') {
                 tok.kind = TOK_EQUALS;
-                s->src++;
+                lex->src++;
             }
             break;
 
         case '\'':
-            tokenize_char(s, &tok);
+            tokenize_char(lex, &tok);
             break;
 
         case '"':
-            tokenize_string(s, &tok);
+            tokenize_string(lex, &tok);
             break;
 
         default: {
 
-            if (isdigit(*s->src)) {
-                tokenize_number(s, &tok);
+            if (isdigit(*lex->src)) {
+                tokenize_number(lex, &tok);
 
-            } else if (isalpha(*s->src) || *s->src == '_') {
-                tokenize_ident(s, &tok);
+            } else if (is_ident_head(*lex->src)) {
+                tokenize_ident(lex, &tok);
 
             } else {
-                compiler_message(MSG_ERROR, "unknown token `%c`", *s->src);
+                compiler_message(MSG_ERROR, "unknown token `%c`", *lex->src);
                 exit(EXIT_FAILURE);
             }
 
@@ -303,7 +341,7 @@ void lexer_print_tokens(const char *src) {
 }
 
 static size_t get_tokencount(const char *src) {
-    LexerState s = { .src = src };
+    Lexer s = { .src = src };
     size_t tokencount = 0;
 
     Token tok;
@@ -324,7 +362,7 @@ Token *lexer_collect_tokens(const char *src) {
     Token *tokens = malloc(count * sizeof(Token));
     size_t i = 0;
 
-    LexerState s = { .src = src };
+    Lexer s = { .src = src };
     Token tok;
     while (tok.kind != TOK_EOF) {
         tok = lexer_next(&s);

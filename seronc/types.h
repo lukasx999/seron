@@ -3,6 +3,8 @@
 
 #include <stddef.h>
 
+#include "lexer.h"
+
 #define MAX_PARAM_COUNT 255
 
 
@@ -54,6 +56,8 @@ struct Table {
 
 // TODO: recursively stringify type
 const char *stringify_typekind(TypeKind type);
+
+
 
 
 
