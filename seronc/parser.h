@@ -102,7 +102,7 @@ typedef struct {
 
 typedef struct {
     Token op;
-    AstNode *expr;
+    AstNode *expr; // NULL if no body
 } StmtReturn;
 
 typedef struct {

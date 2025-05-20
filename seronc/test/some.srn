@@ -1,0 +1,22 @@
+
+proc puts(s: *char);
+proc putchar(c: char);
+proc malloc(size: long) *char;
+
+proc foo(a: int, b: char, c: long) void {
+    return;
+}
+
+
+proc main() int {
+
+    let size: long = 50L;
+    let xs: *char = malloc(size);
+
+    *xs = 'A';
+    *(xs+1L) = 0C;
+
+    puts(xs);
+
+    return 0;
+}

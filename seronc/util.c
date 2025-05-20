@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <assert.h>
+#include <string.h>
 
 #include "lexer.h"
 #include "util.h"
@@ -12,7 +13,7 @@
 
 
 static void compiler_message_core(MessageKind kind, const char *fmt, va_list va) {
-    if (kind == MSG_INFO && !compiler_config.opts.verbose)
+    if (kind == MSG_INFO && !compiler_ctx.opts.verbose)
         return;
 
     NON_NULL(fmt);
@@ -51,13 +52,34 @@ void compiler_message_tok(MessageKind kind, Token tok, const char *fmt, ...) {
     va_start(va, fmt);
 
     char buf[NAME_MAX] = { 0 };
+
+    const char *src = compiler_ctx.src;
+    TokenLocation loc = get_token_location(&tok, src);
+
+    for (size_t i=0; i < strlen(src); ++i) {
+        const char *s = src + loc.start;
+        if (s[i] == '\n') break;
+        printf("%c", s[i]);
+    }
+
+    printf("\n");
+
+    // TODO: use fancy printf formatting here
+    for (int i=0; i < loc.column; ++i)
+        printf(" ");
+
+    for (size_t i=0; i < tok.len; ++i)
+        printf("^");
+
+    printf("\n");
+
     snprintf(
         buf,
         ARRAY_LEN(buf),
         "%s:%d:%d: %s",
-        compiler_config.filename.raw,
-        tok.pos_line,
-        tok.pos_column,
+        compiler_ctx.filename.raw,
+        loc.line,
+        loc.column,
         fmt
     );
 

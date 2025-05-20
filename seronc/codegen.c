@@ -569,5 +569,5 @@ static Type emit(AstNode *node) {
 
 void codegen(AstNode *root) {
     emit(root);
-    gen_write_to_file(compiler_config.filename.asm_);
+    gen_write_to_file(compiler_ctx.filename.asm_);
 }

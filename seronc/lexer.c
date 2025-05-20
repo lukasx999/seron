@@ -17,7 +17,7 @@
 #define LITERAL_SUFFIX_INT  'I'
 
 
-const char *tokenkind_to_string(TokenKind tok) {
+const char *stringify_tokenkind(TokenKind tok) {
     const char *repr[] = {
         [TOK_INVALID]        = "invalid",
         [TOK_LITERAL_NUMBER] = "num",
@@ -74,27 +74,20 @@ static inline int match_kw(const char *str, const char *kw) {
 static TokenKind get_keyword(const char *str) {
     return
 
-    match_kw(str, "proc")   ? TOK_KW_PROC     :
-    match_kw(str, "let")    ? TOK_KW_VARDECL  :
-    match_kw(str, "if")     ? TOK_KW_IF       :
-    match_kw(str, "else")   ? TOK_KW_ELSE     :
-    match_kw(str, "elsif")  ? TOK_KW_ELSIF    :
-    match_kw(str, "while")  ? TOK_KW_WHILE    :
-    match_kw(str, "table")  ? TOK_KW_TABLE    :
-    match_kw(str, "return") ? TOK_KW_RETURN   :
-
+    match_kw(str, "proc")   ? TOK_KW_PROC        :
+    match_kw(str, "let")    ? TOK_KW_VARDECL     :
+    match_kw(str, "if")     ? TOK_KW_IF          :
+    match_kw(str, "else")   ? TOK_KW_ELSE        :
+    match_kw(str, "elsif")  ? TOK_KW_ELSIF       :
+    match_kw(str, "while")  ? TOK_KW_WHILE       :
+    match_kw(str, "table")  ? TOK_KW_TABLE       :
+    match_kw(str, "return") ? TOK_KW_RETURN      :
     match_kw(str, "void")   ? TOK_KW_TYPE_VOID   :
     match_kw(str, "char")   ? TOK_KW_TYPE_CHAR   :
     match_kw(str, "int")    ? TOK_KW_TYPE_INT    :
     match_kw(str, "long")   ? TOK_KW_TYPE_LONG   :
 
     TOK_LITERAL_IDENT; // no keyword found? must be an identifier!
-}
-
-static inline void copy_slice_to_buf(char *buf, const char *start, const char *end) {
-    // TODO: add tok.value limit via MIN()
-    size_t n = (size_t) (end - start);
-    strncpy(buf, start, n);
 }
 
 static void tokenize_string(Lexer *s, Token *tok) {
@@ -109,7 +102,9 @@ static void tokenize_string(Lexer *s, Token *tok) {
         }
     }
 
-    copy_slice_to_buf(tok->value, start, s->src);
+    size_t len = s->src - start;
+    tok->len = len + 2; // account for quotes surrounding the string
+    strncpy(tok->value, start, MIN(len, ARRAY_LEN(tok->value)));
     s->src++; // make src point to the next char, instead of `"`
 
 }
@@ -129,6 +124,7 @@ static void tokenize_char(Lexer *lex, Token *tok) {
 
     // chars are converted to numbers
     tok->number = c;
+    tok->len = 3; // account for quotes
 
     if (*lex->src++ != '\'') {
         compiler_message(MSG_ERROR, "unterminated character literal");
@@ -165,9 +161,9 @@ static void tokenize_number(Lexer *lex, Token *tok) {
         default: break;
     }
 
-    size_t n = lex->src - start;
+    tok->len = lex->src - start;
     char buf[MAX_NUMBER_LITERAL_LEN] = { 0 };
-    strncpy(buf, start, MIN(n, ARRAY_LEN(buf)));
+    strncpy(buf, start, MIN(tok->len, ARRAY_LEN(buf)));
 
     tok->number = atoll(buf);
 
@@ -178,17 +174,24 @@ static void tokenize_ident(Lexer *lex, Token *tok) {
     const char *start = lex->src;
     while (is_ident_tail(*++lex->src));
 
+    tok->len = lex->src - start;
+
     if ((tok->kind = get_keyword(start)) == TOK_LITERAL_IDENT)
-        copy_slice_to_buf(tok->value, start, lex->src);
+        strncpy(tok->value, start, MIN(tok->len, ARRAY_LEN(tok->value)));
 }
 
 void lexer_init(Lexer *lex, const char *src) {
     lex->src = src;
+    lex->position = 0;
 }
 
 Token lexer_next(Lexer *lex) {
 
-    Token tok = { .kind = TOK_INVALID };
+    Token tok = {
+        .kind     = TOK_INVALID,
+        .position = lex->position,
+        .len      = 1,
+    };
 
     if (*lex->src == '\0') {
         tok.kind = TOK_EOF;
@@ -281,6 +284,7 @@ Token lexer_next(Lexer *lex) {
             tok.kind = TOK_ASSIGN;
             if (*++lex->src == '=') {
                 tok.kind = TOK_EQUALS;
+                tok.len = 2;
                 lex->src++;
             }
             break;
@@ -311,8 +315,39 @@ Token lexer_next(Lexer *lex) {
 
     }
 
+    lex->position += tok.len;
+
     assert(tok.kind != TOK_INVALID);
     return tok;
+
+}
+
+TokenLocation get_token_location(const Token *tok, const char *src) {
+
+    int linecount = 1;
+    int column = 1;
+    int start = 0;
+    // TODO: dont recompute src len every single call
+    for (size_t i=0; i < strlen(src); ++i) {
+
+        if (src[i] == '\n') {
+            linecount++;
+            start = i+1;
+            column = 1;
+        }
+
+        if (i == tok->position)
+            break;
+
+        column++;
+
+    }
+
+    return (TokenLocation) {
+        .line   = linecount,
+        .column = column,
+        .start  = start,
+    };
 
 }
 
@@ -324,9 +359,16 @@ void lexer_print_tokens(const char *src) {
     printf("\n");
 
     while (1) {
-        const char *kind = tokenkind_to_string(tok->kind);
+        const char *kind = stringify_tokenkind(tok->kind);
 
-        printf("%s%d:%d%s ", COLOR_GRAY, tok->pos_line, tok->pos_column, COLOR_END);
+        TokenLocation loc = get_token_location(tok, src);
+        printf(
+            "pos: %lu, len: %lu, line: %d, col: %d | ",
+            tok->position,
+            tok->len,
+            loc.line,
+            loc.column
+        );
 
         printf("%s", kind);
         if (strcmp(tok->value, ""))

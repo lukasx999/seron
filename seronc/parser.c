@@ -49,6 +49,7 @@ static TypeKind type_from_token_keyword(TokenKind kind) {
         case TOK_KW_TYPE_VOID: return TYPE_VOID;
         default:               return TYPE_INVALID;
     }
+    UNREACHABLE();
 }
 
 static LiteralKind literal_from_token(TokenKind kind) {
@@ -58,6 +59,7 @@ static LiteralKind literal_from_token(TokenKind kind) {
         case TOK_LITERAL_STRING: return LITERAL_STRING;
         default:                 PANIC("unknown tokenkind");
     }
+    UNREACHABLE();
 }
 
 static BinOpKind binop_from_token(TokenKind kind) {
@@ -68,6 +70,7 @@ static BinOpKind binop_from_token(TokenKind kind) {
         case TOK_ASTERISK: return BINOP_MUL;
         default:           PANIC("unknown tokenkind");
     }
+    UNREACHABLE();
 }
 
 static UnaryOpKind unaryop_from_token(TokenKind kind) {
@@ -78,7 +81,31 @@ static UnaryOpKind unaryop_from_token(TokenKind kind) {
         case TOK_ASTERISK:  return UNARYOP_DEREF;
         default:            PANIC("unknown tokenkind");
     }
+    UNREACHABLE();
 }
+
+static const char *stringify_unaryop(UnaryOpKind op) {
+    switch (op) {
+        case UNARYOP_MINUS:  return "minus";
+        case UNARYOP_NEG:    return "neg";
+        case UNARYOP_ADDROF: return "addrof";
+        case UNARYOP_DEREF:  return "deref";
+        default: PANIC("unknown unaryop");
+    }
+    UNREACHABLE();
+}
+
+static const char *stringify_binop(BinOpKind op) {
+    switch (op) {
+        case BINOP_ADD: return "add";
+        case BINOP_SUB: return "sub";
+        case BINOP_MUL: return "mul";
+        case BINOP_DIV: return "div";
+        default: PANIC("unknown binop");
+    }
+    UNREACHABLE();
+}
+
 
 typedef struct {
     Arena *arena;
@@ -124,7 +151,7 @@ static inline void parser_expect_token(const Parser *p, TokenKind tokenkind) {
             MSG_ERROR,
             parser_peek(p),
             "Expected %s",
-            tokenkind_to_string(tokenkind)
+            stringify_tokenkind(tokenkind)
         );
         exit(EXIT_FAILURE);
     }
@@ -330,25 +357,6 @@ void parser_dispatch_ast(AstNode *root, AstDispatchEntry *table, size_t table_si
     parser_traverse_ast(root, dispatch_callback_pre, dispatch_callback_post, &dt);
 }
 
-
-
-
-// Prints a value in the following format: `<str>: <arg>`
-// <arg> is omitted if arg == NULL
-static inline void print_ast_value(
-    const char *str,
-    const char *color,
-    const char *value,
-    const char *opt
-) {
-    printf("%s%s%s", color, str, COLOR_END);
-    if (value != NULL)
-        printf("%s: %s%s", COLOR_GRAY, value, COLOR_END);
-    if (opt != NULL)
-        printf(" %s(%s)%s", COLOR_GRAY, opt, COLOR_END);
-    puts("");
-}
-
 static void print_colored(const char *color, const char *fmt, ...) {
     va_list va;
     va_start(va, fmt);
@@ -392,22 +400,20 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
             print_colored(AST_COLOR_KEYWORD, "while\n");
             break;
 
-        case ASTNODE_RETURN:
-            print_colored(AST_COLOR_KEYWORD, "return\n");
-            break;
+        case ASTNODE_RETURN: {
+            StmtReturn *ret = &root->stmt_return;
+            print_colored(AST_COLOR_KEYWORD, "return");
+
+            if (ret->expr == NULL)
+                print_colored(AST_COLOR_IDENT, " (no-expr)");
+
+            printf("\n");
+        } break;
 
         case ASTNODE_BINOP: {
             ExprBinOp *binop = &root->expr_binop;
 
-            const char *op = NULL;
-            switch (binop->kind) {
-                case BINOP_ADD: op = "add"; break;
-                case BINOP_SUB: op = "sub"; break;
-                case BINOP_MUL: op = "mul"; break;
-                case BINOP_DIV: op = "div"; break;
-                default: PANIC("unknown binop");
-            }
-
+            const char *op = stringify_binop(binop->kind);
             print_colored(AST_COLOR_OPERATION, "%s\n", NON_NULL(op));
 
         } break;
@@ -419,15 +425,7 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
         case ASTNODE_UNARYOP: {
             ExprUnaryOp *unaryop = &root->expr_unaryop;
 
-            const char *op = NULL;
-            switch (unaryop->kind) {
-                case UNARYOP_MINUS:  op = "minus";  break;
-                case UNARYOP_NEG:    op = "neg";    break;
-                case UNARYOP_ADDROF: op = "addrof"; break;
-                case UNARYOP_DEREF:  op = "deref";  break;
-                default: PANIC("unknown unaryop");
-            }
-
+            const char *op = stringify_unaryop(unaryop->kind);
             print_colored(AST_COLOR_OPERATION, "%s\n", NON_NULL(op));
 
         } break;
@@ -440,7 +438,8 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
             DeclProc *proc = &root->stmt_proc;
             print_colored(AST_COLOR_KEYWORD, "proc: ");
             print_colored(AST_COLOR_IDENT, "%s", proc->ident.value);
-            print_colored(COLOR_GRAY, "(");
+
+            print_colored(AST_COLOR_IDENT, "(");
 
             ProcSignature *sig = proc->type.signature;
             for (size_t i=0; i < sig->params_count; ++i) {
@@ -448,7 +447,12 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
                 print_colored(AST_COLOR_IDENT, "%s%s", sig->params[i].ident, sep);
             }
 
-            print_colored(COLOR_GRAY, ")\n");
+            print_colored(AST_COLOR_IDENT, ")");
+
+            if (proc->body == NULL)
+                print_colored(AST_COLOR_IDENT, " (no-body)");
+
+            printf("\n");
 
             // TODO: print param types
         } break;
@@ -458,14 +462,45 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
             print_colored(AST_COLOR_KEYWORD, "vardecl: ");
             print_colored(AST_COLOR_IDENT, "%s\n", vardecl->ident.value);
             // TODO: print type information
-            // print_colored(AST_COLOR_IDENT, " (%s: %s)\n", vardecl->ident.value, stringify_typekind(vardecl->type.kind));
 
         } break;
 
         case ASTNODE_LITERAL: {
             ExprLiteral *literal = &root->expr_literal;
             Token *tok = &literal->op;
-            print_ast_value(tokenkind_to_string(tok->kind), COLOR_RED, tok->value, NULL);
+
+            switch (literal->kind) {
+                case LITERAL_STRING:
+                    print_colored(AST_COLOR_KEYWORD, "string: ");
+                    print_colored(AST_COLOR_IDENT, "%s\n", tok->value);
+                    break;
+
+                case LITERAL_IDENT:
+                    print_colored(AST_COLOR_KEYWORD, "ident: ");
+                    print_colored(AST_COLOR_IDENT, "%s\n", tok->value);
+                    break;
+
+                case LITERAL_NUMBER: {
+                    print_colored(AST_COLOR_KEYWORD, "number: ");
+                    print_colored(AST_COLOR_IDENT, "%d ", tok->number);
+
+                    const char *type = NULL;
+                    switch (tok->number_type) {
+                        case NUMBER_CHAR: type = "char"; break;
+                        case NUMBER_INT:  type = "int";  break;
+                        case NUMBER_LONG: type = "long"; break;
+                        case NUMBER_ANY:  NOP()          break;
+                    }
+
+                    if (type != NULL)
+                        print_colored(AST_COLOR_IDENT, "(%s)", type);
+                    printf("\n");
+
+
+                } break;
+                default: PANIC("unknown unaryop");
+            }
+
         } break;
 
         default: PANIC("unexpected node kind");
@@ -483,6 +518,7 @@ AstNode *parse(const char *src, Arena *arena) {
     Parser parser = {
         .arena = arena,
     };
+
     lexer_init(&parser.lexer, src);
 
     parser_advance(&parser); // get first token

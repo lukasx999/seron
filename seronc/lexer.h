@@ -54,8 +54,9 @@ typedef enum {
     TOKENKIND_COUNT,
 } TokenKind;
 
-const char *tokenkind_to_string(TokenKind tok);
+const char *stringify_tokenkind(TokenKind tok);
 
+// TODO: change to `Type`?
 typedef enum {
     NUMBER_LONG,
     NUMBER_INT,
@@ -70,12 +71,23 @@ typedef struct {
     NumberLiteralType number_type;
     uint64_t number;    // for all kinds of numbers
 
-    int pos_line, pos_column;
-    size_t pos_absolute, length;
+    size_t position;
+    size_t len;
 } Token;
+
+// required for diagnostics
+typedef struct {
+    int line;
+    int column;
+    int start; // index of the start of the line the token is located on
+} TokenLocation;
+
+// expensive computation, use lazily
+TokenLocation get_token_location(const Token *tok, const char *src);
 
 typedef struct {
     const char *src;
+    size_t position;
 } Lexer;
 
 void lexer_init(Lexer *state, const char *src);
