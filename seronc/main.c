@@ -88,7 +88,6 @@ static void assemble(void) {
     char *asm_ = compiler_config.filename.asm_;
     char *obj  = compiler_config.filename.obj;
 
-    // Assemble
     int ret = run_cmd_sync((char*[]) {
         "nasm",
         asm_,
@@ -109,10 +108,9 @@ static void link_cc(void) {
     char *obj       = compiler_config.filename.obj;
     const char *bin = compiler_config.filename.stripped;
 
-    // Link
     int ret = run_cmd_sync((char*[]) {
         "cc",
-        "-no-pie", // TODO: possibly insecure?
+        "-no-pie",
         "-lc",
         "-lraylib",
         obj,

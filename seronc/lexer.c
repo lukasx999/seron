@@ -69,8 +69,11 @@ static TokenKind get_kw(const char *str) {
     match_kw(str, "else")   ? TOK_KW_ELSE     :
     match_kw(str, "elsif")  ? TOK_KW_ELSIF    :
     match_kw(str, "while")  ? TOK_KW_WHILE    :
+    match_kw(str, "table")  ? TOK_KW_TABLE    :
     match_kw(str, "return") ? TOK_KW_RETURN   :
+
     match_kw(str, "asm")    ? TOK_BUILTIN_ASM :
+
     match_kw(str, "void")   ? TOK_TYPE_VOID   :
     match_kw(str, "char")   ? TOK_TYPE_CHAR   :
     match_kw(str, "int")    ? TOK_TYPE_INT    :
@@ -81,6 +84,10 @@ static TokenKind get_kw(const char *str) {
 
 static inline void copy_slice_to_buf(char *buf, const char *start, const char *end) {
     strncpy(buf, start, (size_t) (end - start));
+}
+
+void lexer_init(LexerState *state, const char *src) {
+    state->src = src;
 }
 
 Token lexer_next(LexerState *s) {

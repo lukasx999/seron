@@ -11,6 +11,7 @@ parser.h      \
 codegen.h     \
 hashtable.h   \
 symboltable.h \
+types.h 	  \
 
 SOURCES=	  \
 lexer.o       \

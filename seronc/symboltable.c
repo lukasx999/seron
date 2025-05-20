@@ -66,7 +66,7 @@ void vardecl(AstNode *node, UNUSED int _depth, void *args) {
 
 void proc_pre(AstNode *node, UNUSED int _depth, void *args) {
     Symboltable *st = args;
-    StmtProc *proc = &node->stmt_proc;
+    DeclProc *proc = &node->stmt_proc;
 
     Symbol sym = {
         .kind = SYMBOL_PROCEDURE,
@@ -84,7 +84,7 @@ void proc_pre(AstNode *node, UNUSED int _depth, void *args) {
 void proc_post(AstNode *node, UNUSED int _depth, void *args) {
 
     Symboltable *st = args;
-    StmtProc *proc = &node->stmt_proc;
+    DeclProc *proc = &node->stmt_proc;
 
     if (proc->body == NULL) return;
 
@@ -93,16 +93,16 @@ void proc_post(AstNode *node, UNUSED int _depth, void *args) {
     proc->symboltable = proc->body->block.symboltable;
 
 
-    ProcSignature *sig = &proc->type.signature;
+    ProcSignature *sig = proc->type.signature;
 
     for (size_t i=0; i < sig->params_count; ++i) {
         Param *param = &sig->params[i];
 
-        st->stack_size += get_type_size(param->type->kind);
+        st->stack_size += get_type_size(param->type.kind);
 
         Symbol sym = {
             .kind   = SYMBOL_PARAMETER,
-            .type   = *param->type,
+            .type   = param->type,
             .offset = st->stack_size,
         };
 

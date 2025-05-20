@@ -14,6 +14,7 @@ syn keyword srnKeyword
       \ int
       \ long
       \ void
+      \ table
 
 syn match srnOperator "[,.=+-\*/;(){}'`]"
 

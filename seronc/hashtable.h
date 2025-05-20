@@ -10,53 +10,12 @@
 
 #include "lib/util.h"
 #include "lib/arena.h"
+#include "types.h"
 
 
 
-#define MAX_IDENT_LEN 64
 
 
-
-typedef struct Type Type;
-
-typedef struct {
-    // TODO: remove pointer
-    Type *type; // heap-allocated
-    char ident[MAX_IDENT_LEN];
-} Param;
-
-
-#define MAX_PARAM_COUNT 255
-
-
-typedef struct {
-    Param params[MAX_PARAM_COUNT];
-    size_t params_count;
-    Type *returntype; // heap-allocated
-} ProcSignature;
-
-// TODO: put this somewhere else
-typedef enum {
-    TYPE_INVALID,
-
-    TYPE_VOID,
-    TYPE_CHAR,
-    TYPE_INT,
-    TYPE_LONG,
-    TYPE_POINTER,
-    TYPE_PROCEDURE,
-} TypeKind;
-
-struct Type {
-    TypeKind kind;
-    union {
-        ProcSignature signature;
-        Type *pointee;
-    };
-};
-
-const char *stringify_typekind(TypeKind type);
-// TODO: recursively stringify type
 
 
 

@@ -79,12 +79,17 @@ typedef struct {
 } Block;
 
 typedef struct {
+    Token op, ident;
+    Type type;
+} DeclTable;
+
+typedef struct {
     Token      op, ident;
     AstNode   *body;        // NULL if declaration
     Type       type;        // type is holding function signature
     Hashtable *symboltable; // for convenience
     int        stack_size;
-} StmtProc;
+} DeclProc;
 
 typedef struct {
     Token op;
@@ -120,6 +125,7 @@ typedef enum {
     ASTNODE_WHILE,
     ASTNODE_ASSIGN,
     ASTNODE_RETURN,
+    ASTNODE_TABLE,
 } AstNodeKind;
 
 struct AstNode {
@@ -130,9 +136,10 @@ struct AstNode {
         ExprBinOp      expr_binop;
         ExprUnaryOp    expr_unaryop;
         ExprCall       expr_call;
-        ExprAssign expr_assign;
+        ExprAssign     expr_assign;
+        DeclTable       table;
         Block          block;
-        StmtProc       stmt_proc;
+        DeclProc       stmt_proc;
         StmtVarDecl    stmt_vardecl;
         StmtIf         stmt_if;
         StmtWhile      stmt_while;

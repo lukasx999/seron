@@ -191,12 +191,12 @@ static Type call(const ExprCall *call) {
 
     Type ty = emit(call->callee);
     gen_write("push rax");
-    ProcSignature *sig = &ty.signature;
+    ProcSignature *sig = ty.signature;
 
     const AstNodeList *list = &call->args;
     for (size_t i=0; i < list->size; ++i) {
 
-        TypeKind type = sig->params[i].type->kind;
+        TypeKind type = sig->params[i].type.kind;
         const char *reg = abi_register_str(i+1, type);
 
         emit(list->items[i]);
@@ -215,12 +215,12 @@ static Type call(const ExprCall *call) {
     // this weird stuff has to be done in order for function pointers to work
     gen_write("pop rax");
     gen_write("call rax");
-    return *sig->returntype;
+    return sig->returntype;
 }
 
-static void proc(const StmtProc *proc) {
+static void proc(const DeclProc *proc) {
     const char *ident  = proc->ident.value;
-    const ProcSignature *sig = &proc->type.signature;
+    const ProcSignature *sig = proc->type.signature;
 
     if (proc->body == NULL) {
         gen_write("extern %s", ident);
@@ -240,12 +240,12 @@ static void proc(const StmtProc *proc) {
     for (size_t i=0; i < sig->params_count; ++i) {
 
         const Param *param = &sig->params[i];
-        const char *reg = abi_register_str(i+1, param->type->kind);
+        const char *reg = abi_register_str(i+1, param->type.kind);
 
         Symbol *sym = NON_NULL(symboltable_lookup(proc->symboltable, param->ident));
 
         if (reg == NULL) {
-            const char *rax = subregister(REG_RAX, param->type->kind);
+            const char *rax = subregister(REG_RAX, param->type.kind);
             gen_write("mov %s, [rbp+%d]", rax, offset);
             gen_write("mov [rbp-%d], %s", sym->offset, rax);
             offset += 8;
@@ -559,6 +559,7 @@ static Type emit(AstNode *node) {
         case ASTNODE_CALL:      return call     (&node->expr_call);     break;
         case ASTNODE_UNARYOP:   return unaryop  (&node->expr_unaryop);  break;
         case ASTNODE_LITERAL:   return literal  (&node->expr_literal);  break;
+        case ASTNODE_TABLE:     NOP()                                   break;
         default:                PANIC("unexpected node kind");
     }
 

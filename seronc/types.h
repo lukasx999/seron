@@ -1,50 +1,63 @@
-#ifndef _TYPECHECKING_H
-#define _TYPECHECKING_H
+#ifndef _TYPES_H
+#define _TYPES_H
 
-#include "lexer.h"
+#include <stddef.h>
 
-typedef struct AstNode AstNode;
+// TODO: move to lexer
+#define MAX_IDENT_LEN 64
+#define MAX_PARAM_COUNT 255
 
 
 
-typedef struct Type Type;
 
-typedef struct {
-    Type *type; // heap-allocated
-    const char *ident;
-} Param;
-
-#define MAX_ARG_COUNT 255
-
-// TODO: maybe reuse for structs
-typedef struct {
-    Param params[MAX_ARG_COUNT]; // TODO: uses shit ton of memory
-    size_t params_count;
-    Type *returntype; // heap-allocated
-} ProcSignature;
 
 typedef enum {
-    TYPE_INVALID, // used for error checking
+    TYPE_INVALID,
+
     TYPE_VOID,
     TYPE_CHAR,
     TYPE_INT,
     TYPE_LONG,
-    TYPE_PROCEDURE,
     TYPE_POINTER,
+    TYPE_PROCEDURE,
+    TYPE_TABLE,
 } TypeKind;
+
+typedef struct Type Type;
+typedef struct Table Table;
+typedef struct ProcSignature ProcSignature;
 
 struct Type {
     TypeKind kind;
-    // This union contains additional information for complex types,
-    // such as functions, pointers and user-defined types
     union {
-        ProcSignature signature;
+        ProcSignature *signature;
         Type *pointee;
+        Table *table;
     };
 };
 
-const char *typekind_to_string(TypeKind type);
+typedef struct {
+    Type type;
+    char ident[MAX_IDENT_LEN];
+} Param;
+
+struct ProcSignature {
+    Param params[MAX_PARAM_COUNT];
+    size_t params_count;
+    Type returntype;
+};
+
+typedef Param Field;
+
+struct Table {
+    Field fields[MAX_PARAM_COUNT];
+    size_t field_count;
+};
+
+// TODO: recursively stringify type
+const char *stringify_typekind(TypeKind type);
 
 
 
-#endif // _TYPECHECKING_H
+
+#endif // _TYPES_H

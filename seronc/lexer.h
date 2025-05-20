@@ -39,6 +39,7 @@ typedef enum {
     TOK_KW_ELSIF,
     TOK_KW_WHILE,
     TOK_KW_RETURN,
+    TOK_KW_TABLE,
 
     TOK_BUILTIN_ASM,
 
@@ -67,6 +68,7 @@ typedef struct {
     const char *src;
 } LexerState;
 
+void lexer_init(LexerState *state, const char *src);
 Token lexer_next(LexerState *s);
 
 // these functions are very performance heavy, and are only used for

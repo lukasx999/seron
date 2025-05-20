@@ -1,54 +1,21 @@
-#proc malloc(size: int) *void;
-#proc free(p: *void);
-#proc puts(s: *char);
-#proc putchar(c: char);
-#proc InitWindow(width: int, height: int, title: *char);
-#proc CloseWindow();
-#proc WindowShouldClose() char;
-#proc BeginDrawing();
-#proc EndDrawing();
-#proc ClearBackground(color: int);
-#proc GetColor(hex: int) int;
-#proc DrawText(str: *char, x: int, y: int, size: int, color: int);
+table person {
+    age: int,
+    wealth: int,
+}
 
-#proc DrawRectangle(posX: int, posY: int, width: int, height: int, color: int);
+proc puts(s: *char);
+proc putchar(c: char);
 
-proc foo(x: int) void {
+
+proc foo(x: int) {
 }
 
 proc main() int {
 
-    #let width int = 500;
-    #let height int = 500;
+    let c: int = 65;
+    putchar(c);
+    let x: proc(s: *char) = puts;
 
-
-    #InitWindow(500, 500, "foo");
-
-    #while !WindowShouldClose() {
-    #    BeginDrawing();
-    #
-    #    ClearBackground(GetColor(65280));
-    #    #DrawText("hello!", 50, 50, 20, GetColor(4294967295));
-    #    DrawRectangle(0, 0, 250, 250, GetColor(4294967295));
-    #
-    #    EndDrawing();
-    #}
-    #
-    #CloseWindow();
-
-    #let x int = 65;
-    #let p *int = &x;
-    #*p = 66;
-    #let y int = *p;
-    #putchar(x);
-
-
-    #let x: proc(s: *char) void = puts;
-    #let y proc(s *char) void = x;
-    #
-    #let i int = 45;
-    #let p *int = &i;
-    #
     #let xs *char = malloc(50);
     #*(xs+0L)  = 'H';
     #*(xs+1L)  = 'e';
@@ -64,14 +31,6 @@ proc main() int {
     #*(xs+11L) = 'd';
     #*(xs+12L) = '!';
     #*(xs+13L) = 0;
-    #
-    #
-    #x(xs);
-    #y(xs);
-    #
-    #puts(xs);
-    #
-    #free(xs);
 
     return 0;
 }
