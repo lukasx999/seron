@@ -1,5 +1,5 @@
 #include "hashtable.h"
-#include "lib/util.h"
+#include <ver.h>
 
 
 const char *stringify_typekind(TypeKind type) {

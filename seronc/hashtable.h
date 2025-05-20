@@ -8,14 +8,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "lib/util.h"
-#include "lib/arena.h"
+#include <ver.h>
+#include <arena.h>
+
 #include "lexer.h"
 #include "types.h"
-
-
-
-
 
 
 

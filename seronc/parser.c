@@ -6,13 +6,13 @@
 #include <stdbool.h>
 #include <stdarg.h>
 
-#include "lib/arena.h"
-#define UTIL_COLORS
-#include "lib/util.h"
+#include <arena.h>
+#include <ver.h>
 
-#include "util.h"
+#include "diagnostics.h"
 #include "lexer.h"
 #include "parser.h"
+#include "colors.h"
 
 
 #define SENTINEL TOK_INVALID
@@ -114,8 +114,8 @@ typedef struct {
 } Parser;
 
 // returns the current token
-static inline Token parser_peek(const Parser *p) {
-    return p->tok;
+static inline const Token *parser_peek(const Parser *p) {
+    return &p->tok;
 }
 
 static inline void *parser_new_node(Parser *p) {
@@ -130,7 +130,7 @@ static bool parser_match_tokens(const Parser *p, ...) {
 
     while (1) {
         TokenKind tok = va_arg(va, TokenKind);
-        bool matched = parser_peek(p).kind == tok;
+        bool matched = parser_peek(p)->kind == tok;
         if (matched || tok == SENTINEL) {
             va_end(va);
             return matched;
@@ -147,8 +147,8 @@ static inline bool parser_match_token(const Parser *p, TokenKind kind) {
 
 static inline void parser_expect_token(const Parser *p, TokenKind tokenkind) {
     if (!parser_match_token(p, tokenkind)) {
-        compiler_message_tok(
-            MSG_ERROR,
+        diagnostic_loc(
+            DIAG_ERROR,
             parser_peek(p),
             "Expected %s",
             stringify_tokenkind(tokenkind)
@@ -157,7 +157,7 @@ static inline void parser_expect_token(const Parser *p, TokenKind tokenkind) {
     }
 }
 
-static inline bool parser_token_is_type(Parser *p) {
+static inline bool parser_token_is_type(const Parser *p) {
     // TODO: find a better way of doing this
     return parser_match_tokens(p, TOK_KW_TYPE_INT, TOK_KW_TYPE_CHAR, TOK_KW_TYPE_LONG, TOK_KW_TYPE_VOID, TOK_ASTERISK, SENTINEL);
 }
@@ -660,7 +660,7 @@ static Type rule_util_type(Parser *p) {
     //        | <proc-type>
 
     Type ty = { .kind = TYPE_INVALID };
-    Token tok = parser_peek(p);
+    const Token *tok = parser_peek(p);
 
     if (parser_match_token(p, TOK_ASTERISK)) {
         parser_advance(p);
@@ -683,7 +683,7 @@ static Type rule_util_type(Parser *p) {
 
 
     if (ty.kind == TYPE_INVALID) {
-        compiler_message_tok(MSG_ERROR, tok, "Unknown type `%s`", tok.value);
+        diagnostic_loc(DIAG_ERROR, tok, "Unknown type `%s`", tok->value);
         exit(EXIT_FAILURE);
     }
 
@@ -698,7 +698,7 @@ static AstNode *rule_grouping(Parser *p) {
     parser_consume(p, TOK_LPAREN);
 
     if (parser_match_token(p, TOK_RPAREN)) {
-        compiler_message_tok(MSG_ERROR, parser_peek(p), "Don't write functional code!");
+        diagnostic_loc(DIAG_ERROR, parser_peek(p), "Don't write functional code!");
         exit(EXIT_FAILURE);
     }
 
@@ -723,13 +723,13 @@ static AstNode *rule_primary(Parser *p) {
 
     if (parser_match_tokens(p, TOK_LITERAL_NUMBER, TOK_LITERAL_IDENT, TOK_LITERAL_STRING, SENTINEL)) {
 
-        Token tok = parser_peek(p);
+        const Token *tok = parser_peek(p);
 
         AstNode *astnode      = parser_new_node(p);
         astnode->kind         = ASTNODE_LITERAL;
         astnode->expr_literal = (ExprLiteral) {
-            .op = tok,
-            .kind = literal_from_token(tok.kind),
+            .op = *tok,
+            .kind = literal_from_token(tok->kind),
         };
 
         parser_advance(p);
@@ -739,7 +739,7 @@ static AstNode *rule_primary(Parser *p) {
         return rule_grouping(p);
 
     } else {
-        compiler_message_tok(MSG_ERROR, parser_peek(p), "Unexpected Token");
+        diagnostic_loc(DIAG_ERROR, parser_peek(p), "Unexpected Token");
         exit(EXIT_FAILURE);
     }
 
@@ -755,12 +755,12 @@ static AstNode *rule_call(Parser *p) {
     if (!parser_match_token(p, TOK_LPAREN))
         return node;
 
-    Token op = parser_peek(p);
+    const Token *op = parser_peek(p);
 
     AstNode *call   = parser_new_node(p);
     call->kind      = ASTNODE_CALL;
     call->expr_call = (ExprCall) {
-        .op      = op,
+        .op      = *op,
         .callee  = node,
         .args    = rule_util_arglist(p),
     };
@@ -924,7 +924,7 @@ static AstNode *rule_block(Parser *p) {
     while (!parser_match_token(p, TOK_RBRACE)) {
 
         if (parser_is_at_end(p)) {
-            compiler_message_tok(MSG_ERROR, brace, "Unmatching brace");
+            diagnostic_loc(DIAG_ERROR, &brace, "Unmatching brace");
             exit(EXIT_FAILURE);
         }
 
@@ -1077,7 +1077,7 @@ static AstNode *rule_decl(Parser *p) {
         parser_match_token(p, TOK_KW_PROC)    ? rule_proc(p)    :
         parser_match_token(p, TOK_KW_VARDECL) ? rule_vardecl(p) :
         parser_match_token(p, TOK_KW_TABLE)   ? rule_table(p)   :
-    (compiler_message(MSG_ERROR, "Expected declaration"), exit(EXIT_FAILURE), NULL);
+    (diagnostic(DIAG_ERROR, "Expected declaration"), exit(EXIT_FAILURE), NULL);
     // TODO: synchronize parser
 }
 

@@ -6,11 +6,11 @@
 #include <assert.h>
 #include <stdbool.h>
 
-#define UTIL_COLORS
-#include <util.h>
+#include <ver.h>
 
-#include "util.h"
+#include "diagnostics.h"
 #include "lexer.h"
+#include "colors.h"
 
 #define LITERAL_SUFFIX_LONG 'L'
 #define LITERAL_SUFFIX_CHAR 'C'
@@ -97,7 +97,7 @@ static void tokenize_string(Lexer *s, Token *tok) {
 
     while (*++s->src != '"') {
         if (*s->src == '\0') {
-            compiler_message(MSG_ERROR, "unterminated string literal: `%s`", start);
+            diagnostic(DIAG_ERROR, "unterminated string literal: `%s`", start);
             exit(EXIT_FAILURE);
         }
     }
@@ -118,7 +118,7 @@ static void tokenize_char(Lexer *lex, Token *tok) {
     char c = *lex->src++;
 
     if (!isascii(c)) {
-        compiler_message(MSG_ERROR, "invalid character literal");
+        diagnostic(DIAG_ERROR, "invalid character literal");
         exit(EXIT_FAILURE);
     }
 
@@ -127,7 +127,7 @@ static void tokenize_char(Lexer *lex, Token *tok) {
     tok->len = 3; // account for quotes
 
     if (*lex->src++ != '\'') {
-        compiler_message(MSG_ERROR, "unterminated character literal");
+        diagnostic(DIAG_ERROR, "unterminated character literal");
         exit(EXIT_FAILURE);
     }
 
@@ -207,6 +207,7 @@ Token lexer_next(Lexer *lex) {
         case ' ':
         case '\n':
             lex->src++;
+            lex->position++;
             return lexer_next(lex);
             break;
 
@@ -306,7 +307,7 @@ Token lexer_next(Lexer *lex) {
                 tokenize_ident(lex, &tok);
 
             } else {
-                compiler_message(MSG_ERROR, "unknown token `%c`", *lex->src);
+                diagnostic(DIAG_ERROR, "unknown token `%c`", *lex->src);
                 exit(EXIT_FAILURE);
             }
 
@@ -330,16 +331,17 @@ TokenLocation get_token_location(const Token *tok, const char *src) {
     // TODO: dont recompute src len every single call
     for (size_t i=0; i < strlen(src); ++i) {
 
-        if (src[i] == '\n') {
-            linecount++;
-            start = i+1;
-            column = 1;
-        }
 
         if (i == tok->position)
             break;
 
         column++;
+
+        if (src[i] == '\n') {
+            linecount++;
+            start = i+1;
+            column = 1;
+        }
 
     }
 

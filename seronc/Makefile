@@ -3,23 +3,24 @@ CFLAGS=-Wall -Wextra -ggdb -std=c11 -pedantic -fsanitize=address,undefined -Ilib
 
 BIN=seronc
 
-DEPS=		  \
-main.h        \
-util.h        \
-lexer.h       \
-parser.h      \
-codegen.h     \
-hashtable.h   \
-symboltable.h \
-types.h 	  \
+DEPS=		   		\
+main.h         		\
+diagnostics.h  		\
+lexer.h        		\
+parser.h       		\
+codegen.h      		\
+hashtable.h    		\
+symboltable.h  		\
+types.h 	  		\
+colors.h 	  		\
 
-SOURCES=	  \
-lexer.o       \
-parser.o      \
-codegen.o     \
-util.o        \
-hashtable.o   \
-symboltable.o \
+SOURCES=	  		\
+lexer.o       		\
+parser.o      		\
+codegen.o     		\
+diagnostics.o 		\
+hashtable.o   		\
+symboltable.o 		\
 
 all: compiler
 

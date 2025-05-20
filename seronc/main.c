@@ -14,13 +14,12 @@
 #define ARENA_IMPL
 #include <arena.h>
 
-#include "util.h"
+#include "diagnostics.h"
 #include "lexer.h"
 #include "parser.h"
 #include "codegen.h"
 #include "symboltable.h"
 #include "main.h"
-#include "lib/util.h"
 
 
 #define FILE_EXTENSION "srn"
@@ -32,19 +31,19 @@ struct CompilerContext compiler_ctx = { 0 };
 static void check_fileextension(const char *filename) {
 
     if (strlen(filename) <= strlen(FILE_EXTENSION) + 1) { // eg: `.___`
-        compiler_message(MSG_ERROR, "Invalid filename `%s`", filename);
+        diagnostic(DIAG_ERROR, "Invalid filename `%s`", filename);
         exit(1);
     }
 
     size_t dot_offset = strlen(filename) - 1 - strlen(FILE_EXTENSION);
 
     if (filename[dot_offset] != '.') {
-        compiler_message(MSG_ERROR, "File extension missing");
+        diagnostic(DIAG_ERROR, "File extension missing");
         exit(1);
     }
 
     if (strncmp(filename + dot_offset + 1, FILE_EXTENSION, strlen(FILE_EXTENSION))) {
-        compiler_message(MSG_ERROR, "File extension must be `.%s`", FILE_EXTENSION);
+        diagnostic(DIAG_ERROR, "File extension must be `.%s`", FILE_EXTENSION);
         exit(1);
     }
 
@@ -54,7 +53,7 @@ static char *read_file(const char *filename) {
     FILE *file = fopen(filename, "rb");
 
     if (file == NULL) {
-        compiler_message(MSG_ERROR, "Source file `%s` does not exist", filename);
+        diagnostic(DIAG_ERROR, "Source file `%s` does not exist", filename);
         exit(EXIT_FAILURE);
     }
 
@@ -98,7 +97,7 @@ static void assemble(void) {
     });
 
     if (ret) {
-        compiler_message(MSG_ERROR, "Failed to assemble via `nasm` (is nasm installed?)");
+        diagnostic(DIAG_ERROR, "Failed to assemble via `nasm` (is nasm installed?)");
         exit(EXIT_FAILURE);
     }
 
@@ -119,7 +118,7 @@ static void link_cc(void) {
     });
 
     if (ret) {
-        compiler_message(MSG_ERROR, "Failed to link via `cc`");
+        diagnostic(DIAG_ERROR, "Failed to link via `cc`");
         exit(EXIT_FAILURE);
     }
 
@@ -184,7 +183,7 @@ static void parse_args(int argc, char **argv) {
             case 'c': compiler_ctx.opts.compile_and_assemble = 1; break;
 
             default:
-                compiler_message(MSG_ERROR, "Unknown option");
+                diagnostic(DIAG_ERROR, "Unknown option");
                 exit(EXIT_FAILURE);
         }
 

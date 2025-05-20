@@ -2,7 +2,7 @@
 #define _SYMBOLTABLE_H
 
 #include <arena.h>
-#include <util.h>
+#include <ver.h>
 
 #include "hashtable.h"
 #include "parser.h"

@@ -6,9 +6,9 @@
 #include <stdbool.h>
 #include <alloca.h>
 
-#include <util.h>
+#include <ver.h>
 
-#include "util.h"
+#include "diagnostics.h"
 #include "lexer.h"
 #include "main.h"
 #include "parser.h"
@@ -153,7 +153,7 @@ static void gen_write_to_file(const char *path) {
 
     FILE *f = fopen(path, "w");
     if (f == NULL) {
-        compiler_message(MSG_ERROR, "Failed to open output file %s", path);
+        diagnostic(DIAG_ERROR, "Failed to open output file %s", path);
         exit(EXIT_FAILURE);
     }
 
@@ -358,12 +358,12 @@ static Type binop(const ExprBinOp *binop) {
 
 }
 
-static Type literal_ident(const char *str, bool addr) {
+static Type literal_ident(const ExprLiteral *literal, const char *str, bool addr) {
 
     Symbol *sym = symboltable_lookup(gen.scope, str);
 
     if (sym == NULL) {
-        compiler_message(MSG_ERROR, "Symbol `%s` does not exist in the current scope", str);
+        diagnostic_loc(DIAG_ERROR, &literal->op, "Symbol `%s` does not exist in the current scope", str);
         exit(EXIT_FAILURE);
     }
 
@@ -395,7 +395,7 @@ static Type literal_addr(const ExprLiteral *literal) {
 
     switch (literal->op.kind) {
         case TOK_LITERAL_IDENT:
-            return literal_ident(str, true);
+            return literal_ident(literal, str, true);
             break;
 
         default: PANIC("unknown operation");
@@ -446,7 +446,7 @@ static Type literal(const ExprLiteral *literal) {
         } break;
 
         case LITERAL_IDENT:
-            return literal_ident(str, false);
+            return literal_ident(literal, str, false);
             break;
 
         default: PANIC("unknown operation");
