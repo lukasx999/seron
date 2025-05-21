@@ -22,7 +22,7 @@
 #include "main.h"
 
 
-#define FILE_EXTENSION "srn"
+#define FILE_EXTENSION "sn"
 
 
 struct CompilerContext compiler_ctx = { 0 };

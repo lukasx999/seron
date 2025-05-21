@@ -1,1 +1,1 @@
-autocmd BufNewFile,BufRead *.srn setfiletype seron
+autocmd BufNewFile,BufRead *.sn setfiletype seron

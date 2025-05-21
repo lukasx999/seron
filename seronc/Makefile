@@ -34,16 +34,15 @@ debug: compiler
 		-ex "break main"    			\
 		-ex "run ./test/main.srn"
 
-# Remove me!
-some: some.asm
-	nasm -felf64 $< -gdwarf && ld some.o
+# Random assembly program for prototyping/testing
+dev-asm: dev.asm
+	nasm -felf64 $< -gdwarf
+	ld dev.o
 
 test: compiler
-	@echo TEST test/main.srn
-	@./seronc ./test/test.srn -cv
-
-	@$(CC) $(CFLAGS) -o test/test test/test.c test/test.o
-	@./test/test
+	./$(BIN) ./test/test.sn -cv
+	$(CC) $(CFLAGS) -o test/test test/test.c test/test.o
+	./test/test
 
 %.o: %.c Makefile $(DEPS)
 	@$(CC) $(CFLAGS) -c $< -o $@

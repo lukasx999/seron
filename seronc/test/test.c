@@ -14,52 +14,62 @@
     }                                                                             \
 } while (0)
 
+int test_id(int);
+bool test_neg(bool);
 
-// Exported functions from ./main.srn
-int literals_11(void);
-int cond(void);
-int variable(void);
-int complex(void);
-int early_return(void);
-int add(int, int, int, int, int, int);
-int spill(int, int, int, int, int, int, int, int);
-int loop(int step);
-int inc(int);
-int loop2(int, int);
-// char incchar(char);
-int pointer(int*);
-void pointer2(int*, int);
-int pointer_double(int**);
-int *alloc(int);
+int test_add(int, int);
+int test_sub(int, int);
+int test_mul(int, int);
+int test_div(int, int);
+
+int test_add_many(int, int, int, int, int, int, int, int, int);
+
+int test_deref(int*);
+void test_deref_write(int*, int);
+
+int test_cond(int, int, bool);
+
+int test_loop(int);
+
+int test_fptr(int(*)(void));
+static int fptr(void) { return 45; }
+
+int test_fptr_args(int(*)(int, int), int, int);
+static int fptr_add(int a, int b) { return a + b; }
+
+
 
 int main(void) {
     int passcount = 0, testcount = 0;
-    printf("Testing Compiler\n\n");
+    printf("Testing Compiler\n");
 
-    test(literals_11(), 11);
-    test(cond(), 45);
-    test(variable(), 50);
-    test(complex(), 28);
-    test(early_return(), 1);
-    test(add(0, 0, 0, 0, 0, 0), 0);
-    test(add(1, 2, -2, 3, -3, 1), 2);
-    test(spill(0, 0, 0, 0, 0, 0, 0, 0), 0);
-    test(spill(1, 2, 3, 4, 5, 6, 7, 8), 36);
-    test(loop(2), 10);
-    test(inc(2), 3);
-    test(loop2(10, 3), 30);
-    // test(incchar('A'), 'B');
-    int x = 45;
-    test(pointer(&x), 45);
-    test((pointer2(&x, 123), x), 123);
+    test(test_id(1), 1);
 
-    int y = 999;
-    int *yp = &y;
-    test(pointer_double(&yp), 999);
+    test(test_neg(1), 0);
+    test(test_neg(0), 1);
+    test(test_neg(15), 0);
 
-    int *z = alloc(45);
-    test(*z, 45);
-    free(z);
+    test(test_add(1, 2), 3);
+    test(test_sub(7, 2), 5);
+    test(test_mul(5, 2), 10);
+    test(test_div(10, 2), 5);
+
+    test(test_add_many(1, 2, 3, 4, 5, 6, 7, 8, 9), 45);
+
+    int a = 45;
+    test(test_deref(&a), a);
+
+    int b = 1;
+    test_deref_write(&b, 123);
+    test(b, 123);
+
+    test(test_cond(25, 35, true), 25);
+    test(test_cond(25, 35, false), 35);
+
+    test(test_loop(5), 5);
+
+    test(test_fptr(fptr), 45);
+    test(test_fptr_args(fptr_add, 1, 2), 3);
 
     printf("\n%d out of %d tests passed\n", passcount, testcount);
     return passcount != testcount;

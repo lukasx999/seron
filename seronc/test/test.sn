@@ -1,0 +1,67 @@
+### Math ###
+
+proc test_id(x: int) int {
+    return x;
+}
+
+proc test_neg(a: char) char {
+    return !a;
+}
+
+proc test_add(a: int, b: int) int {
+    return a + b;
+}
+
+proc test_sub(a: int, b: int) int {
+    return a - b;
+}
+
+proc test_mul(a: int, b: int) int {
+    return a * b;
+}
+
+proc test_div(a: int, b: int) int {
+    return a / b;
+}
+
+# This is supposed to test ABI compatability, as arguments are passed via the stack, starting at the 6th argument
+proc test_add_many(a1: int, a2: int, a3: int, a4: int, a5: int, a6: int, a7: int, a8: int, a9: int) int {
+    return a1+a2+a3+a4+a5+a6+a7+a8+a9;
+}
+
+### Pointers ###
+
+proc test_deref(p: *int) int {
+    return *p;
+}
+
+proc test_deref_write(p: *int, a: int) {
+    *p = a;
+}
+
+proc test_fptr(p: proc() int) int {
+    return p();
+}
+
+proc test_fptr_args(p: proc(a: int, b: int) int, a: int, b: int) int {
+    return p(a, b);
+}
+
+### Control Flow ###
+
+proc test_cond(a: int, b: int, cond: char) int {
+    if cond {
+        return a;
+    } else {
+        return b;
+    }
+}
+
+proc test_loop(iters: int) int {
+    let acc: int = 0;
+    while iters {
+        iters = iters - 1;
+        acc = acc + 1;
+    }
+    return acc;
+}
