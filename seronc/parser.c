@@ -147,12 +147,7 @@ static inline bool parser_match_token(const Parser *p, TokenKind kind) {
 
 static inline void parser_expect_token(const Parser *p, TokenKind tokenkind) {
     if (!parser_match_token(p, tokenkind)) {
-        diagnostic_loc(
-            DIAG_ERROR,
-            parser_peek(p),
-            "Expected %s",
-            stringify_tokenkind(tokenkind)
-        );
+        diagnostic_loc(DIAG_ERROR, parser_peek(p), "Expected `%s`", stringify_tokenkind(tokenkind));
         exit(EXIT_FAILURE);
     }
 }
@@ -676,17 +671,16 @@ static Type rule_util_type(Parser *p) {
         // TODO:
         ty.kind = TYPE_TABLE;
 
-    } else {
+    } else if (parser_token_is_type(p)) {
         Token tok = parser_advance(p);
         ty.kind = type_from_token_keyword(tok.kind);
-    }
 
-
-    if (ty.kind == TYPE_INVALID) {
-        diagnostic_loc(DIAG_ERROR, tok, "Unknown type `%s`", tok->value);
+    } else {
+        diagnostic_loc(DIAG_ERROR, tok, "Unknown type `%s`", stringify_tokenkind(tok->kind));
         exit(EXIT_FAILURE);
     }
 
+    assert(ty.kind != TYPE_INVALID);
     return ty;
 }
 
@@ -739,7 +733,8 @@ static AstNode *rule_primary(Parser *p) {
         return rule_grouping(p);
 
     } else {
-        diagnostic_loc(DIAG_ERROR, parser_peek(p), "Unexpected Token");
+        const Token *tok = parser_peek(p);
+        diagnostic_loc(DIAG_ERROR, tok, "unexpected token `%s`, expected expression", stringify_tokenkind(tok->kind));
         exit(EXIT_FAILURE);
     }
 
@@ -924,7 +919,7 @@ static AstNode *rule_block(Parser *p) {
     while (!parser_match_token(p, TOK_RBRACE)) {
 
         if (parser_is_at_end(p)) {
-            diagnostic_loc(DIAG_ERROR, &brace, "Unmatching brace");
+            diagnostic_loc(DIAG_ERROR, &brace, "Unmatching brace. did you forget the closing brace?");
             exit(EXIT_FAILURE);
         }
 

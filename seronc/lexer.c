@@ -16,7 +16,6 @@
 #define LITERAL_SUFFIX_CHAR 'C'
 #define LITERAL_SUFFIX_INT  'I'
 
-
 const char *stringify_tokenkind(TokenKind tok) {
     const char *repr[] = {
         [TOK_INVALID]        = "invalid",

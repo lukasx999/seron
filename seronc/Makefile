@@ -28,6 +28,12 @@ compiler: main.o $(SOURCES)
 	@$(CC) $(CFLAGS) $^ -o $(BIN)
 	@echo LINK $^
 
+debug: compiler
+	gdb 								\
+		-ex "file ./seronc" 			\
+		-ex "break main"    			\
+		-ex "run ./test/main.srn"
+
 # Remove me!
 some: some.asm
 	nasm -felf64 $< -gdwarf && ld some.o
@@ -47,4 +53,4 @@ clean:
 	rm *.o $(BIN)
 	rm test/{*.o,*.s,test}
 
-.PHONY: clean test
+.PHONY: clean, test
