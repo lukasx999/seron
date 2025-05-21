@@ -201,6 +201,7 @@ static void parse_args(int argc, char **argv) {
 
 // TODO: synchronizing parser / typechecker
 // TODO: get tokens from FILE* stream
+// TODO: refactor parser to library, so it can be reused by lsp-server
 
 int main(int argc, char **argv) {
 
