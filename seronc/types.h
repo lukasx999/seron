@@ -38,7 +38,7 @@ struct Type {
 
 typedef struct {
     Type type;
-    char ident[MAX_IDENT_LEN];
+    char ident[MAX_IDENT_LEN+1]; // account for nullbyte
 } Param;
 
 struct ProcSignature {

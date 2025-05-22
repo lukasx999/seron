@@ -32,7 +32,7 @@ debug: compiler
 	gdb 								\
 		-ex "file ./seronc" 			\
 		-ex "break main"    			\
-		-ex "run ./test/main.srn"
+		-ex "run ./test/main.sn"
 
 # Random assembly program for prototyping/testing
 dev-asm: dev.asm

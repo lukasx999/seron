@@ -25,6 +25,7 @@ int test_div(int, int);
 int test_add_many(int, int, int, int, int, int, int, int, int);
 
 int test_deref(int*);
+int *test_deref_double(int**);
 void test_deref_write(int*, int);
 
 int test_cond(int, int, bool);
@@ -58,6 +59,9 @@ int main(void) {
 
     int a = 45;
     test(test_deref(&a), a);
+
+    int *ap = &a;
+    assert(test_deref_double(&ap) == &a);
 
     int b = 1;
     test_deref_write(&b, 123);

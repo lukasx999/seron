@@ -145,10 +145,36 @@ static inline bool parser_match_token(const Parser *p, TokenKind kind) {
     return parser_match_tokens(p, kind, SENTINEL);
 }
 
-static inline void parser_expect_token(const Parser *p, TokenKind tokenkind) {
+// moves one token ahead, and returns the token before
+static inline Token parser_advance(Parser *p) {
+    Token old = p->tok;
+    p->tok = lexer_next(&p->lexer);
+    return old;
+}
+
+static void parser_recover(Parser *p) {
+
+    return;
+
+    while (1) {
+        // if (parser_match_tokens(p, TOK_KW_PROC, TOK_KW_VARDECL, TOK_KW_TABLE, SENTINEL)) {
+        //     break;
+        // }
+        if (parser_match_token(p, TOK_SEMICOLON)) {
+            parser_advance(p);
+            break;
+        }
+
+        parser_advance(p);
+    }
+
+}
+
+static inline void parser_expect_token(Parser *p, TokenKind tokenkind) {
     if (!parser_match_token(p, tokenkind)) {
         diagnostic_loc(DIAG_ERROR, parser_peek(p), "Expected `%s`", stringify_tokenkind(tokenkind));
-        exit(EXIT_FAILURE);
+        parser_recover(p);
+        // exit(EXIT_FAILURE);
     }
 }
 
@@ -159,13 +185,6 @@ static inline bool parser_token_is_type(const Parser *p) {
 
 static inline bool parser_is_at_end(const Parser *p) {
     return parser_match_token(p, TOK_EOF);
-}
-
-// moves one token ahead, and returns the token before
-static inline Token parser_advance(Parser *p) {
-    Token old = p->tok;
-    p->tok = lexer_next(&p->lexer);
-    return old;
 }
 
 // advance, enforcing that the current token has the specified kind
@@ -559,14 +578,7 @@ static Param rule_util_param(Parser *p) {
         .type  = rule_util_type(p),
     };
 
-    // TODO: do this in the lexer
-    // if (strlen(tok.value) > MAX_IDENT_LEN) {
-    //     compiler_message_tok(MSG_ERROR, tok, "Identifiers cannot be longer than %d characters!", MAX_IDENT_LEN);
-    //     exit(EXIT_FAILURE);
-    // }
-
-    strncpy(param.ident, tok.value, ARRAY_LEN(param.ident));
-
+    strncpy(param.ident, tok.value, ARRAY_LEN(param.ident) - 1);
     return param;
 
 }

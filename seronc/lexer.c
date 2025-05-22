@@ -114,6 +114,7 @@ static void tokenize_char(Lexer *lex, Token *tok) {
     tok->number_type = NUMBER_CHAR;
     lex->src++;
 
+    // TODO: escape codes
     char c = *lex->src++;
 
     if (!isascii(c)) {
@@ -161,10 +162,24 @@ static void tokenize_number(Lexer *lex, Token *tok) {
     }
 
     tok->len = lex->src - start;
+
+    if (tok->len > MAX_NUMBER_LITERAL_LEN) {
+        diagnostic_loc(
+            DIAG_ERROR,
+            tok,
+            "Integer literals may not be longer than %d characters. This one has: %d",
+            MAX_NUMBER_LITERAL_LEN,
+            tok->len
+        );
+        exit(EXIT_FAILURE);
+    }
+
     char buf[MAX_NUMBER_LITERAL_LEN] = { 0 };
-    strncpy(buf, start, MIN(tok->len, ARRAY_LEN(buf)));
+    strncpy(buf, start, tok->len);
 
     tok->number = atoll(buf);
+    // TODO: proper error handling
+    assert(tok->number != 0);
 
 }
 
@@ -175,8 +190,20 @@ static void tokenize_ident(Lexer *lex, Token *tok) {
 
     tok->len = lex->src - start;
 
-    if ((tok->kind = get_keyword(start)) == TOK_LITERAL_IDENT)
-        strncpy(tok->value, start, MIN(tok->len, ARRAY_LEN(tok->value)));
+    if (tok->len > MAX_IDENT_LEN) {
+        diagnostic_loc(
+            DIAG_ERROR,
+            tok,
+            "Identifiers may not be longer than %d characters. This one has: %d",
+            MAX_IDENT_LEN,
+            tok->len
+        );
+        exit(EXIT_FAILURE);
+    }
+
+    if ((tok->kind = get_keyword(start)) == TOK_LITERAL_IDENT) {
+        strncpy(tok->value, start, tok->len);
+    }
 }
 
 void lexer_init(Lexer *lex, const char *src) {
