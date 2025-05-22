@@ -152,29 +152,10 @@ static inline Token parser_advance(Parser *p) {
     return old;
 }
 
-static void parser_recover(Parser *p) {
-
-    return;
-
-    while (1) {
-        // if (parser_match_tokens(p, TOK_KW_PROC, TOK_KW_VARDECL, TOK_KW_TABLE, SENTINEL)) {
-        //     break;
-        // }
-        if (parser_match_token(p, TOK_SEMICOLON)) {
-            parser_advance(p);
-            break;
-        }
-
-        parser_advance(p);
-    }
-
-}
-
 static inline void parser_expect_token(Parser *p, TokenKind tokenkind) {
     if (!parser_match_token(p, tokenkind)) {
         diagnostic_loc(DIAG_ERROR, parser_peek(p), "Expected `%s`", stringify_tokenkind(tokenkind));
-        parser_recover(p);
-        // exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
 }
 
