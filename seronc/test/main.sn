@@ -1,4 +1,7 @@
 proc main() {
-    let x: foo = 123;
-    let y: bar = 45;
+    let x: int 123;
+    let y: int 45;
+    let y: int 45;
+    let y: int 45;
+    let y: int 45;
 }

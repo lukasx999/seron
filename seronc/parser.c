@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdarg.h>
+#include <setjmp.h>
 
 #include <arena.h>
 #include <ver.h>
@@ -17,6 +18,11 @@
 
 #define SENTINEL TOK_INVALID
 
+// this is the sanest way to implement error recovery for recursive descent parsing
+// otherwise, we'd have to propagate errors all the way up the call stack, which would be
+// very verbose, and annoying.
+jmp_buf ctx_stmt = { 0 };
+jmp_buf ctx_decl = { 0 };
 
 
 
@@ -152,10 +158,25 @@ static inline Token parser_advance(Parser *p) {
     return old;
 }
 
+static void parser_recover_stmt(Parser *p) {
+    while (1) {
+        if (parser_match_token(p, TOK_SEMICOLON)) {
+            break;
+        }
+        parser_advance(p);
+    }
+    parser_advance(p);
+}
+
+static inline void parser_error_stmt(Parser *p) {
+    parser_recover_stmt(p);
+    longjmp(ctx_stmt, 1);
+}
+
 static inline void parser_expect_token(Parser *p, TokenKind tokenkind) {
     if (!parser_match_token(p, tokenkind)) {
         diagnostic_loc(DIAG_ERROR, parser_peek(p), "Expected `%s`", stringify_tokenkind(tokenkind));
-        exit(EXIT_FAILURE);
+        parser_error_stmt(p);
     }
 }
 
@@ -173,7 +194,6 @@ static inline Token parser_consume(Parser *p, TokenKind kind) {
     parser_expect_token(p, kind);
     return parser_advance(p);
 }
-
 
 
 
@@ -909,7 +929,15 @@ static AstNode *rule_block(Parser *p) {
 
     astnodelist_init(&node->block.stmts, p->arena);
 
-    while (!parser_match_token(p, TOK_RBRACE)) {
+    while (1) {
+
+        // we cant put the call to parser_match_token() in the condition,
+        // as it has to be checked after we've jumped
+        // we also can't put the setjmp() call at the end of the loop
+        // as that means, that the stack frame of rule_stmt() is already gone,
+        // making setjmp() segfault
+        setjmp(ctx_stmt);
+        if (parser_match_token(p, TOK_RBRACE)) break;
 
         if (parser_is_at_end(p)) {
             diagnostic_loc(DIAG_ERROR, &brace, "Unmatching brace. did you forget the closing brace?");
@@ -919,6 +947,7 @@ static AstNode *rule_block(Parser *p) {
         AstNode *stmt = rule_stmt(p);
         if (stmt != NULL)
             astnodelist_append(&node->block.stmts, stmt);
+
     }
 
     parser_advance(p);
