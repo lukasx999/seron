@@ -20,8 +20,6 @@
 
 
 
-
-
 static void astnodelist_init(AstNodeList *list, Arena *arena) {
      *list = (AstNodeList) {
         .cap   = 5,
@@ -127,6 +125,7 @@ typedef struct {
     Token tok;
     Lexer lexer;
     ParserContext ctx;
+    int errcount;
 } Parser;
 
 // returns the current token
@@ -198,6 +197,7 @@ static void parser_recover_decl(Parser *p) {
 
 // jump to the next valid token in the current context ("panic mode")
 static inline void parser_sync(Parser *p) {
+    p->errcount++;
     switch (p->ctx) {
         case CONTEXT_DECL:
             parser_recover_decl(p);
@@ -574,7 +574,14 @@ AstNode *parse(const char *src, Arena *arena) {
     // get the first token
     parser.tok = lexer_next(&parser.lexer);
 
-    return rule_program(&parser);
+    AstNode *root = rule_program(&parser);
+
+    if (parser.errcount) {
+        diagnostic(DIAG_ERROR, "Parsing failed with %d errors", parser.errcount);
+        exit(EXIT_FAILURE);
+    }
+
+    return root;
 }
 
 

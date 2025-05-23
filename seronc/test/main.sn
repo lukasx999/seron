@@ -3,7 +3,7 @@ proc main() {
     {}
 }
 
-proc foo() {
-    let x: int 45;
-    let y: int 45;
-}
+#proc foo() {
+#    let x: int 45;
+#    let y: int 45;
+#}
