@@ -1094,8 +1094,8 @@ static AstNode *rule_decl(Parser *p) {
         parser_match_token(p, TOK_KW_PROC)    ? rule_proc(p)    :
         parser_match_token(p, TOK_KW_VARDECL) ? rule_vardecl(p) :
         parser_match_token(p, TOK_KW_TABLE)   ? rule_table(p)   :
+    // TODO: error
     (diagnostic(DIAG_ERROR, "Expected declaration"), exit(EXIT_FAILURE), NULL);
-    // TODO: synchronize parser
 }
 
 static AstNode *rule_program(Parser *p) {
@@ -1107,8 +1107,10 @@ static AstNode *rule_program(Parser *p) {
 
     astnodelist_init(&node->block.stmts, p->arena);
 
-    while (!parser_is_at_end(p))
+    while (!parser_is_at_end(p)) {
+        setjmp(ctx_decl);
         astnodelist_append(&node->block.stmts, rule_decl(p));
+    }
 
     return node;
 }
