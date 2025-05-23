@@ -22,17 +22,22 @@ diagnostics.o 		\
 hashtable.o   		\
 symboltable.o 		\
 
+PROTO=./test/main.sn
+
 all: compiler
 
 compiler: main.o $(SOURCES)
 	@$(CC) $(CFLAGS) $^ -o $(BIN)
 	@echo LINK $^
 
+run: compiler
+	./$(BIN) -v $(PROTO) --dump-ast && ./test/main
+
 debug: compiler
 	gdb 								\
-		-ex "file ./seronc" 			\
+		-ex "file ./$(BIN)" 			\
 		-ex "break main"    			\
-		-ex "run ./test/main.sn"
+		-ex "run $(PROTO)"
 
 # Random assembly program for prototyping/testing
 dev-asm: dev.asm

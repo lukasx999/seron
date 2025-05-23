@@ -16,7 +16,14 @@
 #include "colors.h"
 
 
-#define SENTINEL TOK_INVALID
+#define SENTINEL TOK_SENTINEL
+
+// we always have to know if we're in a statement or declaration, so we know
+// where to jump to in case of an error
+typedef enum {
+    CONTEXT_STMT,
+    CONTEXT_DECL,
+} ParserContext;
 
 // this is the sanest way to implement error recovery for recursive descent parsing
 // otherwise, we'd have to propagate errors all the way up the call stack, which would be
@@ -117,6 +124,7 @@ typedef struct {
     Arena *arena;
     Token tok;
     Lexer lexer;
+    ParserContext ctx;
 } Parser;
 
 // returns the current token
@@ -151,8 +159,19 @@ static inline bool parser_match_token(const Parser *p, TokenKind kind) {
     return parser_match_tokens(p, kind, SENTINEL);
 }
 
-// moves one token ahead, and returns the token before
+static inline bool parser_is_at_end(const Parser *p) {
+    return parser_match_token(p, TOK_EOF);
+}
+
+// moves one token ahead, returning the token before
 static inline Token parser_advance(Parser *p) {
+
+    if (parser_is_at_end(p)) {
+        diagnostic(DIAG_ERROR, "Unexpected end of file. (please finish your code)");
+        // there's no point in trying to synchronize anything as there are no more tokens
+        exit(EXIT_FAILURE);
+    }
+
     Token old = p->tok;
     p->tok = lexer_next(&p->lexer);
     return old;
@@ -160,23 +179,39 @@ static inline Token parser_advance(Parser *p) {
 
 static void parser_recover_stmt(Parser *p) {
     while (1) {
-        if (parser_match_token(p, TOK_SEMICOLON)) {
+        if (parser_match_token(p, TOK_SEMICOLON))
             break;
-        }
         parser_advance(p);
     }
     parser_advance(p);
 }
 
-static inline void parser_error_stmt(Parser *p) {
-    parser_recover_stmt(p);
-    longjmp(ctx_stmt, 1);
+static void parser_recover_decl(Parser *p) {
+    while (1) {
+        if (parser_match_token(p, TOK_KW_PROC))
+            break;
+        parser_advance(p);
+    }
+}
+
+static inline void parser_sync(Parser *p) {
+
+    switch (p->ctx) {
+        case CONTEXT_DECL:
+            parser_recover_decl(p);
+            longjmp(ctx_decl, 1);
+            break;
+        case CONTEXT_STMT:
+            parser_recover_stmt(p);
+            longjmp(ctx_stmt, 1);
+            break;
+    }
 }
 
 static inline void parser_expect_token(Parser *p, TokenKind tokenkind) {
     if (!parser_match_token(p, tokenkind)) {
         diagnostic_loc(DIAG_ERROR, parser_peek(p), "Expected `%s`", stringify_tokenkind(tokenkind));
-        parser_error_stmt(p);
+        parser_sync(p);
     }
 }
 
@@ -185,13 +220,11 @@ static inline bool parser_token_is_type(const Parser *p) {
     return parser_match_tokens(p, TOK_KW_TYPE_INT, TOK_KW_TYPE_CHAR, TOK_KW_TYPE_LONG, TOK_KW_TYPE_VOID, TOK_ASTERISK, SENTINEL);
 }
 
-static inline bool parser_is_at_end(const Parser *p) {
-    return parser_match_token(p, TOK_EOF);
-}
-
 // advance, enforcing that the current token has the specified kind
 static inline Token parser_consume(Parser *p, TokenKind kind) {
-    parser_expect_token(p, kind);
+    // can't use parser_expect_token() on an EOF token, as its gonna try to synchronize
+    if (!parser_is_at_end(p))
+        parser_expect_token(p, kind);
     return parser_advance(p);
 }
 
@@ -535,8 +568,9 @@ AstNode *parse(const char *src, Arena *arena) {
     };
 
     lexer_init(&parser.lexer, src);
+    // get the first token
+    parser.tok = lexer_next(&parser.lexer);
 
-    parser_advance(&parser); // get first token
     return rule_program(&parser);
 }
 
@@ -649,7 +683,6 @@ static Type rule_util_proc_type(Parser *p, Token *out_ident, Token *out_op) {
         sig->returntype = rule_util_type(p);
     else
         sig->returntype.kind = TYPE_VOID;
-
 
     Type type = {
         .kind = TYPE_PROCEDURE,
@@ -937,7 +970,8 @@ static AstNode *rule_block(Parser *p) {
         // as that means, that the stack frame of rule_stmt() is already gone,
         // making setjmp() segfault
         setjmp(ctx_stmt);
-        if (parser_match_token(p, TOK_RBRACE)) break;
+        if (parser_match_token(p, TOK_RBRACE))
+            break;
 
         if (parser_is_at_end(p)) {
             diagnostic_loc(DIAG_ERROR, &brace, "Unmatching brace. did you forget the closing brace?");
@@ -1024,12 +1058,13 @@ static AstNode *rule_return(Parser *p) {
 static AstNode *rule_stmt(Parser *p) {
     // <statement> ::=
     //             | <block>
-    //             | <procedure>
     //             | <vardecl>
     //             | <if>
     //             | <while>
     //             | <return>
     //             | <exprstmt>
+
+    p->ctx = CONTEXT_STMT;
 
     return
         parser_match_token(p, TOK_LBRACE)     ? rule_block  (p) :
@@ -1089,6 +1124,8 @@ static AstNode *rule_table(Parser *p) {
 
 static AstNode *rule_decl(Parser *p) {
     // <declaration> ::= <proc> | <vardecl>
+
+    p->ctx = CONTEXT_DECL;
 
     return
         parser_match_token(p, TOK_KW_PROC)    ? rule_proc(p)    :
