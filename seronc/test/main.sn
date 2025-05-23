@@ -2,8 +2,3 @@ proc main() {
     return 0;
     {}
 }
-
-#proc foo() {
-#    let x: int 45;
-#    let y: int 45;
-#}

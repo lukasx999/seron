@@ -16,6 +16,7 @@
 #include "colors.h"
 
 
+
 #define SENTINEL TOK_SENTINEL
 
 
@@ -178,6 +179,7 @@ static inline Token parser_advance(Parser *p) {
     return old;
 }
 
+// move to the next statement
 static void parser_recover_stmt(Parser *p) {
     while (1) {
         if (parser_match_token(p, TOK_SEMICOLON))
@@ -187,6 +189,7 @@ static void parser_recover_stmt(Parser *p) {
     parser_advance(p);
 }
 
+// move to the next declaration
 static void parser_recover_decl(Parser *p) {
     while (1) {
         if (parser_match_tokens(p, TOK_KW_PROC, TOK_KW_TABLE, SENTINEL))
@@ -197,6 +200,7 @@ static void parser_recover_decl(Parser *p) {
 
 // jump to the next valid token in the current context ("panic mode")
 static inline void parser_sync(Parser *p) {
+    // TODO: check for EOF
     p->errcount++;
     switch (p->ctx) {
         case CONTEXT_DECL:
@@ -631,22 +635,20 @@ static Param rule_util_param(Parser *p) {
 static void rule_util_paramlist(Parser *p, ProcSignature *sig) {
     // <paramlist> ::= "(" (<param> ("," <param>)* )? ")"
 
-
     parser_consume(p, TOK_LPAREN);
 
     while (!parser_match_token(p, TOK_RPAREN)) {
 
-        // TODO:
-        // if (sig->params_count >= MAX_PARAM_COUNT) {
-        //     compiler_message_tok(MSG_ERROR, tok, "Procedures may not have more than %d parameters!", MAX_PARAM_COUNT);
-        //     exit(EXIT_FAILURE);
-        // }
-
         sig->params[sig->params_count++] = rule_util_param(p);
+
+        const Token *tok = parser_peek(p);
+        if (sig->params_count >= MAX_PARAM_COUNT) {
+            diagnostic_loc(DIAG_ERROR, tok, "Procedures may not have more than %d parameters!", MAX_PARAM_COUNT);
+            parser_sync(p);
+        }
 
         if (parser_match_token(p, TOK_COMMA))
             parser_consume(p, TOK_COMMA);
-
     }
 
     parser_consume(p, TOK_RPAREN);
@@ -686,6 +688,7 @@ static Type rule_util_proc_type(Parser *p, Token *out_ident, Token *out_op) {
         *out_ident = parser_consume(p, TOK_LITERAL_IDENT);
 
     ProcSignature *sig = arena_alloc(p->arena, sizeof(ProcSignature));
+    sig->params_count = 0;
     rule_util_paramlist(p, sig);
 
     // returntype is void if not specified
@@ -739,8 +742,6 @@ static Type rule_util_type(Parser *p) {
     assert(ty.kind != TYPE_INVALID);
     return ty;
 }
-
-
 
 static AstNode *rule_grouping(Parser *p) {
     // <grouping> ::= "(" <expression> ")"
