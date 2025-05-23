@@ -8,13 +8,13 @@ push rbp
 mov rbp, rsp
 
 
+mov rax, 123
+mov rdi, 123
 
-mov dword [rbp-4], 45
+cmp rax, rdi
+sete al
 
-lea rax, [rbp-4]
-mov [rbp-12], rax
 
-mov rax, [rax]
 
 
 mov rsp, rbp

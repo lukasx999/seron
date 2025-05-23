@@ -44,6 +44,7 @@ debug: compiler
 dev-asm: dev.asm
 	nasm -felf64 $< -gdwarf
 	ld dev.o
+	./a.out
 
 test: compiler
 	./$(BIN) ./test/test.sn -cv

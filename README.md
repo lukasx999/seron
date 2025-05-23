@@ -6,14 +6,15 @@
 
 - Compiled to native Assembly
 - Static & Strong Typing
-- **No** dependencies
+- Familiar syntax
+- Easy interop with C APIs
+- Building requires on dependencies
 
 Currently, the only supported backend is x86_64 NASM.
 
 ## Build Requirements
 
 - C11 Toolchain
-- Nothing else!
 
 ## Usage Requirements
 
@@ -24,7 +25,7 @@ Currently, the only supported backend is x86_64 NASM.
 
 ```
 $ git clone https://github.com/lukasx999/seron.git
-$ cd seronc/src
+$ cd seron/seronc
 $ make
 $ ./seronc
 ```
@@ -34,6 +35,8 @@ $ ./seronc
 Currently, only syntax highlighting is available for Vim. See `editor/`.
 
 ## Building `compile_commands.json` for clangd
+
+Requires `pipx` to be installed
 
 ```
 $ pipx install compiledb

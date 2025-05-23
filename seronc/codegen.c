@@ -346,12 +346,33 @@ static Type binop(const ExprBinOp *binop) {
 
     // assert(rhs.kind == lhs.kind);
 
+    // LHS: rdi
+    // RHS: rax
+
     switch (binop->kind) {
-        case BINOP_ADD: gen_write("add %s, %s", rax, rdi); break;
-        case BINOP_SUB: gen_write("sub %s, %s", rax, rdi); break;
-        case BINOP_MUL: gen_write("imul %s", rdi);         break;
-        case BINOP_DIV: gen_write("idiv %s", rdi);         break;
-        default:        PANIC("unknown operation");
+        case BINOP_ADD:
+            gen_write("add %s, %s", rax, rdi);
+            break;
+
+        case BINOP_SUB:
+            gen_write("sub %s, %s", rax, rdi);
+            break;
+
+        case BINOP_MUL:
+            gen_write("imul %s", rdi);
+            break;
+
+        case BINOP_DIV:
+            gen_write("idiv %s", rdi);
+            break;
+
+        // TODO: add BINOP_NEQ
+        case BINOP_EQ:
+            gen_write("cmp %s, %s", rax, rdi);
+            gen_write("sete %s", subregister(REG_RAX, TYPE_CHAR));
+            break;
+
+        default: PANIC("unknown operation");
     }
 
     return rhs;
@@ -397,7 +418,6 @@ static Type literal_addr(const ExprLiteral *literal) {
         case TOK_LITERAL_IDENT:
             return literal_ident(literal, str, true);
             break;
-
         default: PANIC("unknown operation");
     }
 
@@ -406,18 +426,14 @@ static Type literal_addr(const ExprLiteral *literal) {
 }
 
 static TypeKind type_from_token_literal(NumberLiteralType type) {
-
     switch (type) {
         case NUMBER_CHAR: return TYPE_CHAR;
         case NUMBER_LONG: return TYPE_LONG;
         case NUMBER_ANY:
         case NUMBER_INT:  return TYPE_INT;
         default: PANIC("unknown token");
-
     }
-
     UNREACHABLE();
-
 }
 
 static Type literal(const ExprLiteral *literal) {
@@ -512,7 +528,12 @@ static void vardecl(const StmtVarDecl *decl) {
     const char *ident = decl->ident.value;
     Type init = emit(decl->init);
     Symbol *sym = NON_NULL(symboltable_lookup(gen.scope, ident));
-    gen_write("mov [rbp-%d], %s ; %s", sym->offset, subregister(REG_RAX, init.kind), ident);
+    gen_write(
+        "mov [rbp-%d], %s ; %s",
+        sym->offset,
+        subregister(REG_RAX, init.kind),
+        ident
+    );
 
 }
 

@@ -40,6 +40,7 @@ typedef enum {
     BINOP_SUB,
     BINOP_MUL,
     BINOP_DIV,
+    BINOP_EQ,
 } BinOpKind;
 
 typedef struct {

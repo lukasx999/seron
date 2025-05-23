@@ -69,6 +69,7 @@ static BinOpKind binop_from_token(TokenKind kind) {
         case TOK_MINUS:    return BINOP_SUB;
         case TOK_SLASH:    return BINOP_DIV;
         case TOK_ASTERISK: return BINOP_MUL;
+        case TOK_EQUALS:   return BINOP_EQ;
         default:           PANIC("unknown tokenkind");
     }
     UNREACHABLE();
@@ -102,10 +103,12 @@ static const char *stringify_binop(BinOpKind op) {
         case BINOP_SUB: return "sub";
         case BINOP_MUL: return "mul";
         case BINOP_DIV: return "div";
+        case BINOP_EQ:  return "eq";
         default: PANIC("unknown binop");
     }
     UNREACHABLE();
 }
+
 
 
 // we always have to know if we're in a statement or declaration, so we know
@@ -889,17 +892,41 @@ static AstNode *rule_term(Parser *p) {
     return lhs;
 }
 
+static AstNode *rule_equality(Parser *p) {
+    // <equality> ::= <expr> ("==" <expr>)*
+
+    AstNode *lhs = rule_term(p);
+
+    while (parser_match_tokens(p, TOK_EQUALS, SENTINEL)) {
+        Token op = parser_advance(p);
+        AstNode *rhs = rule_term(p);
+
+        AstNode *node    = parser_new_node(p);
+        node->kind       = ASTNODE_BINOP;
+        node->expr_binop = (ExprBinOp) {
+            .lhs  = lhs,
+            .op   = op,
+            .rhs  = rhs,
+            .kind = binop_from_token(op.kind),
+        };
+
+        lhs = node;
+    }
+
+    return lhs;
+}
+
 static AstNode *rule_assign(Parser *p) {
     // <assign> ::= <expr> "=" <assign> | <term>
 
-    AstNode *expr = rule_term(p);
+    AstNode *expr = rule_equality(p);
 
     if (!parser_match_token(p, TOK_ASSIGN))
         return expr;
 
     Token op = parser_advance(p);
 
-    AstNode *value = rule_assign(p);
+    AstNode *value = rule_equality(p);
 
     AstNode *node     = parser_new_node(p);
     node->kind        = ASTNODE_ASSIGN;
