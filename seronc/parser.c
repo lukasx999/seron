@@ -18,18 +18,7 @@
 
 #define SENTINEL TOK_SENTINEL
 
-// we always have to know if we're in a statement or declaration, so we know
-// where to jump to in case of an error
-typedef enum {
-    CONTEXT_STMT,
-    CONTEXT_DECL,
-} ParserContext;
 
-// this is the sanest way to implement error recovery for recursive descent parsing
-// otherwise, we'd have to propagate errors all the way up the call stack, which would be
-// very verbose, and annoying.
-jmp_buf ctx_stmt = { 0 };
-jmp_buf ctx_decl = { 0 };
 
 
 
@@ -120,6 +109,19 @@ static const char *stringify_binop(BinOpKind op) {
 }
 
 
+// we always have to know if we're in a statement or declaration, so we know
+// where to jump to in case of an error
+typedef enum {
+    CONTEXT_STMT,
+    CONTEXT_DECL,
+} ParserContext;
+
+// this is the sanest way to implement error recovery for recursive descent parsing
+// otherwise, we'd have to propagate errors all the way up the call stack, which would be
+// very verbose, and annoying.
+static jmp_buf ctx_stmt = { 0 };
+static jmp_buf ctx_decl = { 0 };
+
 typedef struct {
     Arena *arena;
     Token tok;
@@ -132,7 +134,7 @@ static inline const Token *parser_peek(const Parser *p) {
     return &p->tok;
 }
 
-static inline void *parser_new_node(Parser *p) {
+static inline AstNode *parser_new_node(Parser *p) {
     return NON_NULL(arena_alloc(p->arena, sizeof(AstNode)));
 }
 
@@ -188,14 +190,14 @@ static void parser_recover_stmt(Parser *p) {
 
 static void parser_recover_decl(Parser *p) {
     while (1) {
-        if (parser_match_token(p, TOK_KW_PROC))
+        if (parser_match_tokens(p, TOK_KW_PROC, TOK_KW_TABLE, SENTINEL))
             break;
         parser_advance(p);
     }
 }
 
+// jump to the next valid token in the current context ("panic mode")
 static inline void parser_sync(Parser *p) {
-
     switch (p->ctx) {
         case CONTEXT_DECL:
             parser_recover_decl(p);
@@ -206,6 +208,7 @@ static inline void parser_sync(Parser *p) {
             longjmp(ctx_stmt, 1);
             break;
     }
+    UNREACHABLE();
 }
 
 static inline void parser_expect_token(Parser *p, TokenKind tokenkind) {
@@ -593,7 +596,7 @@ static AstNodeList rule_util_arglist(Parser *p) {
         astnodelist_append(&args, rule_expr(p));
 
         if (parser_match_token(p, TOK_COMMA))
-            parser_advance(p);
+            parser_consume(p, TOK_COMMA);
 
     }
 
@@ -635,7 +638,7 @@ static void rule_util_paramlist(Parser *p, ProcSignature *sig) {
         sig->params[sig->params_count++] = rule_util_param(p);
 
         if (parser_match_token(p, TOK_COMMA))
-            parser_advance(p);
+            parser_consume(p, TOK_COMMA);
 
     }
 
@@ -653,7 +656,7 @@ static void rule_util_fieldlist(Parser *p, Table *table) {
         table->fields[table->field_count++] = rule_util_param(p);
 
         if (parser_match_token(p, TOK_COMMA))
-            parser_advance(p);
+            parser_consume(p, TOK_COMMA);
 
     }
 
@@ -723,7 +726,7 @@ static Type rule_util_type(Parser *p) {
 
     } else {
         diagnostic_loc(DIAG_ERROR, tok, "Unknown type `%s`", stringify_tokenkind(tok->kind));
-        exit(EXIT_FAILURE);
+        parser_sync(p);
     }
 
     assert(ty.kind != TYPE_INVALID);
@@ -781,7 +784,7 @@ static AstNode *rule_primary(Parser *p) {
     } else {
         const Token *tok = parser_peek(p);
         diagnostic_loc(DIAG_ERROR, tok, "unexpected token `%s`, expected expression", stringify_tokenkind(tok->kind));
-        exit(EXIT_FAILURE);
+        parser_sync(p);
     }
 
     UNREACHABLE();
@@ -907,7 +910,6 @@ static AstNode *rule_expr(Parser *p) {
     return rule_assign(p);
 }
 
-
 // returns NULL on empty statement
 static AstNode *rule_exprstmt(Parser *p) {
     // <exprstmt> ::= <expr>? ";"
@@ -975,6 +977,7 @@ static AstNode *rule_block(Parser *p) {
 
         if (parser_is_at_end(p)) {
             diagnostic_loc(DIAG_ERROR, &brace, "Unmatching brace. did you forget the closing brace?");
+            // TODO: sync
             exit(EXIT_FAILURE);
         }
 
@@ -1129,10 +1132,10 @@ static AstNode *rule_decl(Parser *p) {
 
     return
         parser_match_token(p, TOK_KW_PROC)    ? rule_proc(p)    :
-        parser_match_token(p, TOK_KW_VARDECL) ? rule_vardecl(p) :
         parser_match_token(p, TOK_KW_TABLE)   ? rule_table(p)   :
-    // TODO: error
-    (diagnostic(DIAG_ERROR, "Expected declaration"), exit(EXIT_FAILURE), NULL);
+    (diagnostic_loc(DIAG_ERROR, parser_peek(p), "Expected declaration"),
+        parser_sync(p),
+        NULL);
 }
 
 static AstNode *rule_program(Parser *p) {

@@ -31,7 +31,8 @@ compiler: main.o $(SOURCES)
 	@echo LINK $^
 
 run: compiler
-	./$(BIN) -v $(PROTO) --dump-ast && ./test/main
+	./$(BIN) -v $(PROTO) --dump-ast
+	./test/main
 
 debug: compiler
 	gdb 								\

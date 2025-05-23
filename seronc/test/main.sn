@@ -1,4 +1,9 @@
-proc
+proc main() {
+    return 0;
+    {}
+}
 
-proc main() {}
-proc
+proc foo() {
+    let x: int 45;
+    let y: int 45;
+}

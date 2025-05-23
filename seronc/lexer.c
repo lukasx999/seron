@@ -179,7 +179,6 @@ static void tokenize_number(Lexer *lex, Token *tok) {
 
     tok->number = atoll(buf);
     // TODO: proper error handling
-    assert(tok->number != 0);
 
 }
 
