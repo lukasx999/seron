@@ -62,9 +62,9 @@ typedef struct {
 } ExprUnaryOp;
 
 typedef struct {
-    Token        op;
-    AstNode     *callee;
-    AstNodeList  args;
+    Token op;
+    AstNode *callee;
+    AstNodeList args;
 } ExprCall;
 
 typedef struct {
@@ -83,11 +83,11 @@ typedef struct {
 } DeclTable;
 
 typedef struct {
-    Token      op, ident;
-    AstNode   *body;        // NULL if declaration
-    Type       type;        // type is holding function signature
+    Token op, ident;
+    AstNode *body;          // NULL if declaration
+    Type type;              // type is holding function signature
     Hashtable *symboltable; // for convenience
-    int        stack_size;
+    int stack_size;
 } DeclProc;
 
 typedef struct {
@@ -130,19 +130,19 @@ typedef enum {
 struct AstNode {
     AstNodeKind kind;
     union {
-        ExprLiteral    expr_literal;
-        ExprGrouping   expr_grouping;
-        ExprBinOp      expr_binop;
-        ExprUnaryOp    expr_unaryop;
-        ExprCall       expr_call;
-        ExprAssign     expr_assign;
-        DeclTable       table;
-        Block          block;
-        DeclProc       stmt_proc;
-        StmtVarDecl    stmt_vardecl;
-        StmtIf         stmt_if;
-        StmtWhile      stmt_while;
-        StmtReturn     stmt_return;
+        ExprLiteral  expr_literal;
+        ExprGrouping expr_grouping;
+        ExprBinOp    expr_binop;
+        ExprUnaryOp  expr_unaryop;
+        ExprCall     expr_call;
+        ExprAssign   expr_assign;
+        DeclTable    table;
+        Block        block;
+        DeclProc     stmt_proc;
+        StmtVarDecl  stmt_vardecl;
+        StmtIf       stmt_if;
+        StmtWhile    stmt_while;
+        StmtReturn   stmt_return;
     };
 };
 
