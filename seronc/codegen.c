@@ -401,6 +401,27 @@ static Type binop(const ExprBinOp *binop) {
             gen_write("setle %s", al);
             break;
 
+        case BINOP_BITWISE_OR:
+            gen_write("or %s, %s", rax, rdi);
+            break;
+
+        case BINOP_BITWISE_AND:
+            gen_write("and %s, %s", rax, rdi);
+            break;
+
+        case BINOP_LOG_OR:
+            // do a bitwise or, then convert the resulting number to either 1 or 0
+            gen_write("or %s, %s", rax, rdi);
+            gen_write("cmp %s, 0", rax);
+            gen_write("setne %s", al);
+            break;
+
+        case BINOP_LOG_AND:
+            // do a bitwise and, then convert the resulting number to either 1 or 0
+            gen_write("and %s, %s", rax, rdi);
+            gen_write("cmp %s, 0", rax);
+            gen_write("setne %s", al);
+            break;
     }
 
     return rhs;

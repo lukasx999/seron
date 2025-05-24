@@ -8,11 +8,10 @@ push rbp
 mov rbp, rsp
 
 
-mov rax, 15
-mov rdi, 10
+mov rax, 1
+mov rdi, 0
 
-cmp rax, rdi
-setg al
+and rax, rdi
 
 
 

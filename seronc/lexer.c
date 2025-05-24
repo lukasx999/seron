@@ -22,13 +22,16 @@ const char *stringify_tokenkind(TokenKind tok) {
         case TOK_SENTINEL:       return "sentinel";
         case TOK_EOF:            return "eof";
         case TOK_LITERAL_NUMBER: return "num";
+        case TOK_PIPE:           return "pipe";
         case TOK_LITERAL_STRING: return "string";
+        case TOK_LOG_AND:        return "and";
         case TOK_LT:             return "lt";
         case TOK_LT_EQ:          return "lt-eq";
         case TOK_GT:             return "gt";
         case TOK_KW_TABLE:       return "table";
         case TOK_GT_EQ:          return "gt-eq";
         case TOK_PLUS:           return "plus";
+        case TOK_LOG_OR:         return "or";
         case TOK_MINUS:          return "minus";
         case TOK_ASTERISK:       return "asterisk";
         case TOK_SLASH:          return "slash";
@@ -267,11 +270,6 @@ Token lexer_next(Lexer *lex) {
             lex->src++;
             break;
 
-        case '&':
-            tok.kind = TOK_AMPERSAND;
-            lex->src++;
-            break;
-
         case '(':
             tok.kind = TOK_LPAREN;
             lex->src++;
@@ -339,6 +337,24 @@ Token lexer_next(Lexer *lex) {
             tok.kind = TOK_ASSIGN;
             if (*++lex->src == '=') {
                 tok.kind = TOK_EQ;
+                tok.len = 2;
+                lex->src++;
+            }
+            break;
+
+        case '|':
+            tok.kind = TOK_PIPE;
+            if (*++lex->src == '|') {
+                tok.kind = TOK_LOG_OR;
+                tok.len = 2;
+                lex->src++;
+            }
+            break;
+
+        case '&':
+            tok.kind = TOK_AMPERSAND;
+            if (*++lex->src == '&') {
+                tok.kind = TOK_LOG_AND;
                 tok.len = 2;
                 lex->src++;
             }

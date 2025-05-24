@@ -1,9 +1,6 @@
 proc putchar(c: int);
 
 proc main() {
-    let x: int = 45;
-    if x >= 45 {
-        putchar(65);
-    }
+    1 & 2;
     return 0;
 }

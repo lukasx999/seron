@@ -46,6 +46,10 @@ typedef enum {
     BINOP_GT_EQ,
     BINOP_LT,
     BINOP_LT_EQ,
+    BINOP_BITWISE_OR,
+    BINOP_BITWISE_AND,
+    BINOP_LOG_OR,
+    BINOP_LOG_AND,
 } BinOpKind;
 
 typedef struct {

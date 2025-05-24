@@ -65,16 +65,20 @@ static LiteralKind literal_from_token(TokenKind kind) {
 
 static BinOpKind binop_from_token(TokenKind kind) {
     switch (kind) {
-        case TOK_PLUS:     return BINOP_ADD;
-        case TOK_MINUS:    return BINOP_SUB;
-        case TOK_SLASH:    return BINOP_DIV;
-        case TOK_ASTERISK: return BINOP_MUL;
-        case TOK_EQ:       return BINOP_EQ;
-        case TOK_NEQ:      return BINOP_NEQ;
-        case TOK_LT:       return BINOP_LT;
-        case TOK_LT_EQ:    return BINOP_LT_EQ;
-        case TOK_GT:       return BINOP_GT;
-        case TOK_GT_EQ:    return BINOP_GT_EQ;
+        case TOK_PLUS:      return BINOP_ADD;
+        case TOK_MINUS:     return BINOP_SUB;
+        case TOK_SLASH:     return BINOP_DIV;
+        case TOK_ASTERISK:  return BINOP_MUL;
+        case TOK_EQ:        return BINOP_EQ;
+        case TOK_NEQ:       return BINOP_NEQ;
+        case TOK_LT:        return BINOP_LT;
+        case TOK_LT_EQ:     return BINOP_LT_EQ;
+        case TOK_GT:        return BINOP_GT;
+        case TOK_GT_EQ:     return BINOP_GT_EQ;
+        case TOK_PIPE:      return BINOP_BITWISE_OR;
+        case TOK_AMPERSAND: return BINOP_BITWISE_AND;
+        case TOK_LOG_OR:    return BINOP_LOG_OR;
+        case TOK_LOG_AND:   return BINOP_LOG_AND;
         default: PANIC("unknown tokenkind");
     }
     UNREACHABLE();
@@ -113,6 +117,10 @@ static const char *stringify_binop(BinOpKind op) {
         case BINOP_GT:    return "gt";
         case BINOP_LT:    return "lt";
         case BINOP_LT_EQ: return "lt-eq";
+        case BINOP_BITWISE_OR:  return "bitwise-or";
+        case BINOP_BITWISE_AND: return "bitwise-and";
+        case BINOP_LOG_OR:      return "log-or";
+        case BINOP_LOG_AND:     return "log-and";
     }
     UNREACHABLE();
 }
@@ -948,17 +956,113 @@ static AstNode *rule_equality(Parser *p) {
     return lhs;
 }
 
-static AstNode *rule_assign(Parser *p) {
-    // <assign> ::= <expr> "=" <assign> | <term>
+static AstNode *rule_bitwise_and(Parser *p) {
+    // <bitwise-and> ::= <equality> ("&" <equality>)*
 
-    AstNode *expr = rule_equality(p);
+    AstNode *lhs = rule_equality(p);
+
+    while (parser_match_token(p, TOK_AMPERSAND)) {
+        Token op = parser_advance(p);
+        AstNode *rhs = rule_equality(p);
+
+        AstNode *node    = parser_new_node(p);
+        node->kind       = ASTNODE_BINOP;
+        node->expr_binop = (ExprBinOp) {
+            .lhs  = lhs,
+            .op   = op,
+            .rhs  = rhs,
+            .kind = binop_from_token(op.kind),
+        };
+
+        lhs = node;
+    }
+
+    return lhs;
+}
+
+static AstNode *rule_bitwise_or(Parser *p) {
+    // <bitwise-or> ::= <bitwise-and> ("|" <bitwise-and>)*
+
+    AstNode *lhs = rule_bitwise_and(p);
+
+    while (parser_match_token(p, TOK_PIPE)) {
+        Token op = parser_advance(p);
+        AstNode *rhs = rule_bitwise_and(p);
+
+        AstNode *node    = parser_new_node(p);
+        node->kind       = ASTNODE_BINOP;
+        node->expr_binop = (ExprBinOp) {
+            .lhs  = lhs,
+            .op   = op,
+            .rhs  = rhs,
+            .kind = binop_from_token(op.kind),
+        };
+
+        lhs = node;
+    }
+
+    return lhs;
+}
+
+static AstNode *rule_log_and(Parser *p) {
+    // <log-and> ::= <bitwise-or> ("&&" <bitwise-or>)*
+
+    AstNode *lhs = rule_bitwise_or(p);
+
+    while (parser_match_token(p, TOK_LOG_AND)) {
+        Token op = parser_advance(p);
+        AstNode *rhs = rule_bitwise_or(p);
+
+        AstNode *node    = parser_new_node(p);
+        node->kind       = ASTNODE_BINOP;
+        node->expr_binop = (ExprBinOp) {
+            .lhs  = lhs,
+            .op   = op,
+            .rhs  = rhs,
+            .kind = binop_from_token(op.kind),
+        };
+
+        lhs = node;
+    }
+
+    return lhs;
+}
+
+static AstNode *rule_log_or(Parser *p) {
+    // <log-or> ::= <log-and> ("||" <log-and>)*
+
+    AstNode *lhs = rule_log_and(p);
+
+    while (parser_match_token(p, TOK_LOG_OR)) {
+        Token op = parser_advance(p);
+        AstNode *rhs = rule_log_and(p);
+
+        AstNode *node    = parser_new_node(p);
+        node->kind       = ASTNODE_BINOP;
+        node->expr_binop = (ExprBinOp) {
+            .lhs  = lhs,
+            .op   = op,
+            .rhs  = rhs,
+            .kind = binop_from_token(op.kind),
+        };
+
+        lhs = node;
+    }
+
+    return lhs;
+}
+
+static AstNode *rule_assign(Parser *p) {
+    // <assign> ::= <log-or> "=" <assign> | <log-or>
+
+    AstNode *expr = rule_log_or(p);
 
     if (!parser_match_token(p, TOK_ASSIGN))
         return expr;
 
     Token op = parser_advance(p);
 
-    AstNode *value = rule_equality(p);
+    AstNode *value = rule_assign(p);
 
     AstNode *node     = parser_new_node(p);
     node->kind        = ASTNODE_ASSIGN;

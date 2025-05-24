@@ -16,6 +16,22 @@ proc test_div(a: int, b: int) int {
     return a / b;
 }
 
+proc test_bitwise_or(a: int, b: int) int {
+    return a | b;
+}
+
+proc test_bitwise_and(a: int, b: int) int {
+    return a & b;
+}
+
+proc test_log_or(a: int, b: int) int {
+    return a || b;
+}
+
+proc test_log_and(a: int, b: int) int {
+    return a && b;
+}
+
 # This is supposed to test ABI compatability, as arguments are passed via the stack, starting at the 6th argument
 proc test_add_many(a1: int, a2: int, a3: int, a4: int, a5: int, a6: int, a7: int, a8: int, a9: int) int {
     return a1+a2+a3+a4+a5+a6+a7+a8+a9;

@@ -11,9 +11,9 @@
 #define MAX_NUMBER_LITERAL_LEN 64
 
 typedef enum {
-    TOK_INVALID, // invalid token, should never appear, but can be used for enforcing invariants
+    TOK_INVALID,  // invalid token, should never appear, but can be used for enforcing invariants
     TOK_SENTINEL, // a sentinel value, used by the parser
-    TOK_EOF, // end-of-file, should only appear once at the end of the tokenstream
+    TOK_EOF,      // end-of-file, should only appear once at the end of the tokenstream
 
     TOK_LITERAL_IDENT,
     TOK_LITERAL_NUMBER,
@@ -31,11 +31,15 @@ typedef enum {
     TOK_ASSIGN,
     TOK_EQ,
     TOK_NEQ,
-    TOK_AMPERSAND,
     TOK_GT,
     TOK_GT_EQ,
     TOK_LT,
     TOK_LT_EQ,
+
+    TOK_AMPERSAND,
+    TOK_PIPE,
+    TOK_LOG_OR,
+    TOK_LOG_AND,
 
     TOK_LPAREN,
     TOK_RPAREN,

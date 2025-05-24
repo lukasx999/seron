@@ -28,6 +28,11 @@ bool test_gt_eq(int, int);
 bool test_lt(int, int);
 bool test_lt_eq(int, int);
 
+int test_bitwise_or(int, int);
+int test_bitwise_and(int, int);
+bool test_log_or(bool, bool);
+bool test_log_and(bool, bool);
+
 int test_add_many(int, int, int, int, int, int, int, int, int);
 
 int test_deref(int*);
@@ -83,6 +88,25 @@ int main(void) {
     test(test_lt_eq(15, 15), true);
     test(test_lt_eq(15, 20), true);
     test(test_lt_eq(20, 15), false);
+
+    test(test_bitwise_and(20, 15), 20 & 15);
+    test(test_bitwise_or(20, 15), 20 | 15);
+
+    test(test_log_and(false, false), false);
+    test(test_log_and(false, true),  false);
+    test(test_log_and(true,  false), false);
+    test(test_log_and(true,  true),  true);
+    test(test_log_and(5,  3), true);
+    test(test_log_and(5,  0), false);
+    test(test_log_and(0,  5), false);
+
+    test(test_log_or(false, false), false);
+    test(test_log_or(false, true),  true);
+    test(test_log_or(true,  false), true);
+    test(test_log_or(true,  true),  true);
+    test(test_log_or(5,  3), true);
+    test(test_log_or(5,  0), true);
+    test(test_log_or(0,  5), true);
 
     int a = 45;
     test(test_deref(&a), a);
