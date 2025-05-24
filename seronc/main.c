@@ -111,10 +111,10 @@ static void link_cc(void) {
         "cc",
         "-no-pie",
         "-lc",
-        "-lraylib",
         obj,
-        "-o", (char*) bin,
-        NULL
+        "-o",
+        (char*) bin,
+        NULL,
     });
 
     if (ret) {
@@ -197,10 +197,6 @@ static void parse_args(int argc, char **argv) {
     set_filenames(filename);
 }
 
-
-
-// TODO: refactor parser to library, so it can be reused by lsp-server
-
 int main(int argc, char **argv) {
 
     parse_args(argc, argv);
@@ -220,8 +216,6 @@ int main(int argc, char **argv) {
         parser_print_ast(root, 2);
 
     symboltable_build(root, &arena);
-
-    // check_types(node_root);
     codegen(root, compiler_ctx.filename.asm_);
 
     if (!compiler_ctx.opts.compile_only) {
