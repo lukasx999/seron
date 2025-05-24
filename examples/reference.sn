@@ -32,6 +32,10 @@ proc main() int {                                       # Entry point
     a / b;                                              # Division
     a == b;                                             # Equality
     a != b;                                             # Inequality
+    a > b;                                              # Greater-Than
+    a >= b;                                             # Greater-Than-Or-Equal
+    a < b;                                              # Less-Than
+    a <= b;                                             # Less-Than-Or-Equal
     !a;                                                 # Negation
 
 
