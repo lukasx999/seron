@@ -31,11 +31,14 @@ compiler: main.o $(SOURCES)
 	@echo LINK $^
 
 run: compiler
-	./$(BIN) -v $(PROTO) --dump-ast
-	./test/main
+	@echo "Building Prototype $(PROTO)"
+	@./$(BIN) -v $(PROTO) --dump-ast
+	@echo "Running Prototype"
+	@./test/main
 
 debug: compiler
-	gdb 								\
+	@echo "Debugging Prototype $(PROTO)"
+	@gdb 								\
 		-ex "file ./$(BIN)" 			\
 		-ex "break main"    			\
 		-ex "run $(PROTO)"
@@ -46,10 +49,11 @@ dev-asm: dev.asm
 	ld dev.o
 	./a.out
 
-test: compiler
-	./$(BIN) ./test/test.sn -cv
-	$(CC) $(CFLAGS) -o test/test test/test.c test/test.o
-	./test/test
+test: ./test/test.sn compiler
+	@echo "TEST $<"
+	@./$(BIN) $< -cv
+	@$(CC) $(CFLAGS) -o test/test test/test.c test/test.o
+	@./test/test
 
 %.o: %.c Makefile $(DEPS)
 	@$(CC) $(CFLAGS) -c $< -o $@

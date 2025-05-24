@@ -53,7 +53,6 @@ static int fptr_add(int a, int b) { return a + b; }
 
 int main(void) {
     int passcount = 0, testcount = 0;
-    printf("Testing Compiler\n");
 
     test(test_add(1, 2), 3);
     test(test_sub(7, 2), 5);

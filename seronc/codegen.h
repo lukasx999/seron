@@ -6,6 +6,6 @@
 
 size_t get_type_size(TypeKind type);
 
-void codegen(AstNode *root);
+void codegen(AstNode *root, const char *filename);
 
 #endif // _CODEGEN_H

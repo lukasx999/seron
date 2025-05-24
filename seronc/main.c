@@ -61,7 +61,7 @@ static char *read_file(const char *filename) {
     stat(filename, &statbuf);
     size_t size = statbuf.st_size;
 
-    char *buf = calloc(size + 1, sizeof(char));
+    char *buf = NON_NULL(calloc(size + 1, sizeof(char)));
     fread(buf, sizeof(char), size, file);
 
     fclose(file);
@@ -199,14 +199,12 @@ static void parse_args(int argc, char **argv) {
 
 
 
-// TODO: get tokens from FILE* stream
 // TODO: refactor parser to library, so it can be reused by lsp-server
 
 int main(int argc, char **argv) {
 
     parse_args(argc, argv);
 
-    // TODO: let the lexer use the FILE* stream directly
     char *file = read_file(compiler_ctx.filename.raw);
     compiler_ctx.src = file;
 
@@ -224,7 +222,7 @@ int main(int argc, char **argv) {
     symboltable_build(root, &arena);
 
     // check_types(node_root);
-    codegen(root);
+    codegen(root, compiler_ctx.filename.asm_);
 
     if (!compiler_ctx.opts.compile_only) {
         assemble();
