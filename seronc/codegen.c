@@ -37,8 +37,9 @@ NO_DISCARD size_t get_type_size(TypeKind type) {
         case TYPE_POINTER: return 8;
         case TYPE_INT:     return 4;
         case TYPE_CHAR:    return 1;
-        default:           PANIC("unknown type");
+        default: PANIC("invalid type");
     }
+    UNREACHABLE();
 }
 
 NO_DISCARD static const char *size_op(TypeKind type) {
@@ -47,8 +48,9 @@ NO_DISCARD static const char *size_op(TypeKind type) {
         case TYPE_LONG: return "qword";
         case TYPE_INT:  return "dword";
         case TYPE_CHAR: return "byte";
-        default:        PANIC("unknown type");
+        default: PANIC("invalid type");
     }
+    UNREACHABLE();
 }
 
 NO_DISCARD static const char *subregister(Register reg, TypeKind type) {
@@ -60,7 +62,7 @@ NO_DISCARD static const char *subregister(Register reg, TypeKind type) {
             case TYPE_POINTER: return "rax";
             case TYPE_INT:     return "eax";
             case TYPE_CHAR:    return "al";
-            default: PANIC("unknown type");
+            default: PANIC("invalid type");
         } break;
 
         case REG_RDI: switch (type) {
@@ -69,13 +71,13 @@ NO_DISCARD static const char *subregister(Register reg, TypeKind type) {
             case TYPE_POINTER: return "rdi";
             case TYPE_INT:     return "edi";
             case TYPE_CHAR:    return "dil";
-            default: PANIC("unknown type");
+            default: PANIC("invalid type");
         } break;
 
         case REG_RSI: switch (type) {
             case TYPE_INT:  return "esi";
             case TYPE_CHAR: return "sil";
-            default: PANIC("unknown type");
+            default: PANIC("invalid type");
         } break;
 
         case REG_RDX: switch (type) {
@@ -83,29 +85,30 @@ NO_DISCARD static const char *subregister(Register reg, TypeKind type) {
             case TYPE_LONG: return "rdx";
             case TYPE_INT:  return "edx";
             case TYPE_CHAR: return "dl";
-            default: PANIC("unknown type");
+            default: PANIC("invalid type");
         } break;
 
         case REG_RCX: switch (type) {
             case TYPE_INT:  return "ecx";
             case TYPE_CHAR: return "cl";
-            default: PANIC("unknown type");
+            default: PANIC("invalid type");
         } break;
 
         case REG_R8: switch (type) {
             case TYPE_INT:  return "r8d";
             case TYPE_CHAR: return "r8b";
-            default: PANIC("unknown type");
+            default: PANIC("invalid type");
         } break;
 
         case REG_R9: switch (type) {
             case TYPE_INT:  return "r9d";
             case TYPE_CHAR: return "r9b";
-            default: PANIC("unknown type");
+            default: PANIC("invalid type");
         } break;
 
-        default: PANIC("unknown register");
+        default: PANIC("invalid register");
     }
+    UNREACHABLE();
 }
 
 // argnum starts at 1
@@ -368,14 +371,14 @@ static Type binop(const ExprBinOp *binop) {
             gen_write("idiv %s", rdi);
             break;
 
-        case BINOP_NEQ:
-            gen_write("cmp %s, %s", rax, rdi);
-            gen_write("setne %s", al);
-            break;
-
         case BINOP_EQ:
             gen_write("cmp %s, %s", rax, rdi);
             gen_write("sete %s", al);
+            break;
+
+        case BINOP_NEQ:
+            gen_write("cmp %s, %s", rax, rdi);
+            gen_write("setne %s", al);
             break;
 
         case BINOP_GT:
@@ -398,7 +401,6 @@ static Type binop(const ExprBinOp *binop) {
             gen_write("setle %s", al);
             break;
 
-        default: PANIC("unknown operation");
     }
 
     return rhs;
@@ -430,7 +432,9 @@ static Type literal_ident(const ExprLiteral *literal, const char *str, bool addr
             gen_write("mov rax, %s", str);
             break;
 
-        default: PANIC("invalid symbol");
+        case SYMBOL_INVALID:
+        case SYMBOL_NONE:
+            PANIC("invalid symbol");
     }
 
     return sym->type;
@@ -440,11 +444,13 @@ static Type literal_addr(const ExprLiteral *literal) {
 
     const char *str = literal->op.value;
 
-    switch (literal->op.kind) {
-        case TOK_LITERAL_IDENT:
+    switch (literal->kind) {
+        case LITERAL_IDENT:
             return literal_ident(literal, str, true);
             break;
-        default: PANIC("unknown operation");
+        case LITERAL_STRING:
+        case LITERAL_NUMBER:
+            PANIC("unknown operation");
     }
 
     UNREACHABLE();
@@ -457,7 +463,6 @@ static TypeKind type_from_token_literal(NumberLiteralType type) {
         case NUMBER_LONG: return TYPE_LONG;
         case NUMBER_ANY:
         case NUMBER_INT:  return TYPE_INT;
-        default: PANIC("unknown token");
     }
     UNREACHABLE();
 }
@@ -490,8 +495,6 @@ static Type literal(const ExprLiteral *literal) {
         case LITERAL_IDENT:
             return literal_ident(literal, str, false);
             break;
-
-        default: PANIC("unknown operation");
     }
 
     UNREACHABLE();
@@ -583,7 +586,19 @@ static Type emit_addr(AstNode *node) {
     switch (node->kind) {
         case ASTNODE_UNARYOP: return unaryop_addr(&node->expr_unaryop); break;
         case ASTNODE_LITERAL: return literal_addr(&node->expr_literal); break;
-        default:              PANIC("unexpected node kind");
+
+        case ASTNODE_BLOCK:
+        case ASTNODE_WHILE:
+        case ASTNODE_PROC:
+        case ASTNODE_RETURN:
+        case ASTNODE_VARDECL:
+        case ASTNODE_IF:
+        case ASTNODE_GROUPING:
+        case ASTNODE_ASSIGN:
+        case ASTNODE_BINOP:
+        case ASTNODE_CALL:
+        case ASTNODE_TABLE:
+            PANIC("unknown node kind");
     }
 
     UNREACHABLE();
@@ -607,7 +622,6 @@ static Type emit(AstNode *node) {
         case ASTNODE_UNARYOP:   return unaryop  (&node->expr_unaryop);  break;
         case ASTNODE_LITERAL:   return literal  (&node->expr_literal);  break;
         case ASTNODE_TABLE:     NOP()                                   break;
-        default:                PANIC("unexpected node kind");
     }
 
     return (Type) { .kind = TYPE_VOID };

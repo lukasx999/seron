@@ -29,13 +29,13 @@ typedef enum {
     TOK_COLON,
     TOK_COMMA,
     TOK_ASSIGN,
-    TOK_EQUALS,
-    TOK_NOT_EQUALS,
+    TOK_EQ,
+    TOK_NEQ,
     TOK_AMPERSAND,
-    TOK_GREATER_THAN,
-    TOK_GREATER_THAN_EQ,
-    TOK_LESS_THAN,
-    TOK_LESS_THAN_EQ,
+    TOK_GT,
+    TOK_GT_EQ,
+    TOK_LT,
+    TOK_LT_EQ,
 
     TOK_LPAREN,
     TOK_RPAREN,
@@ -55,8 +55,6 @@ typedef enum {
     TOK_KW_TYPE_CHAR,
     TOK_KW_TYPE_INT,
     TOK_KW_TYPE_LONG,
-
-    TOKENKIND_COUNT,
 } TokenKind;
 
 const char *stringify_tokenkind(TokenKind tok);

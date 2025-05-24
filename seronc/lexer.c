@@ -17,41 +17,47 @@
 #define LITERAL_SUFFIX_INT  'I'
 
 const char *stringify_tokenkind(TokenKind tok) {
-    const char *repr[] = {
-        [TOK_INVALID]        = "invalid",
-        [TOK_LITERAL_NUMBER] = "num",
-        [TOK_LITERAL_STRING] = "string",
-        [TOK_PLUS]           = "plus",
-        [TOK_MINUS]          = "minus",
-        [TOK_ASTERISK]       = "asterisk",
-        [TOK_SLASH]          = "slash",
-        [TOK_SEMICOLON]      = "semicolon",
-        [TOK_COMMA]          = "comma",
-        [TOK_COLON]          = "colon",
-        [TOK_LITERAL_IDENT]  = "ident",
-        [TOK_ASSIGN]         = "assign",
-        [TOK_EQUALS]         = "equals",
-        [TOK_BANG]           = "bang",
-        [TOK_AMPERSAND]      = "ampersand",
-        [TOK_LPAREN]         = "lparen",
-        [TOK_RPAREN]         = "rparen",
-        [TOK_LBRACE]         = "lbrace",
-        [TOK_RBRACE]         = "rbrace",
-        [TOK_KW_PROC]        = "proc",
-        [TOK_KW_VARDECL]     = "let",
-        [TOK_KW_IF]          = "if",
-        [TOK_KW_ELSE]        = "else",
-        [TOK_KW_ELSIF]       = "elsif",
-        [TOK_KW_WHILE]       = "while",
-        [TOK_KW_RETURN]      = "return",
-        [TOK_KW_TYPE_VOID]   = "void",
-        [TOK_KW_TYPE_CHAR]   = "char",
-        [TOK_KW_TYPE_INT]    = "int",
-        [TOK_KW_TYPE_LONG]   = "long",
-        [TOK_EOF]            = "eof",
-    };
-    assert(ARRAY_LEN(repr) == TOKENKIND_COUNT);
-    return repr[tok];
+    switch (tok) {
+        case TOK_INVALID:        return "invalid";
+        case TOK_SENTINEL:       return "sentinel";
+        case TOK_EOF:            return "eof";
+        case TOK_LITERAL_NUMBER: return "num";
+        case TOK_LITERAL_STRING: return "string";
+        case TOK_LT:             return "lt";
+        case TOK_LT_EQ:          return "lt-eq";
+        case TOK_GT:             return "gt";
+        case TOK_KW_TABLE:       return "table";
+        case TOK_GT_EQ:          return "gt-eq";
+        case TOK_PLUS:           return "plus";
+        case TOK_MINUS:          return "minus";
+        case TOK_ASTERISK:       return "asterisk";
+        case TOK_SLASH:          return "slash";
+        case TOK_SEMICOLON:      return "semicolon";
+        case TOK_COMMA:          return "comma";
+        case TOK_COLON:          return "colon";
+        case TOK_LITERAL_IDENT:  return "ident";
+        case TOK_ASSIGN:         return "assign";
+        case TOK_EQ:             return "eq";
+        case TOK_NEQ:            return "neq";
+        case TOK_BANG:           return "bang";
+        case TOK_AMPERSAND:      return "ampersand";
+        case TOK_LPAREN:         return "lparen";
+        case TOK_RPAREN:         return "rparen";
+        case TOK_LBRACE:         return "lbrace";
+        case TOK_RBRACE:         return "rbrace";
+        case TOK_KW_PROC:        return "proc";
+        case TOK_KW_VARDECL:     return "let";
+        case TOK_KW_IF:          return "if";
+        case TOK_KW_ELSE:        return "else";
+        case TOK_KW_ELSIF:       return "elsif";
+        case TOK_KW_WHILE:       return "while";
+        case TOK_KW_RETURN:      return "return";
+        case TOK_KW_TYPE_VOID:   return "void";
+        case TOK_KW_TYPE_CHAR:   return "char";
+        case TOK_KW_TYPE_INT:    return "int";
+        case TOK_KW_TYPE_LONG:   return "long";
+    }
+    UNREACHABLE();
 }
 
 
@@ -301,19 +307,20 @@ Token lexer_next(Lexer *lex) {
             lex->src++;
             break;
 
+        // TODO: refactor these kinds of checks
         case '<':
-            tok.kind = TOK_LESS_THAN;
+            tok.kind = TOK_LT;
             if (*++lex->src == '=') {
-                tok.kind = TOK_LESS_THAN_EQ;
+                tok.kind = TOK_LT_EQ;
                 tok.len = 2;
                 lex->src++;
             }
             break;
 
         case '>':
-            tok.kind = TOK_GREATER_THAN;
+            tok.kind = TOK_GT;
             if (*++lex->src == '=') {
-                tok.kind = TOK_GREATER_THAN_EQ;
+                tok.kind = TOK_GT_EQ;
                 tok.len = 2;
                 lex->src++;
             }
@@ -322,7 +329,7 @@ Token lexer_next(Lexer *lex) {
         case '!':
             tok.kind = TOK_BANG;
             if (*++lex->src == '=') {
-                tok.kind = TOK_NOT_EQUALS;
+                tok.kind = TOK_NEQ;
                 tok.len = 2;
                 lex->src++;
             }
@@ -331,7 +338,7 @@ Token lexer_next(Lexer *lex) {
         case '=':
             tok.kind = TOK_ASSIGN;
             if (*++lex->src == '=') {
-                tok.kind = TOK_EQUALS;
+                tok.kind = TOK_EQ;
                 tok.len = 2;
                 lex->src++;
             }

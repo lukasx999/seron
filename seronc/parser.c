@@ -65,16 +65,16 @@ static LiteralKind literal_from_token(TokenKind kind) {
 
 static BinOpKind binop_from_token(TokenKind kind) {
     switch (kind) {
-        case TOK_PLUS:            return BINOP_ADD;
-        case TOK_MINUS:           return BINOP_SUB;
-        case TOK_SLASH:           return BINOP_DIV;
-        case TOK_ASTERISK:        return BINOP_MUL;
-        case TOK_EQUALS:          return BINOP_EQ;
-        case TOK_NOT_EQUALS:      return BINOP_NEQ;
-        case TOK_LESS_THAN:       return BINOP_LT;
-        case TOK_LESS_THAN_EQ:    return BINOP_LT_EQ;
-        case TOK_GREATER_THAN:    return BINOP_GT;
-        case TOK_GREATER_THAN_EQ: return BINOP_GT_EQ;
+        case TOK_PLUS:     return BINOP_ADD;
+        case TOK_MINUS:    return BINOP_SUB;
+        case TOK_SLASH:    return BINOP_DIV;
+        case TOK_ASTERISK: return BINOP_MUL;
+        case TOK_EQ:       return BINOP_EQ;
+        case TOK_NEQ:      return BINOP_NEQ;
+        case TOK_LT:       return BINOP_LT;
+        case TOK_LT_EQ:    return BINOP_LT_EQ;
+        case TOK_GT:       return BINOP_GT;
+        case TOK_GT_EQ:    return BINOP_GT_EQ;
         default: PANIC("unknown tokenkind");
     }
     UNREACHABLE();
@@ -97,7 +97,6 @@ static const char *stringify_unaryop(UnaryOpKind op) {
         case UNARYOP_NEG:    return "neg";
         case UNARYOP_ADDROF: return "addrof";
         case UNARYOP_DEREF:  return "deref";
-        default: PANIC("unknown unaryop");
     }
     UNREACHABLE();
 }
@@ -114,7 +113,6 @@ static const char *stringify_binop(BinOpKind op) {
         case BINOP_GT:    return "gt";
         case BINOP_LT:    return "lt";
         case BINOP_LT_EQ: return "lt-eq";
-        default: PANIC("unknown binop");
     }
     UNREACHABLE();
 }
@@ -907,7 +905,7 @@ static AstNode *rule_comparison(Parser *p) {
 
     AstNode *lhs = rule_term(p);
 
-    while (parser_match_tokens(p, TOK_LESS_THAN, TOK_LESS_THAN_EQ, TOK_GREATER_THAN, TOK_GREATER_THAN_EQ, SENTINEL)) {
+    while (parser_match_tokens(p, TOK_LT, TOK_LT_EQ, TOK_GT, TOK_GT_EQ, SENTINEL)) {
         Token op = parser_advance(p);
         AstNode *rhs = rule_term(p);
 
@@ -931,7 +929,7 @@ static AstNode *rule_equality(Parser *p) {
 
     AstNode *lhs = rule_comparison(p);
 
-    while (parser_match_tokens(p, TOK_EQUALS, TOK_NOT_EQUALS, SENTINEL)) {
+    while (parser_match_tokens(p, TOK_EQ, TOK_NEQ, SENTINEL)) {
         Token op = parser_advance(p);
         AstNode *rhs = rule_comparison(p);
 
