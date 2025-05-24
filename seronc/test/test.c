@@ -23,6 +23,10 @@ int test_id(int);
 bool test_neg(bool);
 bool test_eq(int, int);
 bool test_neq(int, int);
+bool test_gt(int, int);
+bool test_gt_eq(int, int);
+bool test_lt(int, int);
+bool test_lt_eq(int, int);
 
 int test_add_many(int, int, int, int, int, int, int, int, int);
 
@@ -63,6 +67,22 @@ int main(void) {
     test(test_eq(15, 15), true);
     test(test_neq(15, 3), true);
     test(test_neq(15, 15), false);
+
+    test(test_gt(15, 15), false);
+    test(test_gt(15, 20), false);
+    test(test_gt(20, 15), true);
+
+    test(test_gt_eq(15, 15), true);
+    test(test_gt_eq(15, 20), false);
+    test(test_gt_eq(20, 15), true);
+
+    test(test_lt(15, 15), false);
+    test(test_lt(15, 20), true);
+    test(test_lt(20, 15), false);
+
+    test(test_lt_eq(15, 15), true);
+    test(test_lt_eq(15, 20), true);
+    test(test_lt_eq(20, 15), false);
 
     int a = 45;
     test(test_deref(&a), a);

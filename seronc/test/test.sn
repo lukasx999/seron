@@ -39,6 +39,22 @@ proc test_neq(a: int, b: int) char {
     return a != b;
 }
 
+proc test_gt(a: int, b: int) char {
+    return a > b;
+}
+
+proc test_gt_eq(a: int, b: int) char {
+    return a >= b;
+}
+
+proc test_lt(a: int, b: int) char {
+    return a < b;
+}
+
+proc test_lt_eq(a: int, b: int) char {
+    return a <= b;
+}
+
 ### Pointers ###
 
 proc test_deref(p: *int) int {

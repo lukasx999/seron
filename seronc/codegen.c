@@ -344,6 +344,8 @@ static Type binop(const ExprBinOp *binop) {
     const char *rax = subregister(REG_RAX, lhs.kind);
     gen_write("pop rdi");
 
+    const char *al = subregister(REG_RAX, TYPE_CHAR);
+
     // assert(rhs.kind == lhs.kind);
 
     // LHS: rdi
@@ -368,12 +370,32 @@ static Type binop(const ExprBinOp *binop) {
 
         case BINOP_NEQ:
             gen_write("cmp %s, %s", rax, rdi);
-            gen_write("setne %s", subregister(REG_RAX, TYPE_CHAR));
+            gen_write("setne %s", al);
             break;
 
         case BINOP_EQ:
             gen_write("cmp %s, %s", rax, rdi);
-            gen_write("sete %s", subregister(REG_RAX, TYPE_CHAR));
+            gen_write("sete %s", al);
+            break;
+
+        case BINOP_GT:
+            gen_write("cmp %s, %s", rax, rdi);
+            gen_write("setg %s", al);
+            break;
+
+        case BINOP_GT_EQ:
+            gen_write("cmp %s, %s", rax, rdi);
+            gen_write("setge %s", al);
+            break;
+
+        case BINOP_LT:
+            gen_write("cmp %s, %s", rax, rdi);
+            gen_write("setl %s", al);
+            break;
+
+        case BINOP_LT_EQ:
+            gen_write("cmp %s, %s", rax, rdi);
+            gen_write("setle %s", al);
             break;
 
         default: PANIC("unknown operation");

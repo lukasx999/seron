@@ -301,6 +301,24 @@ Token lexer_next(Lexer *lex) {
             lex->src++;
             break;
 
+        case '<':
+            tok.kind = TOK_LESS_THAN;
+            if (*++lex->src == '=') {
+                tok.kind = TOK_LESS_THAN_EQ;
+                tok.len = 2;
+                lex->src++;
+            }
+            break;
+
+        case '>':
+            tok.kind = TOK_GREATER_THAN;
+            if (*++lex->src == '=') {
+                tok.kind = TOK_GREATER_THAN_EQ;
+                tok.len = 2;
+                lex->src++;
+            }
+            break;
+
         case '!':
             tok.kind = TOK_BANG;
             if (*++lex->src == '=') {

@@ -26,5 +26,14 @@ proc main() int {                                       # Entry point
 
     let hp: proc(x: int) int = h;                       # Function Pointer
 
+    a + b;                                              # Addition
+    a - b;                                              # Subtraction
+    a * b;                                              # Multiplication
+    a / b;                                              # Division
+    a == b;                                             # Equality
+    a != b;                                             # Inequality
+    !a;                                                 # Negation
+
+
     return 0;
 }

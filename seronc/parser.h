@@ -42,6 +42,10 @@ typedef enum {
     BINOP_DIV,
     BINOP_EQ,
     BINOP_NEQ,
+    BINOP_GT,
+    BINOP_GT_EQ,
+    BINOP_LT,
+    BINOP_LT_EQ,
 } BinOpKind;
 
 typedef struct {
