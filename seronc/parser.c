@@ -107,16 +107,16 @@ static const char *stringify_unaryop(UnaryOpKind op) {
 
 static const char *stringify_binop(BinOpKind op) {
     switch (op) {
-        case BINOP_ADD:   return "add";
-        case BINOP_SUB:   return "sub";
-        case BINOP_MUL:   return "mul";
-        case BINOP_DIV:   return "div";
-        case BINOP_EQ:    return "eq";
-        case BINOP_NEQ:   return "neq";
-        case BINOP_GT_EQ: return "gt-eq";
-        case BINOP_GT:    return "gt";
-        case BINOP_LT:    return "lt";
-        case BINOP_LT_EQ: return "lt-eq";
+        case BINOP_ADD:         return "add";
+        case BINOP_SUB:         return "sub";
+        case BINOP_MUL:         return "mul";
+        case BINOP_DIV:         return "div";
+        case BINOP_EQ:          return "eq";
+        case BINOP_NEQ:         return "neq";
+        case BINOP_GT_EQ:       return "gt-eq";
+        case BINOP_GT:          return "gt";
+        case BINOP_LT:          return "lt";
+        case BINOP_LT_EQ:       return "lt-eq";
         case BINOP_BITWISE_OR:  return "bitwise-or";
         case BINOP_BITWISE_AND: return "bitwise-and";
         case BINOP_LOG_OR:      return "log-or";
@@ -134,11 +134,6 @@ typedef enum {
     CONTEXT_DECL,
 } ParserContext;
 
-// this is the sanest way to implement error recovery for recursive descent parsing
-// otherwise, we'd have to propagate errors all the way up the call stack, which would be
-// very verbose, and annoying.
-static jmp_buf ctx_stmt = { 0 };
-static jmp_buf ctx_decl = { 0 };
 
 typedef struct {
     Arena *arena;
@@ -146,6 +141,11 @@ typedef struct {
     Lexer lexer;
     ParserContext ctx;
     int errcount;
+    // this is the sanest way to implement error recovery for recursive descent parsing
+    // otherwise, we'd have to propagate errors all the way up the call stack, which would be
+    // very verbose, and annoying.
+    jmp_buf ctx_stmt;
+    jmp_buf ctx_decl;
 } Parser;
 
 // returns the current token
@@ -224,11 +224,11 @@ static inline void parser_sync(Parser *p) {
     switch (p->ctx) {
         case CONTEXT_DECL:
             parser_recover_decl(p);
-            longjmp(ctx_decl, 1);
+            longjmp(p->ctx_decl, 1);
             break;
         case CONTEXT_STMT:
             parser_recover_stmt(p);
-            longjmp(ctx_stmt, 1);
+            longjmp(p->ctx_stmt, 1);
             break;
     }
     UNREACHABLE();
@@ -1142,7 +1142,7 @@ static AstNode *rule_block(Parser *p) {
         // we also can't put the setjmp() call at the end of the loop
         // as that means, that the stack frame of rule_stmt() is already gone,
         // making setjmp() segfault
-        setjmp(ctx_stmt);
+        setjmp(p->ctx_stmt);
         if (parser_match_token(p, TOK_RBRACE))
             break;
 
@@ -1319,7 +1319,7 @@ static AstNode *rule_program(Parser *p) {
     astnodelist_init(&node->block.stmts, p->arena);
 
     while (!parser_is_at_end(p)) {
-        setjmp(ctx_decl);
+        setjmp(p->ctx_decl);
         astnodelist_append(&node->block.stmts, rule_decl(p));
     }
 
