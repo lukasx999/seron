@@ -1,0 +1,20 @@
+proc fib(n: int) {
+
+    let a: int = 0;
+    let b: int = 1;
+    let next: int = b;
+
+    while n {
+        n = n - 1;
+
+        next = a + b;
+        a = b;
+        b = next;
+    }
+}
+
+proc main() int {
+    fib(999999999);
+
+    return 0;
+}

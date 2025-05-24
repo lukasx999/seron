@@ -75,8 +75,11 @@ NO_DISCARD static const char *subregister(Register reg, TypeKind type) {
         } break;
 
         case REG_RSI: switch (type) {
-            case TYPE_INT:  return "esi";
-            case TYPE_CHAR: return "sil";
+            case TYPE_PROCEDURE:
+            case TYPE_LONG:
+            case TYPE_POINTER:  return "rsi";
+            case TYPE_INT:      return "esi";
+            case TYPE_CHAR:     return "sil";
             default: PANIC("invalid type");
         } break;
 
