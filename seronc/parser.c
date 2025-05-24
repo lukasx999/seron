@@ -134,7 +134,6 @@ typedef enum {
     CONTEXT_DECL,
 } ParserContext;
 
-
 typedef struct {
     Arena *arena;
     Token tok;
