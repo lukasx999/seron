@@ -231,7 +231,6 @@ int main(int argc, char **argv) {
 
         if (!compiler_ctx.opts.compile_and_assemble)
             link_cc();
-
     }
 
     arena_free(&arena);

@@ -958,7 +958,6 @@ static AstNode *rule_assign(Parser *p) {
     };
 
     return node;
-
 }
 
 static AstNode *rule_expr(Parser *p) {
