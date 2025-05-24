@@ -261,11 +261,6 @@ Token lexer_next(Lexer *lex) {
             lex->src++;
             break;
 
-        case '!':
-            tok.kind = TOK_BANG;
-            lex->src++;
-            break;
-
         case '&':
             tok.kind = TOK_AMPERSAND;
             lex->src++;
@@ -304,6 +299,15 @@ Token lexer_next(Lexer *lex) {
         case ':':
             tok.kind = TOK_COLON;
             lex->src++;
+            break;
+
+        case '!':
+            tok.kind = TOK_BANG;
+            if (*++lex->src == '=') {
+                tok.kind = TOK_NOT_EQUALS;
+                tok.len = 2;
+                lex->src++;
+            }
             break;
 
         case '=':

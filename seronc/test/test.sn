@@ -1,12 +1,4 @@
-### Math ###
-
-proc test_id(x: int) int {
-    return x;
-}
-
-proc test_neg(a: char) char {
-    return !a;
-}
+### Arithmetic ###
 
 proc test_add(a: int, b: int) int {
     return a + b;
@@ -27,6 +19,24 @@ proc test_div(a: int, b: int) int {
 # This is supposed to test ABI compatability, as arguments are passed via the stack, starting at the 6th argument
 proc test_add_many(a1: int, a2: int, a3: int, a4: int, a5: int, a6: int, a7: int, a8: int, a9: int) int {
     return a1+a2+a3+a4+a5+a6+a7+a8+a9;
+}
+
+### Logical ###
+
+proc test_id(x: int) int {
+    return x;
+}
+
+proc test_neg(a: char) char {
+    return !a;
+}
+
+proc test_eq(a: int, b: int) char {
+    return a == b;
+}
+
+proc test_neq(a: int, b: int) char {
+    return a != b;
 }
 
 ### Pointers ###

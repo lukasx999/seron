@@ -366,7 +366,11 @@ static Type binop(const ExprBinOp *binop) {
             gen_write("idiv %s", rdi);
             break;
 
-        // TODO: add BINOP_NEQ
+        case BINOP_NEQ:
+            gen_write("cmp %s, %s", rax, rdi);
+            gen_write("setne %s", subregister(REG_RAX, TYPE_CHAR));
+            break;
+
         case BINOP_EQ:
             gen_write("cmp %s, %s", rax, rdi);
             gen_write("sete %s", subregister(REG_RAX, TYPE_CHAR));

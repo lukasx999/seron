@@ -2,7 +2,7 @@ proc putchar(c: int);
 
 proc main() {
     let x: int = 45;
-    if x == 46 {
+    if x != 45 {
         putchar(65);
     }
     return 0;

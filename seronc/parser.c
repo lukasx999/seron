@@ -65,12 +65,13 @@ static LiteralKind literal_from_token(TokenKind kind) {
 
 static BinOpKind binop_from_token(TokenKind kind) {
     switch (kind) {
-        case TOK_PLUS:     return BINOP_ADD;
-        case TOK_MINUS:    return BINOP_SUB;
-        case TOK_SLASH:    return BINOP_DIV;
-        case TOK_ASTERISK: return BINOP_MUL;
-        case TOK_EQUALS:   return BINOP_EQ;
-        default:           PANIC("unknown tokenkind");
+        case TOK_PLUS:       return BINOP_ADD;
+        case TOK_MINUS:      return BINOP_SUB;
+        case TOK_SLASH:      return BINOP_DIV;
+        case TOK_ASTERISK:   return BINOP_MUL;
+        case TOK_EQUALS:     return BINOP_EQ;
+        case TOK_NOT_EQUALS: return BINOP_NEQ;
+        default: PANIC("unknown tokenkind");
     }
     UNREACHABLE();
 }
@@ -81,7 +82,7 @@ static UnaryOpKind unaryop_from_token(TokenKind kind) {
         case TOK_BANG:      return UNARYOP_NEG;
         case TOK_AMPERSAND: return UNARYOP_ADDROF;
         case TOK_ASTERISK:  return UNARYOP_DEREF;
-        default:            PANIC("unknown tokenkind");
+        default: PANIC("unknown tokenkind");
     }
     UNREACHABLE();
 }
@@ -99,11 +100,12 @@ static const char *stringify_unaryop(UnaryOpKind op) {
 
 static const char *stringify_binop(BinOpKind op) {
     switch (op) {
-        case BINOP_ADD: return "add";
-        case BINOP_SUB: return "sub";
-        case BINOP_MUL: return "mul";
-        case BINOP_DIV: return "div";
-        case BINOP_EQ:  return "eq";
+        case BINOP_ADD:  return "add";
+        case BINOP_SUB:  return "sub";
+        case BINOP_MUL:  return "mul";
+        case BINOP_DIV:  return "div";
+        case BINOP_EQ:   return "eq";
+        case BINOP_NEQ:  return "neq";
         default: PANIC("unknown binop");
     }
     UNREACHABLE();
@@ -893,11 +895,11 @@ static AstNode *rule_term(Parser *p) {
 }
 
 static AstNode *rule_equality(Parser *p) {
-    // <equality> ::= <expr> ("==" <expr>)*
+    // <equality> ::= <term> (("!=" | "==") <term>)*
 
     AstNode *lhs = rule_term(p);
 
-    while (parser_match_tokens(p, TOK_EQUALS, SENTINEL)) {
+    while (parser_match_tokens(p, TOK_EQUALS, TOK_NOT_EQUALS, SENTINEL)) {
         Token op = parser_advance(p);
         AstNode *rhs = rule_term(p);
 

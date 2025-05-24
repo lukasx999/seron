@@ -30,6 +30,7 @@ typedef enum {
     TOK_COMMA,
     TOK_ASSIGN,
     TOK_EQUALS,
+    TOK_NOT_EQUALS,
     TOK_AMPERSAND,
 
     TOK_LPAREN,
