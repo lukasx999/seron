@@ -197,6 +197,8 @@ static void parse_args(int argc, char **argv) {
     set_filenames(filename);
 }
 
+// TODO: dont generate garbage
+
 int main(int argc, char **argv) {
 
     parse_args(argc, argv);
