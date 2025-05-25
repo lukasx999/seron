@@ -142,29 +142,36 @@ NO_DISCARD static const char *abi_register_str(int argnum, TypeKind type) {
 }
 
 
+
 typedef struct {
     size_t cap, len;
     char *items;
 } Buffer;
 
-void buffer_init(Buffer *buf) {
+static void buffer_init(Buffer *buf) {
     *buf = (Buffer) { 0 };
 }
 
-void buffer_append(Buffer *buf, char c) {
+static void buffer_append(Buffer *buf, char c) {
 
+    // TODO: consider allocating a initial chunk of memory
     if (buf->len >= buf->cap) {
         if (buf->cap == 0)
             buf->cap = 50;
         else
             buf->cap *= 2;
-        buf->items = realloc(buf->items, buf->cap);
+        buf->items = NON_NULL(realloc(buf->items, buf->cap));
     }
 
     buf->items[buf->len++] = c;
 }
 
-void buffer_destroy(Buffer *buf) {
+static void buffer_append_str(Buffer *buf, const char *str) {
+    for (const char *c=str; *c; c++)
+        buffer_append(buf, *c);
+}
+
+static void buffer_destroy(Buffer *buf) {
     free(buf->items);
     buf->items = NULL;
 }
@@ -172,13 +179,22 @@ void buffer_destroy(Buffer *buf) {
 
 
 struct Gen {
-    // TODO: dynamic array
-    char buffer_data[50000];
-    char buffer_text[50000];
+    Buffer buf_data;
+    Buffer buf_text;
     int label_count;
     int data_count;
     Hashtable *scope;
 } gen = { 0 };
+
+static void gen_init(void) {
+    buffer_init(&gen.buf_data);
+    buffer_init(&gen.buf_text);
+}
+
+static void gen_destroy(void) {
+    buffer_destroy(&gen.buf_data);
+    buffer_destroy(&gen.buf_text);
+}
 
 static void gen_write_to_file(const char *path) {
 
@@ -188,8 +204,11 @@ static void gen_write_to_file(const char *path) {
         exit(EXIT_FAILURE);
     }
 
-    fprintf(f, "section .data\n%s", gen.buffer_data);
-    fprintf(f, "section .text\n%s", gen.buffer_text);
+    if (gen.buf_data.len)
+        fprintf(f, "section .data\n%s", gen.buf_data.items);
+
+    if (gen.buf_text.len)
+        fprintf(f, "section .text\n%s", gen.buf_text.items);
 
     fclose(f);
 }
@@ -200,7 +219,7 @@ static void gen_write(const char *fmt, ...) {
     char buf[500] = { 0 };
     vsnprintf(buf, ARRAY_LEN(buf), fmt, va);
     strcat(buf, "\n");
-    strcat(gen.buffer_text, buf);
+    buffer_append_str(&gen.buf_text, buf);
     va_end(va);
 }
 
@@ -210,7 +229,7 @@ static void gen_write_data(const char *fmt, ...) {
     char buf[500] = { 0 };
     vsnprintf(buf, ARRAY_LEN(buf), fmt, va);
     strcat(buf, "\n");
-    strcat(gen.buffer_data, buf);
+    buffer_append_str(&gen.buf_data, buf);
     va_end(va);
 }
 
@@ -678,6 +697,8 @@ static Type emit(AstNode *node) {
 }
 
 void codegen(AstNode *root, const char *filename) {
+    gen_init();
     emit(root);
     gen_write_to_file(filename);
+    gen_destroy();
 }
