@@ -10,7 +10,6 @@
 
 #include "diagnostics.h"
 #include "lexer.h"
-#include "main.h"
 #include "parser.h"
 #include "symboltable.h"
 
@@ -143,6 +142,32 @@ NO_DISCARD static const char *abi_register_str(int argnum, TypeKind type) {
 }
 
 
+typedef struct {
+    size_t cap, len;
+    char *items;
+} Buffer;
+
+void buffer_init(Buffer *buf) {
+    *buf = (Buffer) { 0 };
+}
+
+void buffer_append(Buffer *buf, char c) {
+
+    if (buf->len >= buf->cap) {
+        if (buf->cap == 0)
+            buf->cap = 50;
+        else
+            buf->cap *= 2;
+        buf->items = realloc(buf->items, buf->cap);
+    }
+
+    buf->items[buf->len++] = c;
+}
+
+void buffer_destroy(Buffer *buf) {
+    free(buf->items);
+    buf->items = NULL;
+}
 
 
 
