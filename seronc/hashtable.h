@@ -11,7 +11,6 @@
 #include <ver.h>
 #include <arena.h>
 
-#include "lexer.h"
 #include "types.h"
 
 

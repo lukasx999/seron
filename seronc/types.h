@@ -2,6 +2,9 @@
 #define _TYPES_H
 
 #include <stddef.h>
+#include <stdint.h>
+
+#include <ver.h>
 
 #include "lexer.h"
 
@@ -35,6 +38,8 @@ struct Type {
         Table *table;
     };
 };
+
+NO_DISCARD size_t get_type_size(TypeKind type);
 
 typedef struct {
     Type type;

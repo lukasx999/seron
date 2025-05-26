@@ -21,6 +21,7 @@ codegen.o     		\
 diagnostics.o 		\
 hashtable.o   		\
 symboltable.o 		\
+types.o 			\
 
 PROTO=./test/main.sn
 

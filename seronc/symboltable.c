@@ -1,5 +1,4 @@
 #include "symboltable.h"
-#include "codegen.h"
 
 void symboltable_init(Symboltable *st, Arena *arena) {
     *st = (Symboltable) {
@@ -124,6 +123,5 @@ void symboltable_build(AstNode *root, Arena *arena) {
         { ASTNODE_PROC,    proc_pre,  proc_post  },
     };
 
-    parser_dispatch_ast(root, table, ARRAY_LEN(table), (void*) &st);
-
+    parser_dispatch_ast(root, table, ARRAY_LEN(table), &st);
 }

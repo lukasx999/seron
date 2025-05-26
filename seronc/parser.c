@@ -630,7 +630,6 @@ static AstNodeList rule_util_arglist(Parser *p) {
 
         if (parser_match_token(p, TOK_COMMA))
             parser_consume(p, TOK_COMMA);
-
     }
 
     parser_consume(p, TOK_RPAREN);
@@ -1193,7 +1192,6 @@ static AstNode *rule_decl(Parser *p) {
         NULL);
 }
 
-// TODO: separate parser api from grammar rules is this file is getting too large
 static AstNode *rule_program(Parser *p) {
     // <program> ::= <declaration>*
 
