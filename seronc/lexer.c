@@ -98,26 +98,30 @@ static TokenKind get_keyword(const char *str) {
     TOK_LITERAL_IDENT; // no keyword found? must be an identifier!
 }
 
-static void tokenize_string(Lexer *s, Token *tok) {
+static void tokenize_string(Lexer *lex) {
+
+    Token *tok = &lex->tok;
 
     tok->kind = TOK_LITERAL_STRING;
-    const char *start = s->src + 1;
+    const char *start = lex->src + 1;
 
-    while (*++s->src != '"') {
-        if (*s->src == '\0') {
+    while (*++lex->src != '"') {
+        if (*lex->src == '\0') {
             diagnostic(DIAG_ERROR, "unterminated string literal: `%s`", start);
             exit(EXIT_FAILURE);
         }
     }
 
-    size_t len = s->src - start;
+    size_t len = lex->src - start;
     tok->len = len + 2; // account for quotes surrounding the string
     strncpy(tok->value, start, MIN(len, ARRAY_LEN(tok->value)));
-    s->src++; // make src point to the next char, instead of `"`
+    lex->src++; // make src point to the next char, instead of `"`
 
 }
 
-static void tokenize_char(Lexer *lex, Token *tok) {
+static void tokenize_char(Lexer *lex) {
+
+    Token *tok = &lex->tok;
 
     tok->kind = TOK_LITERAL_NUMBER;
     tok->number_type = NUMBER_CHAR;
@@ -142,7 +146,9 @@ static void tokenize_char(Lexer *lex, Token *tok) {
 
 }
 
-static void tokenize_number(Lexer *lex, Token *tok) {
+static void tokenize_number(Lexer *lex) {
+
+    Token *tok = &lex->tok;
 
     tok->kind = TOK_LITERAL_NUMBER;
     tok->number_type = NUMBER_ANY;
@@ -191,7 +197,9 @@ static void tokenize_number(Lexer *lex, Token *tok) {
 
 }
 
-static void tokenize_ident(Lexer *lex, Token *tok) {
+static void tokenize_ident(Lexer *lex) {
+
+    Token *tok = &lex->tok;
 
     const char *start = lex->src;
     while (is_ident_tail(*++lex->src));
@@ -214,6 +222,24 @@ static void tokenize_ident(Lexer *lex, Token *tok) {
     }
 }
 
+static void tokenize_single(Lexer *lex, TokenKind kind) {
+    Token *tok = &lex->tok;
+    tok->kind = kind;
+    lex->src++;
+}
+
+static void tokenize_double(Lexer *lex, TokenKind first, char cond, TokenKind second) {
+
+    Token *tok = &lex->tok;
+
+    tok->kind = first;
+    if (*++lex->src == cond) {
+        tok->kind = second;
+        tok->len = 2;
+        lex->src++;
+    }
+}
+
 void lexer_init(Lexer *lex, const char *src) {
     lex->src = src;
     lex->position = 0;
@@ -221,15 +247,17 @@ void lexer_init(Lexer *lex, const char *src) {
 
 Token lexer_next(Lexer *lex) {
 
-    Token tok = {
+    lex->tok = (Token) {
         .kind     = TOK_INVALID,
         .position = lex->position,
         .len      = 1,
     };
 
+    Token *tok = &lex->tok;
+
     if (*lex->src == '\0') {
-        tok.kind = TOK_EOF;
-        return tok;
+        tok->kind = TOK_EOF;
+        return *tok;
     }
 
     // TODO: multi-line comments
@@ -251,145 +279,47 @@ Token lexer_next(Lexer *lex) {
             return lexer_next(lex);
             break;
 
-        case '+': tok.kind = TOK_PLUS;
-            lex->src++;
-            break;
-
-        case '-':
-            tok.kind = TOK_MINUS;
-            lex->src++;
-            break;
-
-        case '*':
-            tok.kind = TOK_ASTERISK;
-            lex->src++;
-            break;
-
-        case '/':
-            tok.kind = TOK_SLASH;
-            lex->src++;
-            break;
-
-        case '(':
-            tok.kind = TOK_LPAREN;
-            lex->src++;
-            break;
-
-        case ')':
-            tok.kind = TOK_RPAREN;
-            lex->src++;
-            break;
-
-        case '{':
-            tok.kind = TOK_LBRACE;
-            lex->src++;
-            break;
-
-        case '}':
-            tok.kind = TOK_RBRACE;
-            lex->src++;
-            break;
-
-        case ';':
-            tok.kind = TOK_SEMICOLON;
-            lex->src++;
-            break;
-
-        case ',':
-            tok.kind = TOK_COMMA;
-            lex->src++;
-            break;
-
-        case ':':
-            tok.kind = TOK_COLON;
-            lex->src++;
-            break;
-
-        // TODO: refactor these kinds of checks
-        case '<':
-            tok.kind = TOK_LT;
-            if (*++lex->src == '=') {
-                tok.kind = TOK_LT_EQ;
-                tok.len = 2;
-                lex->src++;
-            }
-            break;
-
-        case '>':
-            tok.kind = TOK_GT;
-            if (*++lex->src == '=') {
-                tok.kind = TOK_GT_EQ;
-                tok.len = 2;
-                lex->src++;
-            }
-            break;
-
-        case '!':
-            tok.kind = TOK_BANG;
-            if (*++lex->src == '=') {
-                tok.kind = TOK_NEQ;
-                tok.len = 2;
-                lex->src++;
-            }
-            break;
-
-        case '=':
-            tok.kind = TOK_ASSIGN;
-            if (*++lex->src == '=') {
-                tok.kind = TOK_EQ;
-                tok.len = 2;
-                lex->src++;
-            }
-            break;
-
-        case '|':
-            tok.kind = TOK_PIPE;
-            if (*++lex->src == '|') {
-                tok.kind = TOK_LOG_OR;
-                tok.len = 2;
-                lex->src++;
-            }
-            break;
-
-        case '&':
-            tok.kind = TOK_AMPERSAND;
-            if (*++lex->src == '&') {
-                tok.kind = TOK_LOG_AND;
-                tok.len = 2;
-                lex->src++;
-            }
-            break;
-
-        case '\'':
-            tokenize_char(lex, &tok);
-            break;
-
-        case '"':
-            tokenize_string(lex, &tok);
-            break;
+        case '+':  tokenize_single(lex, TOK_PLUS);                        break;
+        case '-':  tokenize_single(lex, TOK_MINUS);                       break;
+        case '*':  tokenize_single(lex, TOK_ASTERISK);                    break;
+        case '/':  tokenize_single(lex, TOK_SLASH);                       break;
+        case '(':  tokenize_single(lex, TOK_LPAREN);                      break;
+        case ')':  tokenize_single(lex, TOK_RPAREN);                      break;
+        case '{':  tokenize_single(lex, TOK_LBRACE);                      break;
+        case '}':  tokenize_single(lex, TOK_RBRACE);                      break;
+        case ';':  tokenize_single(lex, TOK_SEMICOLON);                   break;
+        case ',':  tokenize_single(lex, TOK_COMMA);                       break;
+        case ':':  tokenize_single(lex, TOK_COLON);                       break;
+        case '<':  tokenize_double(lex, TOK_LT,        '=', TOK_LT_EQ);   break;
+        case '>':  tokenize_double(lex, TOK_GT,        '=', TOK_GT_EQ);   break;
+        case '!':  tokenize_double(lex, TOK_BANG,      '=', TOK_NEQ);     break;
+        case '=':  tokenize_double(lex, TOK_ASSIGN,    '=', TOK_EQ);      break;
+        case '|':  tokenize_double(lex, TOK_PIPE,      '|', TOK_LOG_OR);  break;
+        case '&':  tokenize_double(lex, TOK_AMPERSAND, '&', TOK_LOG_AND); break;
+        case '\'': tokenize_char(lex);                                    break;
+        case '"':  tokenize_string(lex);                                  break;
 
         default: {
 
             if (isdigit(*lex->src)) {
-                tokenize_number(lex, &tok);
+                tokenize_number(lex);
 
             } else if (is_ident_head(*lex->src)) {
-                tokenize_ident(lex, &tok);
+                tokenize_ident(lex);
 
             } else {
                 diagnostic(DIAG_ERROR, "unknown token `%c`", *lex->src);
                 exit(EXIT_FAILURE);
             }
 
-
         } break;
 
     }
 
-    lex->position += tok.len;
+    lex->position += tok->len;
 
-    assert(tok.kind != TOK_INVALID);
-    return tok;
+    assert(tok->kind != TOK_INVALID);
+    return *tok;
 
 }
 

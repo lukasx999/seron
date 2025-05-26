@@ -95,6 +95,11 @@ TokenLocation get_token_location(const Token *tok, const char *src);
 typedef struct {
     const char *src;
     size_t position;
+    // next token to be processed
+    // the only reason this is in here, is so that
+    // functions for tokenizing don't have to be passed a
+    // pointer to the current token for convenience
+    Token tok;
 } Lexer;
 
 void lexer_init(Lexer *state, const char *src);
