@@ -4,7 +4,6 @@
 #include <assert.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <alloca.h>
 
 #include <ver.h>
 
@@ -150,6 +149,8 @@ static void buffer_append(Buffer *buf, char c) {
         else
             buf->cap *= 2;
         buf->items = NON_NULL(realloc(buf->items, buf->cap));
+        // zero out the newly allocated region
+        memset(buf->items + buf->len, 0, buf->cap - buf->len);
     }
 
     buf->items[buf->len++] = c;

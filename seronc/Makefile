@@ -32,10 +32,8 @@ compiler: main.o $(SOURCES)
 	@echo LINK $^
 
 run: compiler
-	@echo "Building Prototype $(PROTO)"
-	@./$(BIN) -v $(PROTO) --dump-ast
-	@echo "Running Prototype"
-	@./test/main
+	@echo "Running Prototype $(PROTO)"
+	@./$(BIN) -t run $(PROTO) --dump-ast
 
 debug: compiler
 	@echo "Debugging Prototype $(PROTO)"
@@ -52,7 +50,7 @@ dev-asm: dev.asm
 
 test: ./test/test.sn compiler
 	@echo "TEST $<"
-	@./$(BIN) $< -cv
+	@./$(BIN) $< -t obj
 	@$(CC) $(CFLAGS) -o test/test test/test.c test/test.o
 	@./test/test
 

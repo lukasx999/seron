@@ -6,6 +6,8 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <limits.h>
+#include <libgen.h>
 #include <time.h>
 
 #include <sys/stat.h>
@@ -22,11 +24,19 @@
 #include "main.h"
 
 
+
+
+
+
 #define FILE_EXTENSION "sn"
+#define TEMP_DIR "/tmp/seron"
 
 
 struct CompilerContext compiler_ctx = { 0 };
 
+static void compiler_init(void) {
+    compiler_ctx.target = TARGET_RUN;
+}
 
 static void check_fileextension(const char *filename) {
 
@@ -68,11 +78,11 @@ static char *read_file(const char *filename) {
     return buf;
 }
 
-static int run_cmd_sync(char *const argv[]) {
+static int run_cmd_sync(const char *const argv[]) {
     int status;
 
     if (!fork()) {
-        execvp(argv[0], argv);
+        execvp(argv[0], (char *const*) argv);
         exit(1); // Failed to exec
     }
 
@@ -83,11 +93,9 @@ static int run_cmd_sync(char *const argv[]) {
     : 1;
 }
 
-static void assemble(void) {
-    char *asm_ = compiler_ctx.filename.asm_;
-    char *obj  = compiler_ctx.filename.obj;
+static void assemble(const char *asm_, const char *obj) {
 
-    int ret = run_cmd_sync((char*[]) {
+    int ret = run_cmd_sync((const char*[]) {
         "nasm",
         asm_,
         "-felf64",
@@ -103,17 +111,29 @@ static void assemble(void) {
 
 }
 
-static void link_cc(void) {
-    char *obj       = compiler_ctx.filename.obj;
-    const char *bin = compiler_ctx.filename.stripped;
+static void link_cc(const char *obj, const char *bin) {
 
-    int ret = run_cmd_sync((char*[]) {
+    int ret = run_cmd_sync((const char*[]) {
         "cc",
         "-no-pie",
         "-lc",
         obj,
         "-o",
-        (char*) bin,
+        bin,
+        NULL,
+    });
+
+    if (ret) {
+        diagnostic(DIAG_ERROR, "Failed to link via `cc`");
+        exit(EXIT_FAILURE);
+    }
+
+}
+
+static void run(const char *bin) {
+
+    int ret = run_cmd_sync((const char*[]) {
+        bin,
         NULL,
     });
 
@@ -128,10 +148,8 @@ static void print_usage(char *argv[]) {
     fprintf(stderr, "Usage: %s [options] file...\n", argv[0]);
     fprintf(stderr, "Options:\n");
     fprintf(stderr,
-            "\t-S                               generate assembly, don't assemble/link\n"
-            "\t-c                               compile and assemble, don't link\n"
-            "\t-v, --verbose                    show info messages\n"
-            "\t--asmdoc                         add debug comments into the generated assembly\n"
+            "\t-t, --target                    select compilation target\n"
+            "\t\tbin, asm, obj, run\n"
             "\t--dump-ast\n"
             "\t--dump-tokens\n"
             "\t--dump-symboltable\n"
@@ -139,36 +157,21 @@ static void print_usage(char *argv[]) {
     exit(EXIT_FAILURE);
 }
 
-static void set_filenames(const char *raw) {
-    compiler_ctx.filename.raw = raw;
-
-    size_t dot_offset = strlen(raw) - 1 - strlen(FILE_EXTENSION);
-
-    char *stripped = compiler_ctx.filename.stripped;
-    strncpy(stripped, raw, dot_offset);
-
-    char *asm = compiler_ctx.filename.asm_;
-    strncpy(asm, stripped, NAME_MAX);
-    strcat(asm, ".s");
-
-    char *obj = compiler_ctx.filename.obj;
-    strncpy(obj, stripped, NAME_MAX);
-    strcat(obj, ".o");
-}
 
 static void parse_args(int argc, char **argv) {
 
     int opt_index = 0;
     struct option opts[] = {
-        { "dump-ast",         no_argument, &compiler_ctx.opts.dump_ast,         1 },
-        { "dump-tokens",      no_argument, &compiler_ctx.opts.dump_tokens,      1 },
-        { "dump-symboltable", no_argument, &compiler_ctx.opts.dump_symboltable, 1 },
-        { "verbose",          no_argument, &compiler_ctx.opts.verbose,          1 },
+        { "dump-ast",         no_argument,       &compiler_ctx.opts.dump_ast,         1 },
+        { "dump-tokens",      no_argument,       &compiler_ctx.opts.dump_tokens,      1 },
+        { "dump-symboltable", no_argument,       &compiler_ctx.opts.dump_symboltable, 1 },
+        // TODO:
+        // { "target",           required_argument, &compiler_ctx.opts.dump_symboltable, 1 },
         { NULL, 0, NULL, 0 },
     };
 
     while (1) {
-        int c = getopt_long(argc, argv, "Scv", opts, &opt_index);
+        int c = getopt_long(argc, argv, "t:", opts, &opt_index);
 
         if (c == -1)
             break;
@@ -178,9 +181,26 @@ static void parse_args(int argc, char **argv) {
                 /* long option */
                 break;
 
-            case 'v': compiler_ctx.opts.verbose              = 1; break;
-            case 'S': compiler_ctx.opts.compile_only         = 1; break;
-            case 'c': compiler_ctx.opts.compile_and_assemble = 1; break;
+            case 't':
+
+                if (!strcmp(optarg, "bin")) {
+                    compiler_ctx.target = TARGET_BINARY;
+
+                } else if (!strcmp(optarg, "obj")) {
+                    compiler_ctx.target = TARGET_OBJECT;
+
+                } else if (!strcmp(optarg, "asm")) {
+                    compiler_ctx.target = TARGET_ASSEMBLY;
+
+                } else if (!strcmp(optarg, "run")) {
+                    compiler_ctx.target = TARGET_RUN;
+
+                } else {
+                    diagnostic(DIAG_ERROR, "Unknown target");
+                    exit(EXIT_FAILURE);
+                }
+
+                break;
 
             default:
                 diagnostic(DIAG_ERROR, "Unknown option");
@@ -194,16 +214,86 @@ static void parse_args(int argc, char **argv) {
 
     const char *filename = argv[optind];
     check_fileextension(filename);
-    set_filenames(filename);
+    compiler_ctx.filename = filename;
 }
 
-// TODO: dont generate garbage
+static void dispatch(AstNode *root) {
+
+    const char *filename = compiler_ctx.filename;
+
+    char buf[PATH_MAX] = { 0 };
+    strncpy(buf, filename, ARRAY_LEN(buf)-1);
+    char *base = basename(buf);
+
+    char buf2[PATH_MAX] = { 0 };
+    strncpy(buf2, filename, ARRAY_LEN(buf2)-1);
+    char *dir = dirname(buf2);
+
+    size_t dot_offset = strlen(base) - 1 - strlen(FILE_EXTENSION);
+
+    char base_bin[NAME_MAX] = { 0 };
+    strncpy(base_bin, base, dot_offset);
+
+    char base_asm[NAME_MAX] = { 0 };
+    strncpy(base_asm, base_bin, ARRAY_LEN(base_asm)-1);
+    strcat(base_asm, ".s");
+
+    char base_obj[NAME_MAX] = { 0 };
+    strncpy(base_obj, base_bin, ARRAY_LEN(base_obj)-1);
+    strcat(base_obj, ".o");
+
+    mkdir(TEMP_DIR, 0777);
+
+    char tmp_bin[PATH_MAX] = TEMP_DIR;
+    strncat(tmp_bin, base_bin, ARRAY_LEN(tmp_bin)-1);
+
+    char tmp_asm[PATH_MAX] = TEMP_DIR;
+    strncat(tmp_asm, base_asm, ARRAY_LEN(tmp_asm)-1);
+
+    char tmp_obj[PATH_MAX] = TEMP_DIR;
+    strncat(tmp_obj, base_obj, ARRAY_LEN(tmp_obj)-1);
+
+    char rel_bin[PATH_MAX] = { 0 };
+    snprintf(rel_bin, ARRAY_LEN(rel_bin), "%s/%s", dir, base_bin);
+
+    char rel_asm[PATH_MAX] = { 0 };
+    snprintf(rel_asm, ARRAY_LEN(rel_asm), "%s/%s", dir, base_asm);
+
+    char rel_obj[PATH_MAX] = { 0 };
+    snprintf(rel_obj, ARRAY_LEN(rel_obj), "%s/%s", dir, base_obj);
+
+    switch (compiler_ctx.target) {
+        case TARGET_BINARY:
+            codegen(root, tmp_asm);
+            assemble(tmp_asm, tmp_obj);
+            link_cc(tmp_obj, rel_bin);
+            break;
+
+        case TARGET_OBJECT:
+            codegen(root, tmp_asm);
+            assemble(tmp_asm, rel_obj);
+            break;
+
+        case TARGET_ASSEMBLY:
+            codegen(root, rel_asm);
+            break;
+
+        case TARGET_RUN:
+            codegen(root, tmp_asm);
+            assemble(tmp_asm, tmp_obj);
+            link_cc(tmp_obj, tmp_bin);
+            run(tmp_bin);
+            break;
+    }
+
+}
 
 int main(int argc, char **argv) {
+    compiler_init();
 
     parse_args(argc, argv);
 
-    char *file = read_file(compiler_ctx.filename.raw);
+    char *file = read_file(compiler_ctx.filename);
     compiler_ctx.src = file;
 
     if (compiler_ctx.opts.dump_tokens)
@@ -218,14 +308,8 @@ int main(int argc, char **argv) {
         parser_print_ast(root, 2);
 
     symboltable_build(root, &arena);
-    codegen(root, compiler_ctx.filename.asm_);
 
-    if (!compiler_ctx.opts.compile_only) {
-        assemble();
-
-        if (!compiler_ctx.opts.compile_and_assemble)
-            link_cc();
-    }
+    dispatch(root);
 
     arena_free(&arena);
     free(file);

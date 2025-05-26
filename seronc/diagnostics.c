@@ -16,9 +16,6 @@
 
 // returns length of tag string
 static size_t print_diag_tag(DiagnosticKind kind) {
-    if (kind == DIAG_INFO && !compiler_ctx.opts.verbose)
-        return 0;
-
     const char *str, *color;
 
     switch (kind) {
@@ -62,7 +59,7 @@ void diagnostic_loc(DiagnosticKind kind, const Token *tok, const char *fmt, ...)
     TokenLocation loc = get_token_location(tok, src);
     print_diag_header(kind);
 
-    snprintf(location_buf, ARRAY_LEN(location_buf), "%s:%d:%d", compiler_ctx.filename.raw, loc.line, loc.column);
+    snprintf(location_buf, ARRAY_LEN(location_buf), "%s:%d:%d", compiler_ctx.filename, loc.line, loc.column);
 
     fprintf(stderr, "Cause: ");
     vfprintf(stderr, fmt, va);

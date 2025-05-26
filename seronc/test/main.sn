@@ -1,9 +1,5 @@
-proc fib() int {
-}
-
-proc main() {
-
-
-
+proc putchar(c: char);
+proc main() int {
+    putchar(65);
     return 0;
 }
