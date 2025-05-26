@@ -34,9 +34,35 @@
 
 struct CompilerContext compiler_ctx = { 0 };
 
-static void compiler_init(void) {
-    compiler_ctx.target = TARGET_RUN;
+
+
+
+typedef enum {
+    TARGET_BINARY,
+    TARGET_ASSEMBLY,
+    TARGET_OBJECT,
+    TARGET_RUN,
+} CompilationTarget;
+
+typedef struct {
+    CompilationTarget target;
+    // options are ints, because `struct option` only accept int pointers
+    struct {
+        int dump_ast;
+        int dump_tokens;
+        int dump_symboltable;
+    } opts;
+} CompilerOptions;
+
+static CompilerOptions compiler_opts_default(void) {
+    return (CompilerOptions) {
+        .target = TARGET_RUN,
+    };
 }
+
+
+
+
 
 static void check_fileextension(const char *filename) {
 
@@ -158,20 +184,22 @@ static void print_usage(char *argv[]) {
 }
 
 
-static void parse_args(int argc, char **argv) {
+static CompilerOptions parse_args(int argc, char **argv) {
+
+    CompilerOptions opts = compiler_opts_default();
 
     int opt_index = 0;
-    struct option opts[] = {
-        { "dump-ast",         no_argument,       &compiler_ctx.opts.dump_ast,         1 },
-        { "dump-tokens",      no_argument,       &compiler_ctx.opts.dump_tokens,      1 },
-        { "dump-symboltable", no_argument,       &compiler_ctx.opts.dump_symboltable, 1 },
+    struct option options[] = {
+        { "dump-ast",         no_argument,       &opts.opts.dump_ast,         1 },
+        { "dump-tokens",      no_argument,       &opts.opts.dump_tokens,      1 },
+        { "dump-symboltable", no_argument,       &opts.opts.dump_symboltable, 1 },
         // TODO:
         // { "target",           required_argument, &compiler_ctx.opts.dump_symboltable, 1 },
         { NULL, 0, NULL, 0 },
     };
 
     while (1) {
-        int c = getopt_long(argc, argv, "t:", opts, &opt_index);
+        int c = getopt_long(argc, argv, "t:", options, &opt_index);
 
         if (c == -1)
             break;
@@ -184,16 +212,16 @@ static void parse_args(int argc, char **argv) {
             case 't':
 
                 if (!strcmp(optarg, "bin")) {
-                    compiler_ctx.target = TARGET_BINARY;
+                    opts.target = TARGET_BINARY;
 
                 } else if (!strcmp(optarg, "obj")) {
-                    compiler_ctx.target = TARGET_OBJECT;
+                    opts.target = TARGET_OBJECT;
 
                 } else if (!strcmp(optarg, "asm")) {
-                    compiler_ctx.target = TARGET_ASSEMBLY;
+                    opts.target = TARGET_ASSEMBLY;
 
                 } else if (!strcmp(optarg, "run")) {
-                    compiler_ctx.target = TARGET_RUN;
+                    opts.target = TARGET_RUN;
 
                 } else {
                     diagnostic(DIAG_ERROR, "Unknown target");
@@ -215,9 +243,13 @@ static void parse_args(int argc, char **argv) {
     const char *filename = argv[optind];
     check_fileextension(filename);
     compiler_ctx.filename = filename;
+
+    return opts;
 }
 
-static void dispatch(AstNode *root) {
+static void dispatch(AstNode *root, CompilerOptions opts) {
+
+    // damn.
 
     const char *filename = compiler_ctx.filename;
 
@@ -262,7 +294,7 @@ static void dispatch(AstNode *root) {
     char rel_obj[PATH_MAX] = { 0 };
     snprintf(rel_obj, ARRAY_LEN(rel_obj), "%s/%s", dir, base_obj);
 
-    switch (compiler_ctx.target) {
+    switch (opts.target) {
         case TARGET_BINARY:
             codegen(root, tmp_asm);
             assemble(tmp_asm, tmp_obj);
@@ -289,14 +321,14 @@ static void dispatch(AstNode *root) {
 }
 
 int main(int argc, char **argv) {
-    compiler_init();
+    compiler_opts_default();
 
-    parse_args(argc, argv);
+    CompilerOptions opts = parse_args(argc, argv);
 
     char *file = read_file(compiler_ctx.filename);
     compiler_ctx.src = file;
 
-    if (compiler_ctx.opts.dump_tokens)
+    if (opts.opts.dump_tokens)
         lexer_print_tokens(file);
 
     Arena arena = { 0 };
@@ -304,12 +336,12 @@ int main(int argc, char **argv) {
 
     AstNode *root = parse(file, &arena);
 
-    if (compiler_ctx.opts.dump_ast)
+    if (opts.opts.dump_ast)
         parser_print_ast(root, 2);
 
     symboltable_build(root, &arena);
 
-    dispatch(root);
+    dispatch(root, opts);
 
     arena_free(&arena);
     free(file);
