@@ -785,7 +785,7 @@ static AstNode *rule_grouping(Parser *p) {
     return astnode;
 }
 
-static AstNode *rule_primary(Parser *p) {
+static AstNode *rule_expr_primary(Parser *p) {
     // <primary> ::=
     //           | NUMBER
     //           | CHAR
@@ -820,10 +820,10 @@ static AstNode *rule_primary(Parser *p) {
 
 }
 
-static AstNode *rule_call(Parser *p) {
+static AstNode *rule_expr_call(Parser *p) {
     // <call> ::= <primary> <arglist>
 
-    AstNode *node = rule_primary(p);
+    AstNode *node = rule_expr_primary(p);
 
     if (!parser_match_token(p, TOK_LPAREN))
         return node;
@@ -841,11 +841,11 @@ static AstNode *rule_call(Parser *p) {
     return call;
 }
 
-static AstNode *rule_unary(Parser *p) {
+static AstNode *rule_expr_unary(Parser *p) {
     // <unary> ::= ( "&" | "*" | "!" | "-" ) <unary> | <call>
 
     if (!parser_match_tokens(p, TOK_MINUS, TOK_BANG, TOK_AMPERSAND, TOK_ASTERISK, SENTINEL))
-        return rule_call(p);
+        return rule_expr_call(p);
 
     Token op           = parser_advance(p);
     AstNode *node      = parser_new_node(p);
@@ -853,7 +853,7 @@ static AstNode *rule_unary(Parser *p) {
     node->expr_unaryop = (ExprUnaryOp) {
         .op   = op,
         .kind = unaryop_from_token(op.kind),
-        .node = rule_unary(p),
+        .node = rule_expr_unary(p),
     };
 
     return node;
@@ -896,57 +896,57 @@ static AstNode *templ_binop(Parser *p, GrammarRule rule, ...) {
     return lhs;
 }
 
-static AstNode *rule_factor(Parser *p) {
+static AstNode *rule_expr_factor(Parser *p) {
     // <factor> ::= <unary> (( "/" | "*" ) <unary>)*
-    return templ_binop(p, rule_unary, TOK_SLASH, TOK_ASTERISK, SENTINEL);
+    return templ_binop(p, rule_expr_unary, TOK_SLASH, TOK_ASTERISK, SENTINEL);
 }
 
-static AstNode *rule_term(Parser *p) {
+static AstNode *rule_expr_term(Parser *p) {
     // <term> ::= <factor> (("+" | "-") <factor>)*
-    return templ_binop(p, rule_factor, TOK_PLUS, TOK_MINUS, SENTINEL);
+    return templ_binop(p, rule_expr_factor, TOK_PLUS, TOK_MINUS, SENTINEL);
 }
 
-static AstNode *rule_comparison(Parser *p) {
+static AstNode *rule_expr_comparison(Parser *p) {
     // <comparison> ::= <term> ((">" | ">=" | "<" | "<=") <term>)*
-    return templ_binop(p, rule_term, TOK_LT, TOK_LT_EQ, TOK_GT, TOK_GT_EQ, SENTINEL);
+    return templ_binop(p, rule_expr_term, TOK_LT, TOK_LT_EQ, TOK_GT, TOK_GT_EQ, SENTINEL);
 }
 
-static AstNode *rule_equality(Parser *p) {
+static AstNode *rule_expr_equality(Parser *p) {
     // <equality> ::= <comparison> (("!=" | "==") <comparison>)*
-    return templ_binop(p, rule_comparison, TOK_EQ, TOK_NEQ, SENTINEL);
+    return templ_binop(p, rule_expr_comparison, TOK_EQ, TOK_NEQ, SENTINEL);
 }
 
-static AstNode *rule_bitwise_and(Parser *p) {
+static AstNode *rule_expr_bitwise_and(Parser *p) {
     // <bitwise-and> ::= <equality> ("&" <equality>)*
-    return templ_binop(p, rule_equality, TOK_AMPERSAND, SENTINEL);
+    return templ_binop(p, rule_expr_equality, TOK_AMPERSAND, SENTINEL);
 }
 
-static AstNode *rule_bitwise_or(Parser *p) {
+static AstNode *rule_expr_bitwise_or(Parser *p) {
     // <bitwise-or> ::= <bitwise-and> ("|" <bitwise-and>)*
-    return templ_binop(p, rule_bitwise_and, TOK_PIPE, SENTINEL);
+    return templ_binop(p, rule_expr_bitwise_and, TOK_PIPE, SENTINEL);
 }
 
-static AstNode *rule_log_and(Parser *p) {
+static AstNode *rule_expr_log_and(Parser *p) {
     // <log-and> ::= <bitwise-or> ("&&" <bitwise-or>)*
-    return templ_binop(p, rule_bitwise_or, TOK_LOG_AND, SENTINEL);
+    return templ_binop(p, rule_expr_bitwise_or, TOK_LOG_AND, SENTINEL);
 }
 
-static AstNode *rule_log_or(Parser *p) {
+static AstNode *rule_expr_log_or(Parser *p) {
     // <log-or> ::= <log-and> ("||" <log-and>)*
-    return templ_binop(p, rule_log_and, TOK_LOG_OR, SENTINEL);
+    return templ_binop(p, rule_expr_log_and, TOK_LOG_OR, SENTINEL);
 }
 
-static AstNode *rule_assign(Parser *p) {
+static AstNode *rule_expr_assign(Parser *p) {
     // <assign> ::= <log-or> "=" <assign> | <log-or>
 
-    AstNode *expr = rule_log_or(p);
+    AstNode *expr = rule_expr_log_or(p);
 
     if (!parser_match_token(p, TOK_ASSIGN))
         return expr;
 
     Token op = parser_advance(p);
 
-    AstNode *value = rule_assign(p);
+    AstNode *value = rule_expr_assign(p);
 
     AstNode *node     = parser_new_node(p);
     node->kind        = ASTNODE_ASSIGN;
@@ -961,7 +961,7 @@ static AstNode *rule_assign(Parser *p) {
 
 static AstNode *rule_expr(Parser *p) {
     // <expression> ::= <assignment>
-    return rule_assign(p);
+    return rule_expr_assign(p);
 }
 
 // returns NULL on empty statement
@@ -976,7 +976,7 @@ static AstNode *rule_exprstmt(Parser *p) {
     return node;
 }
 
-static AstNode *rule_vardecl(Parser *p) {
+static AstNode *rule_stmt_vardecl(Parser *p) {
     // <vardecl> ::= "let" <identifier> ":" <type> ("=" <expression>)? ";"
 
     Token op = parser_consume(p, TOK_KW_VARDECL);
@@ -1007,7 +1007,7 @@ static AstNode *rule_vardecl(Parser *p) {
     return vardecl;
 }
 
-static AstNode *rule_block(Parser *p) {
+static AstNode *rule_stmt_block(Parser *p) {
     // <block> ::= "{" <statement>* "}"
 
     Token brace = parser_consume(p, TOK_LBRACE);
@@ -1045,13 +1045,13 @@ static AstNode *rule_block(Parser *p) {
     return node;
 }
 
-static AstNode *rule_while(Parser *p) {
+static AstNode *rule_stmt_while(Parser *p) {
     // <while> ::= "while" <expression> <block>
 
     Token op = parser_consume(p, TOK_KW_WHILE);
 
     AstNode *cond  = rule_expr(p);
-    AstNode *body  = rule_block(p);
+    AstNode *body  = rule_stmt_block(p);
 
     AstNode *node    = parser_new_node(p);
     node->kind       = ASTNODE_WHILE;
@@ -1064,18 +1064,18 @@ static AstNode *rule_while(Parser *p) {
     return node;
 }
 
-static AstNode *rule_if(Parser *p) {
+static AstNode *rule_stmt_if(Parser *p) {
     // <if> ::= "if" <expression> <block> ("else" <block>)?
 
     Token op = parser_consume(p, TOK_KW_IF);
 
     AstNode *cond  = rule_expr(p);
-    AstNode *then  = rule_block(p);
+    AstNode *then  = rule_stmt_block(p);
     AstNode *else_ = NULL;
 
     if (parser_match_token(p, TOK_KW_ELSE)) {
         parser_advance(p);
-        else_ = rule_block(p);
+        else_ = rule_stmt_block(p);
     }
 
     AstNode *node = parser_new_node(p);
@@ -1090,7 +1090,7 @@ static AstNode *rule_if(Parser *p) {
     return node;
 }
 
-static AstNode *rule_return(Parser *p) {
+static AstNode *rule_stmt_return(Parser *p) {
     // <return> ::= "return" <expression>? ";"
 
     Token op = parser_consume(p, TOK_KW_RETURN);
@@ -1124,15 +1124,15 @@ static AstNode *rule_stmt(Parser *p) {
     p->ctx = CONTEXT_STMT;
 
     return
-        parser_match_token(p, TOK_LBRACE)     ? rule_block  (p) :
-        parser_match_token(p, TOK_KW_VARDECL) ? rule_vardecl(p) :
-        parser_match_token(p, TOK_KW_IF)      ? rule_if     (p) :
-        parser_match_token(p, TOK_KW_WHILE)   ? rule_while  (p) :
-        parser_match_token(p, TOK_KW_RETURN)  ? rule_return (p) :
+        parser_match_token(p, TOK_LBRACE)     ? rule_stmt_block  (p) :
+        parser_match_token(p, TOK_KW_VARDECL) ? rule_stmt_vardecl(p) :
+        parser_match_token(p, TOK_KW_IF)      ? rule_stmt_if     (p) :
+        parser_match_token(p, TOK_KW_WHILE)   ? rule_stmt_while  (p) :
+        parser_match_token(p, TOK_KW_RETURN)  ? rule_stmt_return (p) :
     rule_exprstmt(p);
 }
 
-static AstNode *rule_proc(Parser *p) {
+static AstNode *rule_decl_proc(Parser *p) {
     // <procedure> ::= <proc-type> <block>?
 
     Token ident, op;
@@ -1140,7 +1140,7 @@ static AstNode *rule_proc(Parser *p) {
 
     AstNode *body = parser_match_token(p, TOK_SEMICOLON)
         ? parser_advance(p), NULL
-        : rule_block(p);
+        : rule_stmt_block(p);
 
     AstNode *proc = parser_new_node(p);
     proc->kind = ASTNODE_PROC;
@@ -1154,7 +1154,7 @@ static AstNode *rule_proc(Parser *p) {
     return proc;
 }
 
-static AstNode *rule_table(Parser *p) {
+static AstNode *rule_decl_table(Parser *p) {
     // <table> ::= "table" IDENTIFIER <fieldlist>
 
     Token op = parser_consume(p, TOK_KW_TABLE);
@@ -1185,8 +1185,8 @@ static AstNode *rule_decl(Parser *p) {
     p->ctx = CONTEXT_DECL;
 
     return
-        parser_match_token(p, TOK_KW_PROC)    ? rule_proc(p)    :
-        parser_match_token(p, TOK_KW_TABLE)   ? rule_table(p)   :
+        parser_match_token(p, TOK_KW_PROC)    ? rule_decl_proc(p)    :
+        parser_match_token(p, TOK_KW_TABLE)   ? rule_decl_table(p)   :
     (diagnostic_loc(DIAG_ERROR, parser_peek(p), "Expected declaration"),
         parser_sync(p),
         NULL);

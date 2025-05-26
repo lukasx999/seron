@@ -168,7 +168,7 @@ static void buffer_destroy(Buffer *buf) {
 
 
 
-struct Gen {
+struct {
     Buffer buf_data;
     Buffer buf_text;
     int label_count;
@@ -206,7 +206,7 @@ static void gen_write_to_file(const char *path) {
 static void gen_write(const char *fmt, ...) {
     va_list va;
     va_start(va, fmt);
-    char buf[500] = { 0 };
+    char buf[1024] = { 0 };
     vsnprintf(buf, ARRAY_LEN(buf), fmt, va);
     strcat(buf, "\n");
     buffer_append_str(&gen.buf_text, buf);
@@ -216,7 +216,7 @@ static void gen_write(const char *fmt, ...) {
 static void gen_write_data(const char *fmt, ...) {
     va_list va;
     va_start(va, fmt);
-    char buf[500] = { 0 };
+    char buf[1024] = { 0 };
     vsnprintf(buf, ARRAY_LEN(buf), fmt, va);
     strcat(buf, "\n");
     buffer_append_str(&gen.buf_data, buf);
