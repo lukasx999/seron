@@ -17,9 +17,6 @@
 
 
 
-#define SENTINEL TOK_SENTINEL
-
-
 
 static void astnodelist_init(AstNodeList *list, Arena *arena) {
      *list = (AstNodeList) {
@@ -160,7 +157,7 @@ static bool parser_match_tokens_va(const Parser *p, va_list va) {
     while (1) {
         TokenKind tok = va_arg(va, TokenKind);
         bool matched = parser_peek(p)->kind == tok;
-        if (matched || tok == SENTINEL) {
+        if (matched || tok == TOK_SENTINEL) {
             return matched;
         }
     }
@@ -169,7 +166,7 @@ static bool parser_match_tokens_va(const Parser *p, va_list va) {
 }
 
 // checks if the current token is of one of the supplied kinds
-// last variadic argument should be `TOK_INVALID` aka `SENTINEL`
+// last variadic argument should be `TOK_INVALID` aka `TOK_SENTINEL`
 static bool parser_match_tokens(const Parser *p, ...) {
     va_list va;
     va_start(va, p);
@@ -180,7 +177,7 @@ static bool parser_match_tokens(const Parser *p, ...) {
 
 // checks if the current token is of the supplied kind
 static inline bool parser_match_token(const Parser *p, TokenKind kind) {
-    return parser_match_tokens(p, kind, SENTINEL);
+    return parser_match_tokens(p, kind, TOK_SENTINEL);
 }
 
 static inline bool parser_is_at_end(const Parser *p) {
@@ -214,7 +211,7 @@ static void parser_recover_stmt(Parser *p) {
 // move to the next declaration
 static void parser_recover_decl(Parser *p) {
     while (1) {
-        if (parser_match_tokens(p, TOK_KW_PROC, TOK_KW_TABLE, SENTINEL))
+        if (parser_match_tokens(p, TOK_KW_PROC, TOK_KW_TABLE, TOK_SENTINEL))
             break;
         parser_advance(p);
     }
@@ -246,7 +243,7 @@ static inline void parser_expect_token(Parser *p, TokenKind tokenkind) {
 
 static inline bool parser_token_is_type(const Parser *p) {
     // TODO: find a better way of doing this
-    return parser_match_tokens(p, TOK_KW_TYPE_INT, TOK_KW_TYPE_CHAR, TOK_KW_TYPE_LONG, TOK_KW_TYPE_VOID, TOK_ASTERISK, SENTINEL);
+    return parser_match_tokens(p, TOK_KW_TYPE_INT, TOK_KW_TYPE_CHAR, TOK_KW_TYPE_LONG, TOK_KW_TYPE_VOID, TOK_ASTERISK, TOK_SENTINEL);
 }
 
 // advance, enforcing that the current token has the specified kind
@@ -793,7 +790,7 @@ static AstNode *rule_expr_primary(Parser *p) {
     //           | STRING
     //           | <grouping>
 
-    if (parser_match_tokens(p, TOK_LITERAL_NUMBER, TOK_LITERAL_IDENT, TOK_LITERAL_STRING, SENTINEL)) {
+    if (parser_match_tokens(p, TOK_LITERAL_NUMBER, TOK_LITERAL_IDENT, TOK_LITERAL_STRING, TOK_SENTINEL)) {
 
         const Token *tok = parser_peek(p);
 
@@ -844,7 +841,7 @@ static AstNode *rule_expr_call(Parser *p) {
 static AstNode *rule_expr_unary(Parser *p) {
     // <unary> ::= ( "&" | "*" | "!" | "-" ) <unary> | <call>
 
-    if (!parser_match_tokens(p, TOK_MINUS, TOK_BANG, TOK_AMPERSAND, TOK_ASTERISK, SENTINEL))
+    if (!parser_match_tokens(p, TOK_MINUS, TOK_BANG, TOK_AMPERSAND, TOK_ASTERISK, TOK_SENTINEL))
         return rule_expr_call(p);
 
     Token op           = parser_advance(p);
@@ -898,42 +895,42 @@ static AstNode *templ_binop(Parser *p, GrammarRule rule, ...) {
 
 static AstNode *rule_expr_factor(Parser *p) {
     // <factor> ::= <unary> (( "/" | "*" ) <unary>)*
-    return templ_binop(p, rule_expr_unary, TOK_SLASH, TOK_ASTERISK, SENTINEL);
+    return templ_binop(p, rule_expr_unary, TOK_SLASH, TOK_ASTERISK, TOK_SENTINEL);
 }
 
 static AstNode *rule_expr_term(Parser *p) {
     // <term> ::= <factor> (("+" | "-") <factor>)*
-    return templ_binop(p, rule_expr_factor, TOK_PLUS, TOK_MINUS, SENTINEL);
+    return templ_binop(p, rule_expr_factor, TOK_PLUS, TOK_MINUS, TOK_SENTINEL);
 }
 
 static AstNode *rule_expr_comparison(Parser *p) {
     // <comparison> ::= <term> ((">" | ">=" | "<" | "<=") <term>)*
-    return templ_binop(p, rule_expr_term, TOK_LT, TOK_LT_EQ, TOK_GT, TOK_GT_EQ, SENTINEL);
+    return templ_binop(p, rule_expr_term, TOK_LT, TOK_LT_EQ, TOK_GT, TOK_GT_EQ, TOK_SENTINEL);
 }
 
 static AstNode *rule_expr_equality(Parser *p) {
     // <equality> ::= <comparison> (("!=" | "==") <comparison>)*
-    return templ_binop(p, rule_expr_comparison, TOK_EQ, TOK_NEQ, SENTINEL);
+    return templ_binop(p, rule_expr_comparison, TOK_EQ, TOK_NEQ, TOK_SENTINEL);
 }
 
 static AstNode *rule_expr_bitwise_and(Parser *p) {
     // <bitwise-and> ::= <equality> ("&" <equality>)*
-    return templ_binop(p, rule_expr_equality, TOK_AMPERSAND, SENTINEL);
+    return templ_binop(p, rule_expr_equality, TOK_AMPERSAND, TOK_SENTINEL);
 }
 
 static AstNode *rule_expr_bitwise_or(Parser *p) {
     // <bitwise-or> ::= <bitwise-and> ("|" <bitwise-and>)*
-    return templ_binop(p, rule_expr_bitwise_and, TOK_PIPE, SENTINEL);
+    return templ_binop(p, rule_expr_bitwise_and, TOK_PIPE, TOK_SENTINEL);
 }
 
 static AstNode *rule_expr_log_and(Parser *p) {
     // <log-and> ::= <bitwise-or> ("&&" <bitwise-or>)*
-    return templ_binop(p, rule_expr_bitwise_or, TOK_LOG_AND, SENTINEL);
+    return templ_binop(p, rule_expr_bitwise_or, TOK_LOG_AND, TOK_SENTINEL);
 }
 
 static AstNode *rule_expr_log_or(Parser *p) {
     // <log-or> ::= <log-and> ("||" <log-and>)*
-    return templ_binop(p, rule_expr_log_and, TOK_LOG_OR, SENTINEL);
+    return templ_binop(p, rule_expr_log_and, TOK_LOG_OR, TOK_SENTINEL);
 }
 
 static AstNode *rule_expr_assign(Parser *p) {
