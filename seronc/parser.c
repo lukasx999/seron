@@ -976,6 +976,11 @@ static AstNode *rule_expr_assign(Parser *p) {
     return node;
 }
 
+UNUSED static AstNode *rule_expr_table_create(UNUSED Parser *p) {
+    // <table-create> ::= "obj" <type> "{"  "}"
+    TODO();
+}
+
 static AstNode *rule_expr(Parser *p) {
     // <expression> ::= <assignment>
     return rule_expr_assign(p);
@@ -994,7 +999,7 @@ static AstNode *rule_exprstmt(Parser *p) {
 }
 
 static AstNode *rule_stmt_vardecl(Parser *p) {
-    // <vardecl> ::= "let" <identifier> ":" <type> ("=" <expression>)? ";"
+    // <vardecl> ::= "let" IDENTIFIER ":" <type> ("=" <expression>)? ";"
 
     Token op = parser_consume(p, TOK_KW_VARDECL);
 
