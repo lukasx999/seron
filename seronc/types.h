@@ -44,6 +44,7 @@ NO_DISCARD size_t get_type_size(TypeKind type);
 typedef struct {
     Type type;
     char ident[MAX_IDENT_LEN+1]; // account for nullbyte
+    int offset;
 } Param;
 
 struct ProcSignature {

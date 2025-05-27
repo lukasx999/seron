@@ -282,15 +282,13 @@ static void proc(const DeclProc *proc) {
         const Param *param = &sig->params[i];
         const char *reg = abi_register_str(i+1, param->type.kind);
 
-        Symbol *sym = NON_NULL(symboltable_lookup(proc->symboltable, param->ident));
-
         if (reg == NULL) {
             const char *rax = subregister(REG_RAX, param->type.kind);
             gen_write("mov %s, [rbp+%d]", rax, offset);
-            gen_write("mov [rbp-%d], %s", sym->offset, rax);
+            gen_write("mov [rbp-%d], %s", param->offset, rax);
             offset += 8;
         } else {
-            gen_write("mov [rbp-%d], %s", sym->offset, reg);
+            gen_write("mov [rbp-%d], %s", param->offset, reg);
         }
 
     }
@@ -614,10 +612,9 @@ static void vardecl(const StmtVarDecl *decl) {
 
     const char *ident = decl->ident.value;
     Type init = emit(decl->init);
-    Symbol *sym = NON_NULL(symboltable_lookup(gen.scope, ident));
     gen_write(
         "mov [rbp-%d], %s ; %s",
-        sym->offset,
+        decl->offset,
         subregister(REG_RAX, init.kind),
         ident
     );

@@ -54,6 +54,8 @@ static void vardecl(AstNode *node, UNUSED int _depth, void *args) {
 
     st->stack_size += get_type_size(vardecl->type.kind);
 
+    vardecl->offset = st->stack_size;
+
     Symbol sym = {
         .kind   = SYMBOL_VARIABLE,
         .type   = vardecl->type,
@@ -98,6 +100,7 @@ static void proc_post(AstNode *node, UNUSED int _depth, void *args) {
         Param *param = &sig->params[i];
 
         st->stack_size += get_type_size(param->type.kind);
+        param->offset = st->stack_size;
 
         Symbol sym = {
             .kind   = SYMBOL_PARAMETER,

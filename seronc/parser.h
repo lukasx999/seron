@@ -119,6 +119,7 @@ typedef struct {
     Token op, ident;
     AstNode *init; // NULL if declaration
     Type type;
+    int offset; // rbp offset
 } StmtVarDecl;
 
 typedef enum {
