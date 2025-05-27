@@ -243,7 +243,15 @@ static inline void parser_expect_token(Parser *p, TokenKind tokenkind) {
 
 static inline bool parser_token_is_type(const Parser *p) {
     // TODO: find a better way of doing this
-    return parser_match_tokens(p, TOK_KW_TYPE_INT, TOK_KW_TYPE_CHAR, TOK_KW_TYPE_LONG, TOK_KW_TYPE_VOID, TOK_ASTERISK, TOK_SENTINEL);
+    return parser_match_tokens(
+        p,
+        TOK_KW_TYPE_INT,
+        TOK_KW_TYPE_CHAR,
+        TOK_KW_TYPE_LONG,
+        TOK_KW_TYPE_VOID,
+        TOK_ASTERISK,
+        TOK_SENTINEL
+    );
 }
 
 // advance, enforcing that the current token has the specified kind
@@ -458,6 +466,23 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
 
     switch (root->kind) {
 
+        case ASTNODE_TABLE: {
+            DeclTable *table = &root->table;
+            print_colored(AST_COLOR_KEYWORD, "table: ");
+
+            print_colored(AST_COLOR_IDENT, "%s", table->ident.value);
+            print_colored(AST_COLOR_IDENT, "(");
+
+            Table *tbl = table->type.table;
+            for (size_t i=0; i < tbl->field_count; ++i) {
+                const char *sep = i == tbl->field_count-1 ? "" : ", ";
+                print_colored(AST_COLOR_IDENT, "%s%s", tbl->fields[i].ident, sep);
+            }
+
+            print_colored(AST_COLOR_IDENT, ")");
+            printf("\n");
+        } break;
+
         case ASTNODE_BLOCK:
             print_colored(AST_COLOR_SEMANTIC, "block\n");
             break;
@@ -572,12 +597,10 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
 
 
                 } break;
-                default: PANIC("unknown unaryop");
             }
 
         } break;
 
-        default: PANIC("unexpected node kind");
     }
 }
 
@@ -709,11 +732,7 @@ static Type rule_util_proc_type(Parser *p, Token *out_ident, Token *out_op) {
     sig->params_count = 0;
     rule_util_paramlist(p, sig);
 
-    // returntype is void if not specified
-    if (parser_token_is_type(p))
-        sig->returntype = rule_util_type(p);
-    else
-        sig->returntype.kind = TYPE_VOID;
+    sig->returntype = rule_util_type(p);
 
     Type type = {
         .kind = TYPE_PROCEDURE,
@@ -747,6 +766,7 @@ static Type rule_util_type(Parser *p) {
     } else if (parser_match_token(p, TOK_LITERAL_IDENT)) {
         // TODO:
         ty.kind = TYPE_TABLE;
+        tok->value;
 
     } else if (parser_token_is_type(p)) {
         Token tok = parser_advance(p);

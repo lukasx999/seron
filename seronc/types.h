@@ -35,7 +35,7 @@ struct Type {
     union {
         ProcSignature *signature;
         Type *pointee;
-        Table *table;
+        Table *table; // TODO: should be string
     };
 };
 

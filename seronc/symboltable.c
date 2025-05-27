@@ -89,10 +89,8 @@ static void proc_post(AstNode *node, UNUSED int _depth, void *args) {
 
     if (proc->body == NULL) return;
 
-
     assert(proc->body->kind == ASTNODE_BLOCK);
     proc->symboltable = proc->body->block.symboltable;
-
 
     ProcSignature *sig = proc->type.signature;
 
@@ -115,6 +113,16 @@ static void proc_post(AstNode *node, UNUSED int _depth, void *args) {
 
 }
 
+static void table_pre(AstNode *node, UNUSED int _depth, void *args) {
+    Symboltable *st = args;
+    DeclTable *table = &node->table;
+    Symbol sym = {
+        .kind = SYMBOL_TABLE,
+        .type = table->type,
+    };
+    hashtable_insert(st->head, table->ident.value, sym);
+}
+
 void symboltable_build(AstNode *root, Arena *arena) {
 
     Symboltable st = { 0 };
@@ -124,6 +132,7 @@ void symboltable_build(AstNode *root, Arena *arena) {
         { ASTNODE_BLOCK,   block_pre, block_post },
         { ASTNODE_VARDECL, vardecl,   NULL       },
         { ASTNODE_PROC,    proc_pre,  proc_post  },
+        { ASTNODE_TABLE,   table_pre, NULL       },
     };
 
     parser_dispatch_ast(root, table, ARRAY_LEN(table), &st);

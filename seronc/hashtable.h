@@ -23,6 +23,7 @@ typedef enum {
     SYMBOL_VARIABLE,
     SYMBOL_PARAMETER,
     SYMBOL_PROCEDURE,
+    SYMBOL_TABLE,
 } SymbolKind;
 
 typedef struct {

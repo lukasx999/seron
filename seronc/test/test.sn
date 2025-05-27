@@ -81,7 +81,7 @@ proc test_deref_double(p: **int) *int {
     return *p;
 }
 
-proc test_deref_write(p: *int, a: int) {
+proc test_deref_write(p: *int, a: int) void {
     *p = a;
 }
 

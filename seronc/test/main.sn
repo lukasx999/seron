@@ -1,4 +1,10 @@
-proc putchar(c: char);
+proc putchar(c: char) void;
+
+table foo {
+    a: int,
+    b: int,
+}
+
 proc main() int {
     putchar(65);
     return 0;
