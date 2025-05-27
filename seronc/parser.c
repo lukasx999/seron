@@ -768,7 +768,7 @@ static AstNode *rule_grouping(Parser *p) {
 
     if (parser_match_token(p, TOK_RPAREN)) {
         diagnostic_loc(DIAG_ERROR, parser_peek(p), "Don't write functional code!");
-        exit(EXIT_FAILURE);
+        parser_sync(p);
     }
 
     AstNode *astnode       = parser_new_node(p);
