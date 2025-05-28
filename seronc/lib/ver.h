@@ -83,7 +83,7 @@ static inline int _impl_must_zero(int value, const char *name, const char *file,
 
 
 static inline void *_impl_non_null(void *ptr, const char *name, const char *file, const char *func, int line) {
-    if (ptr == NULL) _impl_panic(file, func, line, "%s is not NULL", name);
+    if (ptr == NULL) _impl_panic(file, func, line, "%s is NULL", name);
     return ptr;
 }
 

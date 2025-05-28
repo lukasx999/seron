@@ -35,7 +35,9 @@ struct Type {
     union {
         ProcSignature *signature;
         Type *pointee;
-        Table *table; // TODO: should be string
+        // TODO:
+        Table *table;
+        char table_name[MAX_IDENT_LEN];
     };
 };
 
@@ -46,6 +48,7 @@ typedef struct {
     char ident[MAX_IDENT_LEN+1]; // account for nullbyte
     int offset;
 } Param;
+// TODO: create separate field struct without offset
 
 struct ProcSignature {
     Param params[MAX_PARAM_COUNT];

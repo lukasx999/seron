@@ -764,9 +764,9 @@ static Type rule_util_type(Parser *p) {
         ty = rule_util_proc_type(p, NULL, NULL);
 
     } else if (parser_match_token(p, TOK_LITERAL_IDENT)) {
-        // TODO:
         ty.kind = TYPE_TABLE;
-        tok->value;
+        strncpy(ty.table_name, tok->value, ARRAY_LEN(ty.table_name)-1);
+        parser_advance(p);
 
     } else if (parser_token_is_type(p)) {
         Token tok = parser_advance(p);
@@ -974,11 +974,6 @@ static AstNode *rule_expr_assign(Parser *p) {
     };
 
     return node;
-}
-
-UNUSED static AstNode *rule_expr_table_create(UNUSED Parser *p) {
-    // <table-create> ::= "obj" <type> "{"  "}"
-    TODO();
 }
 
 static AstNode *rule_expr(Parser *p) {

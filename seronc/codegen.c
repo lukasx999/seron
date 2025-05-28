@@ -473,6 +473,11 @@ static Type literal_ident(const ExprLiteral *literal, const char *str, bool addr
     }
 
     switch (sym->kind) {
+        case SYMBOL_TABLE:
+            diagnostic_loc(DIAG_ERROR, &literal->op, "Symbol `%s` is a type, not a variable", str);
+            exit(EXIT_FAILURE);
+            break;
+
         case SYMBOL_PARAMETER:
         case SYMBOL_VARIABLE:
             if (addr) {

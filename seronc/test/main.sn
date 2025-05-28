@@ -6,6 +6,7 @@ table foo {
 }
 
 proc main() int {
+    let a: foo;
     putchar(65);
     return 0;
 }

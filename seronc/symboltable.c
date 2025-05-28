@@ -1,4 +1,5 @@
 #include "symboltable.h"
+#include "diagnostics.h"
 
 void symboltable_init(Symboltable *st, Arena *arena) {
     *st = (Symboltable) {
@@ -52,7 +53,21 @@ static void vardecl(AstNode *node, UNUSED int _depth, void *args) {
     Symboltable *st = args;
     StmtVarDecl *vardecl = &node->stmt_vardecl;
 
-    st->stack_size += get_type_size(vardecl->type.kind);
+    int size = 0;
+    if (vardecl->type.kind == TYPE_TABLE) {
+        Symbol *sym = NON_NULL(symboltable_lookup(st->head, vardecl->type.table_name));
+        Table *table = sym->type.table;
+
+        // TODO: set offset to first member
+        for (size_t i=0; i < table->field_count; ++i)
+            size += get_type_size(table->fields[i].type.kind);
+
+    } else {
+        size = get_type_size(vardecl->type.kind);
+
+    }
+
+    st->stack_size += size;
 
     vardecl->offset = st->stack_size;
 
@@ -62,6 +77,7 @@ static void vardecl(AstNode *node, UNUSED int _depth, void *args) {
         .offset = st->stack_size,
     };
 
+    // shadowing is a feature, not a bug
     hashtable_insert(st->head, vardecl->ident.value, sym);
 }
 
@@ -116,10 +132,12 @@ static void proc_post(AstNode *node, UNUSED int _depth, void *args) {
 static void table_pre(AstNode *node, UNUSED int _depth, void *args) {
     Symboltable *st = args;
     DeclTable *table = &node->table;
+
     Symbol sym = {
         .kind = SYMBOL_TABLE,
         .type = table->type,
     };
+
     hashtable_insert(st->head, table->ident.value, sym);
 }
 
