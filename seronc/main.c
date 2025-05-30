@@ -251,6 +251,7 @@ static void dispatch(AstNode *root, CompilerOptions opts) {
 
     // damn.
 
+    // TODO: fix /tmp paths
     const char *filename = compiler_ctx.filename;
 
     char buf[PATH_MAX] = { 0 };

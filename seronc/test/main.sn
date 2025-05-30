@@ -6,7 +6,9 @@ table foo {
 }
 
 proc main() int {
-    let a: foo;
-    putchar(65);
+
+    let xs: *long = long [ 65L, 66L, 67L ];
+    putchar(*(xs));
+
     return 0;
 }

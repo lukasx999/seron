@@ -384,6 +384,8 @@ static Type binop(const ExprBinOp *binop) {
 
     const char *al = subregister(REG_RAX, TYPE_CHAR);
 
+    // TODO: fix pointer arithmetic
+
     // assert(rhs.kind == lhs.kind);
 
     // LHS: rdi
@@ -459,7 +461,7 @@ static Type binop(const ExprBinOp *binop) {
             break;
     }
 
-    return rhs;
+    return lhs;
 
 }
 
@@ -639,6 +641,29 @@ static Type assign(const ExprAssign *assign) {
 
 }
 
+static Type array(const ExprArray *array) {
+
+    AstNodeList list = array->values;
+    int elem_size = type_primitive_size(array->type.kind);
+
+    for (size_t i=0; i < list.size; ++i) {
+        emit(list.items[i]);
+
+        gen_write(
+            "mov [rbp-%d], %s ; array",
+            array->offset + (list.size - i) * elem_size,
+            subregister(REG_RAX, array->type.kind)
+        );
+
+    }
+
+    gen_write("lea rax, [rbp-%d]", array->offset + list.size * elem_size);
+
+    // TODO: remove const cast
+    return (Type) { .kind = TYPE_POINTER, .pointee = (Type*) &array->type };
+}
+
+
 // get address of lvalue
 static Type emit_addr(AstNode *node) {
     NON_NULL(node);
@@ -651,6 +676,7 @@ static Type emit_addr(AstNode *node) {
         case ASTNODE_WHILE:
         case ASTNODE_PROC:
         case ASTNODE_RETURN:
+        case ASTNODE_ARRAY:
         case ASTNODE_VARDECL:
         case ASTNODE_IF:
         case ASTNODE_GROUPING:
@@ -681,6 +707,7 @@ static Type emit(AstNode *node) {
         case ASTNODE_CALL:      return call     (&node->expr_call);     break;
         case ASTNODE_UNARYOP:   return unaryop  (&node->expr_unaryop);  break;
         case ASTNODE_LITERAL:   return literal  (&node->expr_literal);  break;
+        case ASTNODE_ARRAY:     return array    (&node->expr_array);    break;
         case ASTNODE_TABLE:     NOP()                                   break;
     }
 

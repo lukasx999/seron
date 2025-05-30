@@ -48,6 +48,8 @@ const char *stringify_tokenkind(TokenKind tok) {
         case TOK_RPAREN:         return "rparen";
         case TOK_LBRACE:         return "lbrace";
         case TOK_RBRACE:         return "rbrace";
+        case TOK_LBRACKET:       return "lbracket";
+        case TOK_RBRACKET:       return "rbracket";
         case TOK_KW_PROC:        return "proc";
         case TOK_KW_VARDECL:     return "let";
         case TOK_KW_IF:          return "if";
@@ -287,6 +289,8 @@ Token lexer_next(Lexer *lex) {
         case ')':  tokenize_single(lex, TOK_RPAREN);                      break;
         case '{':  tokenize_single(lex, TOK_LBRACE);                      break;
         case '}':  tokenize_single(lex, TOK_RBRACE);                      break;
+        case '[':  tokenize_single(lex, TOK_LBRACKET);                    break;
+        case ']':  tokenize_single(lex, TOK_RBRACKET);                    break;
         case ';':  tokenize_single(lex, TOK_SEMICOLON);                   break;
         case ',':  tokenize_single(lex, TOK_COMMA);                       break;
         case ':':  tokenize_single(lex, TOK_COLON);                       break;

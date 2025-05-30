@@ -45,6 +45,8 @@ typedef enum {
     TOK_RPAREN,
     TOK_LBRACE,
     TOK_RBRACE,
+    TOK_LBRACKET,
+    TOK_RBRACKET,
 
     TOK_KW_PROC,
     TOK_KW_VARDECL,

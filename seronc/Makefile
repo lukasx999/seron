@@ -33,8 +33,8 @@ compiler: main.o $(SOURCES)
 
 run: compiler
 	@echo "Running Prototype $(PROTO)"
-	@./$(BIN) -t run $(PROTO) --dump-ast
 	@./$(BIN) -t asm $(PROTO)
+	@./$(BIN) -t run $(PROTO) --dump-ast
 
 debug: compiler
 	@echo "Debugging Prototype $(PROTO)"
@@ -46,7 +46,7 @@ debug: compiler
 # Random assembly program for prototyping/testing
 dev-asm: dev.asm
 	nasm -felf64 $< -gdwarf
-	ld dev.o
+	cc dev.o -no-pie -ggdb
 	./a.out
 
 test: ./test/test.sn compiler

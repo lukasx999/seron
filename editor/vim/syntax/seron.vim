@@ -16,7 +16,7 @@ syn keyword srnKeyword
       \ void
       \ table
 
-syn match srnOperator "[,.=+-\*/;(){}!&|'`]"
+syn match srnOperator "[,.=+-\*/;(){}[]!&|'`]"
 
 syn region srnString start=/"/ end=/"/
 syn region srnChar start=/'/ end=/'/

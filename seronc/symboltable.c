@@ -66,6 +66,16 @@ static int type_complex_size(const Type *type, const Hashtable *ht) {
     return size;
 }
 
+static void array_pre(AstNode *node, UNUSED int _depth, void *args) {
+    Symboltable *st = args;
+    ExprArray *array = &node->expr_array;
+
+    int elem_size = type_primitive_size(array->type.kind);
+    array->offset = st->stack_size + elem_size;
+    // TODO: ???
+    st->stack_size += elem_size * array->values.size + elem_size;
+
+}
 
 static void vardecl(AstNode *node, UNUSED int _depth, void *args) {
     Symboltable *st = args;
@@ -156,6 +166,7 @@ void symboltable_build(AstNode *root, Arena *arena) {
         { ASTNODE_VARDECL, vardecl,   NULL       },
         { ASTNODE_PROC,    proc_pre,  proc_post  },
         { ASTNODE_TABLE,   table_pre, NULL       },
+        { ASTNODE_ARRAY,   array_pre, NULL       },
     };
 
     parser_dispatch_ast(root, table, ARRAY_LEN(table), &st);

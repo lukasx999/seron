@@ -83,6 +83,13 @@ typedef struct {
 } ExprAssign;
 
 typedef struct {
+    Token op;
+    AstNodeList values;
+    Type type;
+    int offset;
+} ExprArray;
+
+typedef struct {
     AstNodeList stmts;
     Hashtable *symboltable;
 } Block;
@@ -136,6 +143,7 @@ typedef enum {
     ASTNODE_ASSIGN,
     ASTNODE_RETURN,
     ASTNODE_TABLE,
+    ASTNODE_ARRAY,
 } AstNodeKind;
 
 struct AstNode {
@@ -154,6 +162,7 @@ struct AstNode {
         StmtIf       stmt_if;
         StmtWhile    stmt_while;
         StmtReturn   stmt_return;
+        ExprArray    expr_array;
     };
 };
 

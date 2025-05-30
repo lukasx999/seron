@@ -285,6 +285,15 @@ void parser_traverse_ast(AstNode *root, AstCallback fn_pre, AstCallback fn_post,
             depth--;
         } break;
 
+        case ASTNODE_ARRAY: {
+            depth++;
+            AstNodeList list = root->expr_array.values;
+
+            for (size_t i=0; i < list.size; ++i)
+                parser_traverse_ast(list.items[i], fn_pre, fn_post, args);
+            depth--;
+        } break;
+
         case ASTNODE_ASSIGN: {
             depth++;
             parser_traverse_ast(root->expr_assign.value, fn_pre, fn_post, args);
@@ -482,6 +491,10 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
             print_colored(AST_COLOR_IDENT, ")");
             printf("\n");
         } break;
+
+        case ASTNODE_ARRAY:
+            print_colored(AST_COLOR_SEMANTIC, "array\n");
+            break;
 
         case ASTNODE_BLOCK:
             print_colored(AST_COLOR_SEMANTIC, "block\n");
@@ -976,9 +989,42 @@ static AstNode *rule_expr_assign(Parser *p) {
     return node;
 }
 
+static AstNode *rule_expr_array(Parser *p) {
+    // TODO: fix expr in rule
+    // <array> ::= <type> "[" <expr>, <expr> "]"
+
+    Type type = rule_util_type(p);
+
+    Token op = parser_consume(p, TOK_LBRACKET);
+
+    AstNodeList values = { 0 };
+    astnodelist_init(&values, p->arena);
+
+    while (!parser_match_token(p, TOK_RBRACKET)) {
+        astnodelist_append(&values, rule_expr(p));
+
+        if (parser_match_token(p, TOK_COMMA))
+            parser_consume(p, TOK_COMMA);
+    }
+
+    parser_consume(p, TOK_RBRACKET);
+
+    AstNode *node     = parser_new_node(p);
+    node->kind        = ASTNODE_ARRAY;
+    node->expr_array  = (ExprArray) {
+        .op     = op,
+        .values = values,
+        .type   = type,
+    };
+
+    return node;
+
+}
+
 static AstNode *rule_expr(Parser *p) {
     // <expression> ::= <assignment>
-    return rule_expr_assign(p);
+    // TODO: fix type kw check
+    return parser_match_token(p, TOK_KW_TYPE_LONG) ? rule_expr_array(p) : rule_expr_assign(p);
 }
 
 // returns NULL on empty statement
