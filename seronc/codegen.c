@@ -649,11 +649,8 @@ static Type array(const ExprArray *array) {
     for (size_t i=0; i < list.size; ++i) {
         emit(list.items[i]);
 
-        gen_write(
-            "mov [rbp-%d], %s ; array",
-            array->offset + (list.size - i) * elem_size,
-            subregister(REG_RAX, array->type.kind)
-        );
+        int offset = array->offset + (list.size - i) * elem_size;
+        gen_write("mov [rbp-%d], %s ; array", offset, subregister(REG_RAX, array->type.kind));
 
     }
 
