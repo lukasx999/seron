@@ -1,26 +1,34 @@
 # Inline comment
 
+# Tables
+table Person {
+    name: *char,
+    age: int,
+}
+
+proc h(x: int) int;                                     # Procedure Declaration
 proc f() void { }                                       # Empty Procedure
 proc g(a: int, b: char) long { }                        # Parameters and Returntype
-proc h(x: int) int;                                     # Procedure Declaration
 
 proc main() int {                                       # Entry point
 
     if 1 { } else { }                                   # If Statement
-    while 1 { }                                         # While Loop
+    while 0 { }                                         # While Loop
 
-    let x: int;                                         # Variable declaration
-    let y: int = 1;                                     # Variable definition
-    y = 2;                                              # Assignment
+    let a: int;                                         # Variable declaration
+    let b: int = 1;                                     # Variable definition
+    b = 2;                                              # Assignment
     { }                                                 # Block
 
-    let a: char = 1B;                                   # Byte literal
-    let b: int  = 4I;                                   # Int literal (default)
-    let c: long = 8L;                                   # Long literal
-    a = 'A';                                            # Char literal
-    b = 4;                                              # Default type for literal is int
+    let c: char = 1B;                                   # Byte literal
+    let d: int  = 4I;                                   # Int literal
+    let e: long = 8L;                                   # Long literal
+    c = 'A';                                            # Char literal
+    d = 4;                                              # Default type for literal is int
+    let e: *char = "foo";                               # String
+    let xs: *int = [ 1, 2, 3 ] int;                     # Array
 
-    let hp: proc(x: int) int = h;                       # Function Pointer
+    let gp: proc(a: int, b: char) long = g;             # Function Pointer
 
     a +  b;                                             # Addition
     a -  b;                                             # Subtraction
@@ -32,13 +40,11 @@ proc main() int {                                       # Entry point
     a >= b;                                             # Greater-Than-Or-Equal
     a <  b;                                             # Less-Than
     a <= b;                                             # Less-Than-Or-Equal
-    !a;                                                 # Negation
     a &  b;                                             # Bitwise AND
     a |  b;                                             # Bitwise OR
     a && b;                                             # Logical AND
     a || b;                                             # Logical OR
-
-    let xs: *int = [ 1, 2, 3 ] int;                     # Array
+    !c;                                                 # Negation
 
     return 0;                                           # Return statement
 }
