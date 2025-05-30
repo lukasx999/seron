@@ -1,10 +1,6 @@
 # Inline comment
 
-##
-Multi-line comment
-##
-
-proc f() { }                                            # Procedure, implicit void returntype
+proc f() void { }                                       # Empty Procedure
 proc g(a: int, b: char) long { }                        # Parameters and Returntype
 proc h(x: int) int;                                     # Procedure Declaration
 
@@ -18,8 +14,8 @@ proc main() int {                                       # Entry point
     y = 2;                                              # Assignment
     { }                                                 # Block
 
-    let a: char = 1C;                                   # Char literal
-    let b: int  = 4I;                                   # Int literal
+    let a: char = 1B;                                   # Byte literal
+    let b: int  = 4I;                                   # Int literal (default)
     let c: long = 8L;                                   # Long literal
     a = 'A';                                            # Char literal
     b = 4;                                              # Default type for literal is int
@@ -42,6 +38,7 @@ proc main() int {                                       # Entry point
     a && b;                                             # Logical AND
     a || b;                                             # Logical OR
 
+    let xs: *int = [ 1, 2, 3 ] int;                     # Array
 
-    return 0;
+    return 0;                                           # Return statement
 }

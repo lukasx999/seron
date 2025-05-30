@@ -29,7 +29,7 @@
 
 
 #define FILE_EXTENSION "sn"
-#define TEMP_DIR "/tmp/seron"
+#define TEMP_DIR "/tmp/seron/" // trailing slash is very important
 
 
 struct CompilerContext compiler_ctx = { 0 };
@@ -249,9 +249,6 @@ static CompilerOptions parse_args(int argc, char **argv) {
 
 static void dispatch(AstNode *root, CompilerOptions opts) {
 
-    // damn.
-
-    // TODO: fix /tmp paths
     const char *filename = compiler_ctx.filename;
 
     char buf[PATH_MAX] = { 0 };

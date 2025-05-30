@@ -13,7 +13,7 @@
 #include "colors.h"
 
 #define LITERAL_SUFFIX_LONG 'L'
-#define LITERAL_SUFFIX_CHAR 'C'
+#define LITERAL_SUFFIX_CHAR 'B'
 #define LITERAL_SUFFIX_INT  'I'
 
 const char *stringify_tokenkind(TokenKind tok) {

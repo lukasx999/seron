@@ -990,10 +990,7 @@ static AstNode *rule_expr_assign(Parser *p) {
 }
 
 static AstNode *rule_expr_array(Parser *p) {
-    // TODO: fix expr in rule
-    // <array> ::= <type> "[" <expr>, <expr> "]"
-
-    Type type = rule_util_type(p);
+    // <array> ::= "[" (<expr> ("," <expr>)* )? "]" <type>
 
     Token op = parser_consume(p, TOK_LBRACKET);
 
@@ -1008,23 +1005,24 @@ static AstNode *rule_expr_array(Parser *p) {
     }
 
     parser_consume(p, TOK_RBRACKET);
+    Type type = rule_util_type(p);
 
-    AstNode *node     = parser_new_node(p);
-    node->kind        = ASTNODE_ARRAY;
-    node->expr_array  = (ExprArray) {
+    AstNode *node    = parser_new_node(p);
+    node->kind       = ASTNODE_ARRAY;
+    node->expr_array = (ExprArray) {
         .op     = op,
         .values = values,
         .type   = type,
     };
 
     return node;
-
 }
 
 static AstNode *rule_expr(Parser *p) {
     // <expression> ::= <assignment>
-    // TODO: fix type kw check
-    return parser_match_token(p, TOK_KW_TYPE_LONG) ? rule_expr_array(p) : rule_expr_assign(p);
+    return parser_match_token(p, TOK_LBRACKET)
+    ? rule_expr_array(p)
+    : rule_expr_assign(p);
 }
 
 // returns NULL on empty statement
