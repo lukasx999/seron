@@ -1,0 +1,33 @@
+proc InitWindow(width: int, height: int, title: *char) void;
+proc WindowShouldClose() char;
+proc BeginDrawing() void;
+proc EndDrawing() void;
+proc CloseWindow() void;
+proc ClearBackground(color: Color) void;
+proc GetColor(hex: int) Color;
+
+table Color {
+    r: char,
+    g: char,
+    b: char,
+    a: char,
+}
+
+proc main() int {
+
+    InitWindow(800, 450, "rule110");
+
+    while !WindowShouldClose() {
+        BeginDrawing();
+        {
+            let c: Color = GetColor(1);
+#ClearBackground();
+#DrawText("Congrats! You created your first window!", 190, 200, 20, LIGHTGRAY);
+        }
+        EndDrawing();
+    }
+
+    CloseWindow();
+
+    return 0;
+}

@@ -46,6 +46,7 @@ NO_DISCARD static const char *subregister(Register reg, TypeKind type) {
         case REG_RAX: switch (type) {
             case TYPE_PROCEDURE:
             case TYPE_LONG:
+            case TYPE_OBJECT:
             case TYPE_POINTER: return "rax";
             case TYPE_INT:     return "eax";
             case TYPE_CHAR:    return "al";
@@ -55,6 +56,7 @@ NO_DISCARD static const char *subregister(Register reg, TypeKind type) {
         case REG_RDI: switch (type) {
             case TYPE_PROCEDURE:
             case TYPE_LONG:
+            case TYPE_OBJECT:
             case TYPE_POINTER: return "rdi";
             case TYPE_INT:     return "edi";
             case TYPE_CHAR:    return "dil";
@@ -64,6 +66,7 @@ NO_DISCARD static const char *subregister(Register reg, TypeKind type) {
         case REG_RSI: switch (type) {
             case TYPE_PROCEDURE:
             case TYPE_LONG:
+            case TYPE_OBJECT:
             case TYPE_POINTER:  return "rsi";
             case TYPE_INT:      return "esi";
             case TYPE_CHAR:     return "sil";
@@ -71,7 +74,9 @@ NO_DISCARD static const char *subregister(Register reg, TypeKind type) {
         } break;
 
         case REG_RDX: switch (type) {
+            case TYPE_PROCEDURE:
             case TYPE_POINTER:
+            case TYPE_OBJECT:
             case TYPE_LONG: return "rdx";
             case TYPE_INT:  return "edx";
             case TYPE_CHAR: return "dl";
@@ -225,7 +230,6 @@ static void gen_write_data(const char *fmt, ...) {
 
 static Type emit_addr(AstNode *node);
 static Type emit(AstNode *node);
-
 
 static Type call(const ExprCall *call) {
 

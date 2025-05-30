@@ -1018,6 +1018,10 @@ static AstNode *rule_expr_array(Parser *p) {
     return node;
 }
 
+// static AstNode *rule_expr_object(Parser *p) {
+//     // <object> ::= "obj"
+// }
+
 static AstNode *rule_expr(Parser *p) {
     // <expression> ::= <assignment>
     return parser_match_token(p, TOK_LBRACKET)

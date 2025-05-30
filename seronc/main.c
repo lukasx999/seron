@@ -142,6 +142,8 @@ static void link_cc(const char *obj, const char *bin) {
     int ret = run_cmd_sync((const char*[]) {
         "cc",
         "-no-pie",
+        // TODO: cmdline args for linking with c libraries, hardcoded for now
+        "-lraylib",
         "-lc",
         obj,
         "-o",
@@ -317,6 +319,12 @@ static void dispatch(AstNode *root, CompilerOptions opts) {
     }
 
 }
+
+// BUG: this causes segfault
+/*
+    let title: *char = [ 'a', 'b', 'c', 0B ] char;
+    InitWindow(800, 450, "foo");
+*/
 
 int main(int argc, char **argv) {
     compiler_opts_default();
