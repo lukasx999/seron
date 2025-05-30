@@ -21,7 +21,7 @@ void symboltable_init(Symboltable *st, Arena *arena);
 Hashtable *symboltable_push(Symboltable *st);
 void symboltable_pop(Symboltable *st);
 // returns NULL if key was not found
-NO_DISCARD Symbol *symboltable_lookup(Hashtable *scope, const char *key);
+NO_DISCARD Symbol *symboltable_lookup(const Hashtable *scope, const char *key);
 void symboltable_build(AstNode *root, Arena *arena);
 
 

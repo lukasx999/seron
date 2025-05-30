@@ -24,6 +24,7 @@ typedef enum {
     TYPE_POINTER,
     TYPE_PROCEDURE,
     TYPE_TABLE,
+    TYPE_OBJECT,
 } TypeKind;
 
 typedef struct Type Type;
@@ -35,13 +36,12 @@ struct Type {
     union {
         ProcSignature *signature;
         Type *pointee;
-        // TODO:
         Table *table;
-        char table_name[MAX_IDENT_LEN];
+        char object_name[MAX_IDENT_LEN];
     };
 };
 
-NO_DISCARD size_t get_type_size(TypeKind type);
+NO_DISCARD int primitive_type_size(TypeKind type);
 
 typedef struct {
     Type type;
