@@ -41,7 +41,7 @@ struct Type {
     };
 };
 
-NO_DISCARD int primitive_type_size(TypeKind type);
+NO_DISCARD int type_primitive_size(TypeKind type);
 
 typedef struct {
     Type type;

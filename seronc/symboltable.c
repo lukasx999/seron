@@ -49,7 +49,7 @@ static void block_post(UNUSED AstNode *_node, UNUSED int _depth, void *args) {
     symboltable_pop(st);
 }
 
-static int complex_type_size(const Type *type, const Hashtable *ht) {
+static int type_complex_size(const Type *type, const Hashtable *ht) {
     int size = 0;
 
     if (type->kind == TYPE_OBJECT) {
@@ -57,10 +57,10 @@ static int complex_type_size(const Type *type, const Hashtable *ht) {
         Table *table = sym->type.table;
 
         for (size_t i=0; i < table->field_count; ++i)
-            size += primitive_type_size(table->fields[i].type.kind);
+            size += type_primitive_size(table->fields[i].type.kind);
 
     } else {
-        size = primitive_type_size(type->kind);
+        size = type_primitive_size(type->kind);
     }
 
     return size;
@@ -71,7 +71,7 @@ static void vardecl(AstNode *node, UNUSED int _depth, void *args) {
     Symboltable *st = args;
     StmtVarDecl *vardecl = &node->stmt_vardecl;
 
-    int size = complex_type_size(&vardecl->type, st->head);
+    int size = type_primitive_size(vardecl->type.kind);
     st->stack_size += size;
 
     vardecl->offset = st->stack_size;
@@ -118,7 +118,7 @@ static void proc_post(AstNode *node, UNUSED int _depth, void *args) {
     for (size_t i=0; i < sig->params_count; ++i) {
         Param *param = &sig->params[i];
 
-        st->stack_size += primitive_type_size(param->type.kind);
+        st->stack_size += type_primitive_size(param->type.kind);
         param->offset = st->stack_size;
 
         Symbol sym = {
