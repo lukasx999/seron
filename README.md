@@ -6,9 +6,9 @@
 
 - Compiled to native Assembly
 - Static & Strong Typing
-- Familiar syntax
+- Familiar C/Rust-style syntax
 - Easy interop with C APIs
-- Building requires on dependencies
+- Building requires no dependencies
 
 Currently, the only supported backend is x86_64 NASM.
 
