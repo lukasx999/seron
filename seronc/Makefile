@@ -46,7 +46,7 @@ debug: compiler
 # Random assembly program for prototyping/testing
 dev-asm: dev.asm
 	nasm -felf64 $< -gdwarf
-	cc dev.o -no-pie -ggdb
+	cc dev.o -no-pie -ggdb -lc -lraylib -lglfw
 	./a.out
 
 test: ./test/test.sn compiler

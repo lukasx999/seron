@@ -1,5 +1,6 @@
 proc putchar(c: char) void;
 proc puts(c: *char) void;
+proc InitWindow(width: int, height: int, title: *char) void;
 
 table foo {
     a: int,
@@ -11,8 +12,11 @@ proc main() int {
     #let xs: *long = long [ 65L, 66L, 67L ];
     #putchar(*(xs));
 
-    let xs: *char = [ 'a', 'b', 'c', 10B, 0B ] char;
-    puts(xs);
+    #let xs: *char = [ 'a', 'b', 'c', 10B, 0B ] char;
+    #puts(xs);
+
+    let x: int;
+    InitWindow(800, 450, "rule110");
 
     return 0;
 }

@@ -77,11 +77,18 @@ static void array_pre(AstNode *node, UNUSED int _depth, void *args) {
 
 }
 
+static void align_sp(int *sp) {
+    // calculate padding for aligning stack, according to sysv abi
+    int padding = 16 - (*sp % 16);
+    *sp += padding;
+}
+
 static void vardecl(AstNode *node, UNUSED int _depth, void *args) {
     Symboltable *st = args;
     StmtVarDecl *vardecl = &node->stmt_vardecl;
 
     int size = type_primitive_size(vardecl->type.kind);
+    align_sp(&size);
     st->stack_size += size;
 
     vardecl->offset = st->stack_size;

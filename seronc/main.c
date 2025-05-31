@@ -120,6 +120,7 @@ static int run_cmd_sync(const char *const argv[]) {
 }
 
 static void assemble(const char *asm_, const char *obj) {
+    printf("ASM %s -> %s\n", asm_, obj);
 
     int ret = run_cmd_sync((const char*[]) {
         "nasm",
@@ -138,13 +139,14 @@ static void assemble(const char *asm_, const char *obj) {
 }
 
 static void link_cc(const char *obj, const char *bin) {
+    printf("LINK %s -> %s\n", obj, bin);
 
     int ret = run_cmd_sync((const char*[]) {
         "cc",
         "-no-pie",
+        "-lc",
         // TODO: cmdline args for linking with c libraries, hardcoded for now
         "-lraylib",
-        "-lc",
         obj,
         "-o",
         bin,
@@ -159,16 +161,11 @@ static void link_cc(const char *obj, const char *bin) {
 }
 
 static void run(const char *bin) {
+    printf("RUN %s\n", bin);
 
-    int ret = run_cmd_sync((const char*[]) {
-        bin,
-        NULL,
-    });
-
-    if (ret) {
-        diagnostic(DIAG_ERROR, "Failed to link via `cc`");
-        exit(EXIT_FAILURE);
-    }
+    // TODO: handle error
+    execvp(bin, (char *const[]){ (char*) bin, NULL });
+    exit(1); // Failed to exec
 
 }
 

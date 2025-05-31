@@ -5,6 +5,8 @@ proc EndDrawing() void;
 proc CloseWindow() void;
 proc ClearBackground(color: Color) void;
 proc GetColor(hex: int) Color;
+proc DrawText(str: *char, x: int, y: int, fontsize: int, color: Color) void;
+proc DrawRectangle(x: int, y: int, width: int, height: int, color: Color) void;
 
 table Color {
     r: char,
@@ -20,9 +22,13 @@ proc main() int {
     while !WindowShouldClose() {
         BeginDrawing();
         {
-            let c: Color = GetColor(1);
-#ClearBackground();
-#DrawText("Congrats! You created your first window!", 190, 200, 20, LIGHTGRAY);
+            let red: Color = GetColor(4278190080);
+            let black: Color = GetColor(0);
+            ClearBackground(black);
+
+
+            DrawRectangle(0, 0, 50, 50, red);
+            #DrawText("Congrats! You created your first window!", 190, 200, 20, red);
         }
         EndDrawing();
     }

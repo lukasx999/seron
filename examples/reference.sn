@@ -28,7 +28,7 @@ proc main() int {                                       # Entry point
     let e: *char = "foo";                               # String
     let xs: *int = [ 1, 2, 3 ] int;                     # Array
 
-    let gp: proc(a: int, b: char) long = g;             # Function Pointer
+    let gp: proc(a: int, b: char) long = g;             # Function Object
 
     a +  b;                                             # Addition
     a -  b;                                             # Subtraction

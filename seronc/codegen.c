@@ -717,6 +717,7 @@ static Type emit(AstNode *node) {
 }
 
 void codegen(AstNode *root, const char *filename) {
+    printf("GEN %s\n", filename);
     gen_init();
     emit(root);
     gen_write_to_file(filename);
