@@ -15,3 +15,9 @@ NO_DISCARD int type_primitive_size(TypeKind type) {
     }
     UNREACHABLE();
 }
+
+void align_16(int *i) {
+    // calculate padding for aligning stack, according to sysv abi
+    int padding = 16 - (*i % 16);
+    *i += padding;
+}

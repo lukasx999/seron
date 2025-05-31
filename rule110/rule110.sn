@@ -1,3 +1,5 @@
+proc calloc(n: long, size: long) *void;
+proc free(ptr: *void) void;
 proc InitWindow(width: int, height: int, title: *char) void;
 proc WindowShouldClose() char;
 proc BeginDrawing() void;
@@ -15,29 +17,116 @@ table Color {
     a: char,
 }
 
+proc draw_cells(cells: *char, cell_iters: int, cell_count: int) void {
+
+    let blue: Color = GetColor(65535); # 0x0000ffff
+    let cell_size: int = 5;
+
+    let i: int = 0;
+    while i < cell_iters {
+
+        let j: int = 0;
+        while j < cell_count {
+
+            #let offset: long = i * cell_count + j;
+            #if *(cells + offset) {
+            #    DrawRectangle(j * cell_size, i * cell_size, cell_size, cell_size, blue);
+            #}
+
+            j = j+1;
+        }
+
+        i = i+1;
+    }
+
+}
+
+proc rule110(left: char, center: char, right: char) char {
+    if  left &&  center &&  right { return 0; }
+    if  left &&  center && !right { return 1; }
+    if  left && !center &&  right { return 1; }
+    if  left && !center && !right { return 0; }
+    if !left &&  center &&  right { return 1; }
+    if !left &&  center && !right { return 1; }
+    if !left && !center &&  right { return 1; }
+    if !left && !center && !right { return 0; }
+}
+
+proc next(cells: *char, iter: *int, cell_iters: int, cell_count: int) void {
+
+    if *iter >= cell_iters { return; }
+
+    let offset: long = *iter - 1;
+    let c: *char = cells + offset * cell_count;
+
+    #for (size_t i=0; i < CELL_COUNT; ++i) {
+    #
+    #    bool left = i == 0
+    #        ? c[CELL_COUNT-1]
+    #        : c[i-1];
+    #
+    #    bool right = i == CELL_COUNT-1
+    #        ? c[0]
+    #        : c[i+1];
+    #
+    #    cells[iter][i] = rule110(left, c[i], right);
+    #}
+
+    *iter = *iter+1;
+}
+
 proc main() int {
 
-    let width: int = 500;
+    let width:  int = 500;
     let height: int = width;
     InitWindow(width, height, "rule110");
 
-    # 0x0000ffff
-    let blue: Color = GetColor(65535);
-    # 0xff0000ff
-    let red: Color = GetColor(4278190335);
+    let cell_iters: int   = 1000;
+    let cell_count: int   = 300;
+    let iter:       int   = 1;
+    let cells:      *char = calloc(cell_count*cell_iters, 1);
+
+    let blue:  Color = GetColor(65535); # 0x0000ffff
+    let red:   Color = GetColor(4278190335); # 0xff0000ff
     let black: Color = GetColor(0);
 
     while !WindowShouldClose() {
         BeginDrawing();
         {
             ClearBackground(black);
-            DrawRectangle(0, 0, 100, 100, blue);
-            DrawText("Rule 110 Seron implementation", 0, 0, 20, red);
+            draw_cells(cells, cell_iters, cell_count);
         }
         EndDrawing();
     }
 
     CloseWindow();
+    free(cells);
 
     return 0;
 }
+
+#
+#
+#
+#
+#int main(void) {
+#
+#    cells[0][CELL_COUNT-1] = 1;
+#
+#    SetTargetFPS(60);
+#    InitWindow(WIDTH, HEIGHT, "rule 110 C implementation");
+#
+#    while (!WindowShouldClose()) {
+#        BeginDrawing();
+#        {
+#            ClearBackground(BLACK);
+#            draw_cells();
+#            next();
+#
+#        }
+#        EndDrawing();
+#    }
+#
+#    CloseWindow();
+#    return 0;
+#}

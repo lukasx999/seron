@@ -71,16 +71,10 @@ static void array_pre(AstNode *node, UNUSED int _depth, void *args) {
     ExprArray *array = &node->expr_array;
 
     int elem_size = type_primitive_size(array->type.kind);
+    align_16(&elem_size);
     array->offset = st->stack_size + elem_size;
-    // TODO: ???
     st->stack_size += elem_size * array->values.size + elem_size;
 
-}
-
-static void align_sp(int *sp) {
-    // calculate padding for aligning stack, according to sysv abi
-    int padding = 16 - (*sp % 16);
-    *sp += padding;
 }
 
 static void vardecl(AstNode *node, UNUSED int _depth, void *args) {
@@ -88,7 +82,7 @@ static void vardecl(AstNode *node, UNUSED int _depth, void *args) {
     StmtVarDecl *vardecl = &node->stmt_vardecl;
 
     int size = type_primitive_size(vardecl->type.kind);
-    align_sp(&size);
+    align_16(&size);
     st->stack_size += size;
 
     vardecl->offset = st->stack_size;

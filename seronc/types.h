@@ -42,6 +42,8 @@ struct Type {
 };
 
 NO_DISCARD int type_primitive_size(TypeKind type);
+// aligns i to a 16 byte boundary
+void align_16(int *i);
 
 typedef struct {
     Type type;
