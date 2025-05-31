@@ -9,8 +9,8 @@ table foo {
 
 proc main() int {
 
-    #let xs: *long = long [ 65L, 66L, 67L ];
-    #putchar(*(xs));
+    let xs: *long = [ 65L, 66L, 67L ] long;
+    putchar(*(xs));
 
     let xs: *char = [ 'a', 'b', 'c', 10B, 0B ] char;
     puts(xs);
