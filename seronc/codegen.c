@@ -67,9 +67,9 @@ NO_DISCARD static const char *subregister(Register reg, TypeKind type) {
             case TYPE_PROCEDURE:
             case TYPE_LONG:
             case TYPE_OBJECT:
-            case TYPE_POINTER:  return "rsi";
-            case TYPE_INT:      return "esi";
-            case TYPE_CHAR:     return "sil";
+            case TYPE_POINTER: return "rsi";
+            case TYPE_INT:     return "esi";
+            case TYPE_CHAR:    return "sil";
             default: PANIC("invalid type");
         } break;
 
@@ -84,24 +84,37 @@ NO_DISCARD static const char *subregister(Register reg, TypeKind type) {
         } break;
 
         case REG_RCX: switch (type) {
+            case TYPE_PROCEDURE:
+            case TYPE_POINTER:
+            case TYPE_OBJECT:
+            case TYPE_LONG: return "rcx";
             case TYPE_INT:  return "ecx";
             case TYPE_CHAR: return "cl";
             default: PANIC("invalid type");
         } break;
 
         case REG_R8: switch (type) {
+            case TYPE_PROCEDURE:
+            case TYPE_POINTER:
+            case TYPE_OBJECT:
+            case TYPE_LONG: return "r8";
             case TYPE_INT:  return "r8d";
             case TYPE_CHAR: return "r8b";
             default: PANIC("invalid type");
         } break;
 
         case REG_R9: switch (type) {
+            case TYPE_PROCEDURE:
+            case TYPE_POINTER:
+            case TYPE_OBJECT:
+            case TYPE_LONG: return "r9";
             case TYPE_INT:  return "r9d";
             case TYPE_CHAR: return "r9b";
             default: PANIC("invalid type");
         } break;
 
-        default: PANIC("invalid register");
+        case REG_INVALID: PANIC("invalid register");
+
     }
     UNREACHABLE();
 }

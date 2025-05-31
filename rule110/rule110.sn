@@ -17,18 +17,22 @@ table Color {
 
 proc main() int {
 
-    InitWindow(800, 450, "rule110");
+    let width: int = 500;
+    let height: int = width;
+    InitWindow(width, height, "rule110");
+
+    # 0x0000ffff
+    let blue: Color = GetColor(65535);
+    # 0xff0000ff
+    let red: Color = GetColor(4278190335);
+    let black: Color = GetColor(0);
 
     while !WindowShouldClose() {
         BeginDrawing();
         {
-            let red: Color = GetColor(4278190080);
-            let black: Color = GetColor(0);
             ClearBackground(black);
-
-
-            DrawRectangle(0, 0, 50, 50, red);
-            #DrawText("Congrats! You created your first window!", 190, 200, 20, red);
+            DrawRectangle(0, 0, 100, 100, blue);
+            DrawText("Rule 110 Seron implementation", 0, 0, 20, red);
         }
         EndDrawing();
     }
