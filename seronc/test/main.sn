@@ -1,22 +1,15 @@
 proc putchar(c: char) void;
-proc puts(c: *char) void;
-proc InitWindow(width: int, height: int, title: *char) void;
-
-table foo {
-    a: int,
-    b: int,
-}
 
 proc main() int {
 
-    let xs: *long = [ 65L, 66L, 67L ] long;
-    putchar(*(xs));
+    for x: int = 0, x < 5, x=x1 {
+    }
 
-    let xs: *char = [ 'a', 'b', 'c', 10B, 0B ] char;
-    puts(xs);
-
-    let x: int;
-    InitWindow(800, 450, "rule110");
+    let x: int = 0;
+    while x <= 5 {
+        putchar(65);
+        x = x+1;
+    }
 
     return 0;
 }
