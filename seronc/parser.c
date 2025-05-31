@@ -18,7 +18,7 @@
 
 
 
-static void astnodelist_init(AstNodeList *list, Arena *arena) {
+void astnodelist_init(AstNodeList *list, Arena *arena) {
      *list = (AstNodeList) {
         .cap   = 5,
         .size  = 0,
@@ -29,7 +29,7 @@ static void astnodelist_init(AstNodeList *list, Arena *arena) {
     list->items = arena_alloc(arena, list->cap * sizeof(AstNode*));
 }
 
-static void astnodelist_append(AstNodeList *list, AstNode *node) {
+void astnodelist_append(AstNodeList *list, AstNode *node) {
 
     if (list->size == list->cap) {
         list->cap *= 2;
@@ -313,6 +313,16 @@ void parser_traverse_ast(AstNode *root, AstCallback fn_pre, AstCallback fn_post,
             depth--;
         } break;
 
+        case ASTNODE_FOR: {
+            depth++;
+            StmtFor *for_ = &root->stmt_for;
+            parser_traverse_ast(for_->vardecl, fn_pre, fn_post, args);
+            parser_traverse_ast(for_->condition, fn_pre, fn_post, args);
+            parser_traverse_ast(for_->assign, fn_pre, fn_post, args);
+            parser_traverse_ast(for_->body, fn_pre, fn_post, args);
+            depth--;
+        } break;
+
         case ASTNODE_WHILE: {
             depth++;
             StmtWhile *while_ = &root->stmt_while;
@@ -506,6 +516,10 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
 
         case ASTNODE_IF:
             print_colored(AST_COLOR_KEYWORD, "if\n");
+            break;
+
+        case ASTNODE_FOR:
+            print_colored(AST_COLOR_SEMANTIC, "for\n");
             break;
 
         case ASTNODE_WHILE:
@@ -1046,6 +1060,7 @@ static AstNode *rule_stmt_vardecl(Parser *p) {
 
     Token op = parser_consume(p, TOK_KW_VARDECL);
 
+    // TODO: use param rule
     Token ident = parser_consume(p, TOK_LITERAL_IDENT);
     parser_consume(p, TOK_COLON);
 
@@ -1107,6 +1122,40 @@ static AstNode *rule_stmt_block(Parser *p) {
     }
 
     parser_advance(p);
+    return node;
+}
+
+static AstNode *rule_stmt_for(Parser *p) {
+    // <for> ::= "for" IDENTIFIER ":" <type> "=" <expr> "," <expr> "," <expr> <block>
+
+    Token op = parser_consume(p, TOK_KW_FOR);
+
+    Token ident = parser_consume(p, TOK_LITERAL_IDENT);
+    parser_consume(p, TOK_COLON);
+    Type type = rule_util_type(p);
+
+    parser_consume(p, TOK_ASSIGN);
+    AstNode *expr = rule_expr(p);
+    parser_consume(p, TOK_COMMA);
+
+    AstNode *cond  = rule_expr(p);
+    parser_consume(p, TOK_COMMA);
+    AstNode *assign = rule_expr(p);
+
+    AstNode *body  = rule_stmt_block(p);
+
+    AstNode *node    = parser_new_node(p);
+    node->kind       = ASTNODE_FOR;
+    node->stmt_for = (StmtFor) {
+        .op        = op,
+        .condition = cond,
+        .body      = body,
+        .assign    = assign,
+        .var_ident = ident,
+        .var_type  = type,
+        .var_expr  = expr,
+    };
+
     return node;
 }
 
@@ -1183,6 +1232,7 @@ static AstNode *rule_stmt(Parser *p) {
     //             | <vardecl>
     //             | <if>
     //             | <while>
+    //             | <for>
     //             | <return>
     //             | <exprstmt>
 
@@ -1193,6 +1243,7 @@ static AstNode *rule_stmt(Parser *p) {
         parser_match_token(p, TOK_KW_VARDECL) ? rule_stmt_vardecl(p) :
         parser_match_token(p, TOK_KW_IF)      ? rule_stmt_if     (p) :
         parser_match_token(p, TOK_KW_WHILE)   ? rule_stmt_while  (p) :
+        parser_match_token(p, TOK_KW_FOR)     ? rule_stmt_for    (p) :
         parser_match_token(p, TOK_KW_RETURN)  ? rule_stmt_return (p) :
     rule_exprstmt(p);
 }

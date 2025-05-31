@@ -41,7 +41,8 @@ void test_deref_write(int*, int);
 
 int test_cond(int, int, bool);
 
-int test_loop(int);
+int test_while(int);
+int test_for(int, int, int);
 
 int test_fptr(int(*)(void));
 static int fptr(void) { return 45; }
@@ -120,7 +121,8 @@ int main(void) {
     test(test_cond(25, 35, true), 25);
     test(test_cond(25, 35, false), 35);
 
-    test(test_loop(5), 5);
+    test(test_while(5), 5);
+    test(test_for(10, 50, 2), 20);
 
     test(test_fptr(fptr), 45);
     test(test_fptr_args(fptr_add, 1, 2), 3);

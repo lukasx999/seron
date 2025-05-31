@@ -21,6 +21,7 @@ const char *stringify_tokenkind(TokenKind tok) {
         case TOK_INVALID:        return "invalid";
         case TOK_SENTINEL:       return "sentinel";
         case TOK_EOF:            return "eof";
+        case TOK_KW_FOR:         return "for";
         case TOK_LITERAL_NUMBER: return "num";
         case TOK_PIPE:           return "pipe";
         case TOK_LITERAL_STRING: return "string";
@@ -87,6 +88,7 @@ static TokenKind get_keyword(const char *str) {
     match_kw(str, "proc")   ? TOK_KW_PROC        :
     match_kw(str, "let")    ? TOK_KW_VARDECL     :
     match_kw(str, "if")     ? TOK_KW_IF          :
+    match_kw(str, "for")    ? TOK_KW_FOR         :
     match_kw(str, "else")   ? TOK_KW_ELSE        :
     match_kw(str, "elsif")  ? TOK_KW_ELSIF       :
     match_kw(str, "while")  ? TOK_KW_WHILE       :

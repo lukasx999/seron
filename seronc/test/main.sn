@@ -2,14 +2,8 @@ proc putchar(c: char) void;
 
 proc main() int {
 
-    for x: int = 0, x < 5, x=x1 {
-    }
-
-    let x: int = 0;
-    while x <= 5 {
-        putchar(65);
-        x = x+1;
-    }
+    let xs: *char = [ 1B, 65B, 3B ] char;
+    putchar(*(xs+1L));
 
     return 0;
 }

@@ -56,6 +56,7 @@ typedef enum {
     TOK_KW_WHILE,
     TOK_KW_RETURN,
     TOK_KW_TABLE,
+    TOK_KW_FOR,
 
     TOK_KW_TYPE_VOID,
     TOK_KW_TYPE_CHAR,

@@ -103,10 +103,18 @@ proc test_cond(a: int, b: int, cond: char) int {
     }
 }
 
-proc test_loop(iters: int) int {
+proc test_while(iters: int) int {
     let acc: int = 0;
     while iters {
         iters = iters - 1;
+        acc = acc + 1;
+    }
+    return acc;
+}
+
+proc test_for(init: int, max: int, step: int) int {
+    let acc: int = 0;
+    for x: int = init, x < max, x=x+step {
         acc = acc + 1;
     }
     return acc;

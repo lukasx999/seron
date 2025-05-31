@@ -21,6 +21,7 @@
 #include "parser.h"
 #include "codegen.h"
 #include "symboltable.h"
+#include "expand.h"
 #include "main.h"
 
 
@@ -338,6 +339,7 @@ int main(int argc, char **argv) {
     arena_init(&arena);
 
     AstNode *root = parse(file, &arena);
+    expand_ast(root, &arena);
 
     if (opts.opts.dump_ast)
         parser_print_ast(root, 2);

@@ -722,6 +722,8 @@ static Type emit(AstNode *node) {
         case ASTNODE_UNARYOP:   return unaryop  (&node->expr_unaryop);  break;
         case ASTNODE_LITERAL:   return literal  (&node->expr_literal);  break;
         case ASTNODE_ARRAY:     return array    (&node->expr_array);    break;
+        case ASTNODE_FOR:
+            PANIC("syntactic sugar should have been expanded earlier"); break;
         case ASTNODE_TABLE:     NOP()                                   break;
     }
 

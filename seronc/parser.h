@@ -20,6 +20,9 @@ typedef struct {
     AstNode **items;
 } AstNodeList;
 
+void astnodelist_init(AstNodeList *list, Arena *arena);
+void astnodelist_append(AstNodeList *list, AstNode *node);
+
 typedef enum {
     LITERAL_STRING,
     LITERAL_NUMBER,
@@ -119,6 +122,14 @@ typedef struct {
 
 typedef struct {
     Token op;
+    AstNode *vardecl, *condition, *assign, *body;
+    Type var_type;
+    Token var_ident;
+    AstNode *var_expr;
+} StmtFor;
+
+typedef struct {
+    Token op;
     AstNode *expr; // NULL if no body
 } StmtReturn;
 
@@ -144,6 +155,7 @@ typedef enum {
     ASTNODE_RETURN,
     ASTNODE_TABLE,
     ASTNODE_ARRAY,
+    ASTNODE_FOR,
 } AstNodeKind;
 
 struct AstNode {
@@ -163,6 +175,7 @@ struct AstNode {
         StmtWhile    stmt_while;
         StmtReturn   stmt_return;
         ExprArray    expr_array;
+        StmtFor      stmt_for;
     };
 };
 

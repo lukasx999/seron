@@ -13,6 +13,7 @@ hashtable.h    		\
 symboltable.h  		\
 types.h 	  		\
 colors.h 	  		\
+expand.h 	  		\
 
 SOURCES=	  		\
 lexer.o       		\
@@ -22,6 +23,7 @@ diagnostics.o 		\
 hashtable.o   		\
 symboltable.o 		\
 types.o 			\
+expand.o 	  		\
 
 PROTO=./test/main.sn
 
