@@ -46,6 +46,7 @@ proc main() int {                                       # Entry point
     a && b;                                             # Logical AND
     a || b;                                             # Logical OR
     !c;                                                 # Negation
+    xs[1L];                                             # Index
 
     return 0;                                           # Return statement
 }

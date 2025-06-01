@@ -19,7 +19,6 @@
 //         <assign>
 //     }
 // }
-
 static void for_pre(AstNode *node, UNUSED int _depth, void *args) {
     Arena *arena = args;
 
@@ -57,10 +56,36 @@ static void for_pre(AstNode *node, UNUSED int _depth, void *args) {
 
 }
 
+// converts index to deref
+//
+// <expr> [ <index> ];
+//
+// *(<expr> + <index>);
+static void index_pre(AstNode *node, UNUSED int _depth, void *args) {
+    Arena *arena = args;
+    ExprIndex *index = &node->expr_index;
+    Token op = index->op;
+
+    AstNode *binop    = arena_alloc(arena, sizeof(AstNode));
+    binop->kind       = ASTNODE_BINOP;
+    binop->expr_binop = (ExprBinOp) {
+        .kind = BINOP_ADD,
+        .op   = op,
+        .lhs  = index->expr,
+        .rhs  = index->index,
+    };
+
+    node->kind = ASTNODE_UNARYOP;
+    node->expr_unaryop.kind = UNARYOP_DEREF;
+    node->expr_unaryop.op = op;
+    node->expr_unaryop.node = binop;
+}
+
 void expand_ast(AstNode *root, Arena *arena) {
 
     AstDispatchEntry table[] = {
-        { ASTNODE_FOR, for_pre, NULL },
+        { ASTNODE_FOR,   for_pre,   NULL },
+        { ASTNODE_INDEX, index_pre, NULL },
     };
 
     parser_dispatch_ast(root, table, ARRAY_LEN(table), arena);

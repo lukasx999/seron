@@ -35,6 +35,8 @@ bool test_log_and(bool, bool);
 
 int test_add_many(int, int, int, int, int, int, int, int, int);
 
+int test_index(int*, size_t);
+int test_index_reverse(int*, size_t);
 int test_deref(int*);
 int *test_deref_double(int**);
 void test_deref_write(int*, int);
@@ -107,6 +109,14 @@ int main(void) {
     test(test_log_or(5,  3), true);
     test(test_log_or(5,  0), true);
     test(test_log_or(0,  5), true);
+
+    int xs[] = { 1, 2, 3 };
+    test(test_index(xs, 0), 1);
+    test(test_index(xs, 1), 2);
+    test(test_index(xs, 2), 3);
+    test(test_index_reverse(xs, 0), 1);
+    test(test_index_reverse(xs, 1), 2);
+    test(test_index_reverse(xs, 2), 3);
 
     int a = 45;
     test(test_deref(&a), a);

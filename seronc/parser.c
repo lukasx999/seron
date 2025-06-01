@@ -294,6 +294,13 @@ void parser_traverse_ast(AstNode *root, AstCallback fn_pre, AstCallback fn_post,
             depth--;
         } break;
 
+        case ASTNODE_INDEX: {
+            depth++;
+            parser_traverse_ast(root->expr_index.expr, fn_pre, fn_post, args);
+            parser_traverse_ast(root->expr_index.index, fn_pre, fn_post, args);
+            depth--;
+        } break;
+
         case ASTNODE_ASSIGN: {
             depth++;
             parser_traverse_ast(root->expr_assign.value, fn_pre, fn_post, args);
@@ -501,6 +508,10 @@ static void parser_print_ast_callback(AstNode *root, int depth, void *args) {
             print_colored(AST_COLOR_IDENT, ")");
             printf("\n");
         } break;
+
+        case ASTNODE_INDEX:
+            print_colored(AST_COLOR_SEMANTIC, "index\n");
+            break;
 
         case ASTNODE_ARRAY:
             print_colored(AST_COLOR_SEMANTIC, "array\n");
@@ -885,11 +896,34 @@ static AstNode *rule_expr_call(Parser *p) {
     return call;
 }
 
+static AstNode *rule_expr_index(Parser *p) {
+    // <index> ::= <call> "[" <expr> "]"
+
+    AstNode *node = rule_expr_call(p);
+
+    if (!parser_match_token(p, TOK_LBRACKET))
+        return node;
+
+    Token op = parser_consume(p, TOK_LBRACKET);
+    AstNode *index_expr = rule_expr(p);
+    parser_consume(p, TOK_RBRACKET);
+
+    AstNode *index   = parser_new_node(p);
+    index->kind      = ASTNODE_INDEX;
+    index->expr_index = (ExprIndex) {
+        .op      = op,
+        .expr    = node,
+        .index   = index_expr,
+    };
+
+    return index;
+}
+
 static AstNode *rule_expr_unary(Parser *p) {
-    // <unary> ::= ( "&" | "*" | "!" | "-" ) <unary> | <call>
+    // <unary> ::= ( "&" | "*" | "!" | "-" ) <unary> | <index>
 
     if (!parser_match_tokens(p, TOK_MINUS, TOK_BANG, TOK_AMPERSAND, TOK_ASTERISK, TOK_SENTINEL))
-        return rule_expr_call(p);
+        return rule_expr_index(p);
 
     Token op           = parser_advance(p);
     AstNode *node      = parser_new_node(p);
@@ -897,7 +931,7 @@ static AstNode *rule_expr_unary(Parser *p) {
     node->expr_unaryop = (ExprUnaryOp) {
         .op   = op,
         .kind = unaryop_from_token(op.kind),
-        .node = rule_expr_unary(p),
+        .node = rule_expr_index(p),
     };
 
     return node;

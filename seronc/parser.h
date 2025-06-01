@@ -82,6 +82,11 @@ typedef struct {
 
 typedef struct {
     Token op;
+    AstNode *expr, *index;
+} ExprIndex;
+
+typedef struct {
+    Token op;
     AstNode *value, *target;
 } ExprAssign;
 
@@ -156,6 +161,7 @@ typedef enum {
     ASTNODE_TABLE,
     ASTNODE_ARRAY,
     ASTNODE_FOR,
+    ASTNODE_INDEX,
 } AstNodeKind;
 
 struct AstNode {
@@ -176,6 +182,7 @@ struct AstNode {
         StmtReturn   stmt_return;
         ExprArray    expr_array;
         StmtFor      stmt_for;
+        ExprIndex    expr_index;
     };
 };
 

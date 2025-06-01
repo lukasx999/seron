@@ -160,7 +160,7 @@ static void buffer_init(Buffer *buf) {
 
 static void buffer_append(Buffer *buf, char c) {
 
-    // TODO: consider allocating a initial chunk of memory
+    // TODO: consider allocating an initial chunk of memory
     if (buf->len >= buf->cap) {
         if (buf->cap == 0)
             buf->cap = 50;
@@ -401,12 +401,19 @@ static Type binop(const ExprBinOp *binop) {
 
     const char *al = subregister(REG_RAX, TYPE_CHAR);
 
-    // TODO: fix pointer arithmetic
+    // LHS: rax
+    // RHS: rdi
+
+    // overload plus operator for pointer arithmetic
+    // multiply the index with the size of the type pointed to by the pointer
+    if (lhs.kind == TYPE_POINTER && rhs.kind != TYPE_POINTER)
+        gen_write("imul %s, %d", subregister(REG_RDI, rhs.kind), type_primitive_size(lhs.pointee->kind));
+
+    if (lhs.kind != TYPE_POINTER && rhs.kind == TYPE_POINTER)
+        gen_write("imul %s, %d", subregister(REG_RAX, lhs.kind), type_primitive_size(rhs.pointee->kind));
+
 
     // assert(rhs.kind == lhs.kind);
-
-    // LHS: rdi
-    // RHS: rax
 
     switch (binop->kind) {
         case BINOP_ADD:
@@ -478,7 +485,8 @@ static Type binop(const ExprBinOp *binop) {
             break;
     }
 
-    return lhs;
+    // if pointer arithmetic was done, binop has to evaluate to a pointer
+    return rhs.kind == TYPE_POINTER ? rhs : lhs;
 
 }
 
@@ -686,6 +694,8 @@ static Type emit_addr(AstNode *node) {
         case ASTNODE_UNARYOP: return unaryop_addr(&node->expr_unaryop); break;
         case ASTNODE_LITERAL: return literal_addr(&node->expr_literal); break;
 
+        case ASTNODE_FOR:
+            PANIC("syntactic sugar should have been expanded earlier"); break;
         case ASTNODE_BLOCK:
         case ASTNODE_WHILE:
         case ASTNODE_PROC:

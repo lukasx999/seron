@@ -73,6 +73,14 @@ proc test_lt_eq(a: int, b: int) char {
 
 ### Pointers ###
 
+proc test_index(xs: *int, idx: long) int {
+    return xs[idx];
+}
+
+proc test_index_reverse(xs: *int, idx: long) int {
+    return idx[xs]; # Weird, but makes sense
+}
+
 proc test_deref(p: *int) int {
     return *p;
 }

@@ -35,8 +35,8 @@ compiler: main.o $(SOURCES)
 
 run: compiler
 	@echo "Running Prototype $(PROTO)"
-	@./$(BIN) -t asm $(PROTO)
-	@./$(BIN) -t run $(PROTO) --dump-ast
+	@./$(BIN) -t asm $(PROTO) --dump-ast
+	@./$(BIN) -t run $(PROTO)
 
 debug: compiler
 	@echo "Debugging Prototype $(PROTO)"
