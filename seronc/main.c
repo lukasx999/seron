@@ -318,12 +318,6 @@ static void dispatch(AstNode *root, CompilerOptions opts) {
 
 }
 
-// BUG: this causes segfault
-/*
-    let title: *char = [ 'a', 'b', 'c', 0B ] char;
-    InitWindow(800, 450, "foo");
-*/
-
 int main(int argc, char **argv) {
     compiler_opts_default();
 

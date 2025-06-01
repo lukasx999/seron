@@ -160,7 +160,6 @@ static void buffer_init(Buffer *buf) {
 
 static void buffer_append(Buffer *buf, char c) {
 
-    // TODO: consider allocating an initial chunk of memory
     if (buf->len >= buf->cap) {
         if (buf->cap == 0)
             buf->cap = 50;
@@ -404,16 +403,20 @@ static Type binop(const ExprBinOp *binop) {
     // LHS: rax
     // RHS: rdi
 
+    // TODO: maybe make this just an ast expansion
+
     // overload plus operator for pointer arithmetic
     // multiply the index with the size of the type pointed to by the pointer
-    if (lhs.kind == TYPE_POINTER && rhs.kind != TYPE_POINTER)
+    if (lhs.kind == TYPE_POINTER && rhs.kind != TYPE_POINTER) {
         gen_write("imul %s, %d", subregister(REG_RDI, rhs.kind), type_primitive_size(lhs.pointee->kind));
 
-    if (lhs.kind != TYPE_POINTER && rhs.kind == TYPE_POINTER)
+    } else if (lhs.kind != TYPE_POINTER && rhs.kind == TYPE_POINTER) {
         gen_write("imul %s, %d", subregister(REG_RAX, lhs.kind), type_primitive_size(rhs.pointee->kind));
 
-
-    // assert(rhs.kind == lhs.kind);
+    } else {
+        // TODO: proper type checking
+        assert(rhs.kind == lhs.kind);
+    }
 
     switch (binop->kind) {
         case BINOP_ADD:
@@ -663,7 +666,6 @@ static Type assign(const ExprAssign *assign) {
     gen_write("mov [rdi], %s", subregister(REG_RAX, ty.kind));
 
     return ty;
-
 }
 
 static Type array(const ExprArray *array) {
@@ -695,6 +697,7 @@ static Type emit_addr(AstNode *node) {
         case ASTNODE_LITERAL: return literal_addr(&node->expr_literal); break;
 
         case ASTNODE_FOR:
+        case ASTNODE_INDEX:
             PANIC("syntactic sugar should have been expanded earlier"); break;
         case ASTNODE_BLOCK:
         case ASTNODE_WHILE:
@@ -732,6 +735,7 @@ static Type emit(AstNode *node) {
         case ASTNODE_UNARYOP:   return unaryop  (&node->expr_unaryop);  break;
         case ASTNODE_LITERAL:   return literal  (&node->expr_literal);  break;
         case ASTNODE_ARRAY:     return array    (&node->expr_array);    break;
+        case ASTNODE_INDEX:
         case ASTNODE_FOR:
             PANIC("syntactic sugar should have been expanded earlier"); break;
         case ASTNODE_TABLE:     NOP()                                   break;
