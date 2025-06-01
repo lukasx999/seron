@@ -22,21 +22,17 @@ proc draw_cells(cells: *char, cell_iters: int, cell_count: int) void {
     let blue: Color = GetColor(65535); # 0x0000ffff
     let cell_size: int = 5;
 
-    let i: int = 0;
-    while i < cell_iters {
+    for i: int = 0, i < cell_iters, i=i+1 {
 
-        let j: int = 0;
-        while j < cell_count {
+        for j: int = 0, j < cell_count, j=j+1 {
 
-            #let offset: long = i * cell_count + j;
-            #if *(cells + offset) {
-            #    DrawRectangle(j * cell_size, i * cell_size, cell_size, cell_size, blue);
-            #}
+            let offset: long = i * cell_count + j;
+            if cells[offset] {
+                DrawRectangle(j * cell_size, i * cell_size, cell_size, cell_size, blue);
+            }
 
-            j = j+1;
         }
 
-        i = i+1;
     }
 
 }
@@ -104,29 +100,3 @@ proc main() int {
 
     return 0;
 }
-
-#
-#
-#
-#
-#int main(void) {
-#
-#    cells[0][CELL_COUNT-1] = 1;
-#
-#    SetTargetFPS(60);
-#    InitWindow(WIDTH, HEIGHT, "rule 110 C implementation");
-#
-#    while (!WindowShouldClose()) {
-#        BeginDrawing();
-#        {
-#            ClearBackground(BLACK);
-#            draw_cells();
-#            next();
-#
-#        }
-#        EndDrawing();
-#    }
-#
-#    CloseWindow();
-#    return 0;
-#}
