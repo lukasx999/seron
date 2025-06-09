@@ -413,9 +413,15 @@ static Type binop(const ExprBinOp *binop) {
     } else if (lhs.kind != TYPE_POINTER && rhs.kind == TYPE_POINTER) {
         gen_write("imul %s, %d", subregister(REG_RAX, lhs.kind), type_primitive_size(rhs.pointee->kind));
 
-    } else {
-        // TODO: proper type checking
-        assert(rhs.kind == lhs.kind);
+    } else if (rhs.kind != lhs.kind) {
+        diagnostic_loc(
+            DIAG_ERROR,
+            &binop->op,
+            "Invalid types (%s, %s)",
+            stringify_typekind(rhs.kind),
+            stringify_typekind(lhs.kind)
+        );
+        exit(EXIT_FAILURE);
     }
 
     switch (binop->kind) {
@@ -647,6 +653,16 @@ static void vardecl(const StmtVarDecl *decl) {
 
     const char *ident = decl->ident.value;
     Type init = emit(decl->init);
+    if (decl->type.kind != init.kind) {
+        diagnostic_loc(
+            DIAG_ERROR,
+            &decl->op,
+            "Invalid type (%s, %s)",
+            stringify_typekind(decl->type.kind),
+            stringify_typekind(init.kind)
+        );
+        exit(EXIT_FAILURE);
+    }
     gen_write(
         "mov [rbp-%d], %s ; %s",
         decl->offset,

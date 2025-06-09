@@ -6,6 +6,7 @@ const char *stringify_typekind(TypeKind type) {
     switch (type) {
         case TYPE_CHAR:      return "char";    break;
         case TYPE_INT:       return "int";     break;
+        case TYPE_LONG:      return "long";    break;
         case TYPE_POINTER:   return "pointer"; break;
         case TYPE_VOID:      return "void";    break;
         case TYPE_PROCEDURE: return "proc";    break;

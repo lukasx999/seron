@@ -1,5 +1,6 @@
 proc calloc(n: long, size: long) *void;
 proc free(ptr: *void) void;
+proc putchar(c: char) void;
 proc InitWindow(width: int, height: int, title: *char) void;
 proc WindowShouldClose() char;
 proc BeginDrawing() void;
@@ -20,16 +21,18 @@ table Color {
 proc draw_cells(cells: *char, cell_iters: int, cell_count: int) void {
 
     let blue: Color = GetColor(65535); # 0x0000ffff
-    let cell_size: int = 5;
+    let cell_size: int = 50;
+    putchar('A');
 
     for i: int = 0, i < cell_iters, i=i+1 {
 
         for j: int = 0, j < cell_count, j=j+1 {
 
-            let offset: long = i * cell_count + j;
-            if cells[offset] {
-                DrawRectangle(j * cell_size, i * cell_size, cell_size, cell_size, blue);
-            }
+            #let offset: long = i * cell_count + j;
+            #if cells[offset] {
+            #    DrawRectangle(j * cell_size, i * cell_size, cell_size, cell_size, blue);
+            #}
+            DrawRectangle(j * cell_size, i * cell_size, cell_size, cell_size, blue);
 
         }
 
@@ -55,18 +58,18 @@ proc next(cells: *char, iter: *int, cell_iters: int, cell_count: int) void {
     let offset: long = *iter - 1;
     let c: *char = cells + offset * cell_count;
 
-    #for (size_t i=0; i < CELL_COUNT; ++i) {
-    #
-    #    bool left = i == 0
-    #        ? c[CELL_COUNT-1]
-    #        : c[i-1];
-    #
-    #    bool right = i == CELL_COUNT-1
-    #        ? c[0]
-    #        : c[i+1];
-    #
-    #    cells[iter][i] = rule110(left, c[i], right);
-    #}
+    for i: int = 0, i < cell_count, i=i+1 {
+
+        #bool left = i == 0
+        #    ? c[CELL_COUNT-1]
+        #    : c[i-1];
+        #
+        #bool right = i == CELL_COUNT-1
+        #    ? c[0]
+        #    : c[i+1];
+        #
+        #cells[iter][i] = rule110(left, c[i], right);
+    }
 
     *iter = *iter+1;
 }
@@ -91,6 +94,7 @@ proc main() int {
         {
             ClearBackground(black);
             draw_cells(cells, cell_iters, cell_count);
+            next(cells, &iter, cell_iters, cell_count);
         }
         EndDrawing();
     }
