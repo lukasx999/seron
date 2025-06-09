@@ -1,6 +1,9 @@
 #include "hashtable.h"
 #include <ver.h>
 
+const char *stringify_type(Type ty) {
+    // TODO:
+}
 
 const char *stringify_typekind(TypeKind type) {
     switch (type) {

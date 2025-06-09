@@ -4,7 +4,7 @@ proc main() int {
 
     let xs: *int = [ 1, 2, 3 ] int;
     let x: long = 1L;
-    x = 2;
+    #x = 2;
     #xs[1L];
     #1+2;
     #putchar(0L[xs]);
