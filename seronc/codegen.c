@@ -674,9 +674,20 @@ static void vardecl(const StmtVarDecl *decl) {
 
 static Type assign(const ExprAssign *assign) {
 
-    emit_addr(assign->target);
+    Type target = emit_addr(assign->target);
     gen_write("push rax");
     Type ty = emit(assign->value);
+
+    if (target.kind != ty.kind) {
+        diagnostic_loc(
+            DIAG_ERROR,
+            &assign->op,
+            "Invalid type (%s, %s)",
+            stringify_typekind(target.kind),
+            stringify_typekind(ty.kind)
+        );
+        exit(EXIT_FAILURE);
+    }
 
     gen_write("pop rdi");
     gen_write("mov [rdi], %s", subregister(REG_RAX, ty.kind));
